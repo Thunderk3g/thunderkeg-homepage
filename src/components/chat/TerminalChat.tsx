@@ -25,24 +25,58 @@ type TerminalChatProps = {
 };
 
 // Memoized message component for better performance and improved styling
+// Add a formatter function to improve message display
+const formatMessageContent = (content: string) => {
+  // Add formatting for code blocks
+  const formattedWithCodeBlocks = content.replace(
+    /```([a-zA-Z]*)\n([\s\S]*?)\n```/g, 
+    (_, language, code) => {
+      return `<div class="bg-gray-900 rounded-md my-2 p-3 overflow-x-auto">
+        <pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+      </div>`;
+    }
+  );
+  
+  // Add formatting for bullet points
+  const formattedWithBullets = formattedWithCodeBlocks.replace(
+    /^- (.*?)$/gm,
+    '<div class="flex items-start my-1"><span class="mr-2 text-blue-400">•</span>$1</div>'
+  );
+  
+  // Add formatting for numbered lists
+  const formattedWithNumbers = formattedWithBullets.replace(
+    /^(\d+)\. (.*?)$/gm,
+    '<div class="flex items-start my-1"><span class="mr-2 text-blue-400">$1.</span>$2</div>'
+  );
+  
+  // Add paragraph spacing
+  return formattedWithNumbers.replace(/\n\n/g, '<div class="h-2"></div>');
+};
+
 const ChatMessage = memo(({ message }: { message: Message }) => {
   return message.role === 'user' ? (
-    <div className="flex items-start mb-4 px-2">
-      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
-        <Terminal size={16} className="text-white" />
+    <div className="flex items-start mb-6 px-2">
+      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center mr-3 flex-shrink-0">
+        <Terminal size={18} className="text-white" />
       </div>
-      <div className="bg-blue-900/30 rounded-lg px-4 py-3 text-white max-w-[85%]">
+      <div className="bg-blue-900/30 rounded-lg px-5 py-4 text-white max-w-[85%] text-[15px] leading-relaxed">
         {message.content}
       </div>
     </div>
   ) : (
-    <div className="flex items-start mb-4 px-2">
-      <div className={`w-8 h-8 rounded-full ${message.fallback ? 'bg-yellow-600' : 'bg-green-600'} flex items-center justify-center mr-2 flex-shrink-0`}>
-        <Command size={16} className="text-white" />
+    <div className="flex items-start mb-6 px-2">
+      <div className={`w-10 h-10 rounded-full ${message.fallback ? 'bg-yellow-600' : 'bg-green-600'} flex items-center justify-center mr-3 flex-shrink-0`}>
+        <Command size={18} className="text-white" />
       </div>
-      <div className={`${message.fallback ? 'bg-yellow-900/30' : 'bg-gray-800'} rounded-lg px-4 py-3 ${message.fallback ? 'text-yellow-300' : 'text-gray-200'} max-w-[85%]`} style={{ whiteSpace: 'pre-wrap' }}>
-        {message.content}
-      </div>
+      <div 
+        className={`${message.fallback ? 'bg-yellow-900/30' : 'bg-gray-800'} rounded-lg px-5 py-4 ${message.fallback ? 'text-yellow-300' : 'text-gray-200'} max-w-[85%] text-[15px] leading-relaxed`}
+        style={{ whiteSpace: 'pre-wrap' }}
+        dangerouslySetInnerHTML={{ 
+          __html: message.fallback 
+            ? message.content 
+            : formatMessageContent(message.content)
+        }}
+      />
     </div>
   );
 });
@@ -631,79 +665,6 @@ Feel free to ask any questions about my experience or background!`
     }
   };
   
-  // Add a formatter function to improve message display
-  const formatMessageContent = (content: string) => {
-    // Add formatting for code blocks
-    const formattedWithCodeBlocks = content.replace(
-      /```([a-zA-Z]*)\n([\s\S]*?)\n```/g, 
-      (_, language, code) => {
-        return `<div class="bg-gray-900 rounded-md my-2 p-3 overflow-x-auto">
-          <pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
-        </div>`;
-      }
-    );
-    
-    // Add formatting for bullet points
-    const formattedWithBullets = formattedWithCodeBlocks.replace(
-      /^- (.*?)$/gm,
-      '<div class="flex items-start my-1"><span class="mr-2 text-blue-400">•</span>$1</div>'
-    );
-    
-    // Add formatting for numbered lists
-    const formattedWithNumbers = formattedWithBullets.replace(
-      /^(\d+)\. (.*?)$/gm,
-      '<div class="flex items-start my-1"><span class="mr-2 text-blue-400">$1.</span>$2</div>'
-    );
-    
-    // Add paragraph spacing
-    return formattedWithNumbers.replace(/\n\n/g, '<div class="h-2"></div>');
-  };
-
-  // Update the ChatMessage component to use the formatter
-  const ChatMessage = memo(({ message }: { message: Message }) => {
-    return message.role === 'user' ? (
-      <div className="flex items-start mb-4 px-2">
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-2 flex-shrink-0">
-          <Terminal size={16} className="text-white" />
-        </div>
-        <div className="bg-blue-900/30 rounded-lg px-4 py-3 text-white max-w-[85%]">
-          {message.content}
-        </div>
-      </div>
-    ) : (
-      <div className="flex items-start mb-4 px-2">
-        <div className={`w-8 h-8 rounded-full ${message.fallback ? 'bg-yellow-600' : 'bg-green-600'} flex items-center justify-center mr-2 flex-shrink-0`}>
-          <Command size={16} className="text-white" />
-        </div>
-        <div 
-          className={`${message.fallback ? 'bg-yellow-900/30' : 'bg-gray-800'} rounded-lg px-4 py-3 ${message.fallback ? 'text-yellow-300' : 'text-gray-200'} max-w-[85%]`}
-          style={{ whiteSpace: 'pre-wrap' }}
-          dangerouslySetInnerHTML={{ 
-            __html: message.fallback 
-              ? message.content 
-              : formatMessageContent(message.content)
-          }}
-        />
-      </div>
-    );
-  });
-  
-  // After each update to messages, make sure we scroll to the bottom
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, streamingMessage]);
-  
-  // Also ensure auto-scrolling when the component mounts
-  useEffect(() => {
-    // Auto-focus the input field when component mounts
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-    
-    // Ensure messages are visible by scrolling to bottom
-    setTimeout(scrollToBottom, 100);
-  }, []);
-  
   return (
     <div className="w-full h-full flex">
       {/* Chat History Sidebar */}
@@ -833,6 +794,21 @@ Feel free to ask any questions about my experience or background!`
         </div>
         
         <form onSubmit={handleSubmit} className="p-2 border-t border-gray-700 bg-gray-800 relative">
+          <AnimatePresence>
+            {showPromptSuggestions && (
+              <div className="absolute bottom-full left-0 right-0 mb-2">
+                <PromptSuggestions
+                  agentType={agentType}
+                  onSelectPrompt={(prompt) => {
+                    setInput(prompt);
+                    setShowPromptSuggestions(false);
+                  }}
+                  onClose={() => setShowPromptSuggestions(false)}
+                />
+              </div>
+            )}
+          </AnimatePresence>
+          
           <div className="flex items-center">
             <div 
               className={`px-2 text-xs mr-2 ${
@@ -874,16 +850,6 @@ Feel free to ask any questions about my experience or background!`
               >
                 <Lightbulb size={16} />
               </button>
-              
-              <AnimatePresence>
-                {showPromptSuggestions && (
-                  <PromptSuggestions
-                    agentType={agentType}
-                    onSelectPrompt={(prompt) => setInput(prompt)}
-                    onClose={() => setShowPromptSuggestions(false)}
-                  />
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </form>
