@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+
+Verify file paths and names for accuracy.
+Markdown Usage:
+
+You can use Markdown for clarity, though it’s optional.
+Keep formatting consistent to improve readability.
+Server Verification:
+
+Always check whether the npm run dev server is running before attempting to run it again.
+Use logs or terminal output to confirm the server status.
+MCP Tool Calls:
+
+Always use MCP tool calls to understand the browser context and any relevant details before running npm run dev.
+Additional Rules to Avoid Silly Mistakes
+
+Dependency Check:
+
+Confirm that all required dependencies are installed and up-to-date (check your package.json and lock files).
+Run npm install to resolve any missing packages if needed.
+Environment Validation:
+
+Ensure you are operating in the correct environment (development, staging, production).
+Double-check environment variables and configuration files before executing commands.
+Command Context:
+
+Verify that you’re running commands in the appropriate directory to prevent path-related issues.
+Use terminal history or scripts to avoid duplicate executions.
+Error Handling:
+
+Review error logs immediately if a command fails, rather than retrying blindly.
+Document and resolve recurring errors to improve workflow efficiency.
+UI Consistency:
+
+For UI elements (like vim themes or maximize buttons), ensure that changes are connected to the correct components.
+Test UI changes in isolation to verify smooth integration with existing functionality.
