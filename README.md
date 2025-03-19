@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Terminal-Themed AI Portfolio
+
+An interactive terminal-style portfolio website featuring AI agents powered by Ollama and RAG. Visitors can engage with terminal-like interfaces to learn about professional background and personal projects through a unique developer-focused experience.
+
+## Features
+
+- **Terminal-Inspired Dark UI**: Vim-like keybindings, command-line interface, and terminal aesthetics
+- **Dual AI Agents**: Specialized terminal personas for different audiences
+  - **Professional Agent**: Focused on skills, experience, and qualifications
+  - **Personal Agent**: Shares information about interests, projects, and collaboration opportunities
+  
+- **Local AI with Ollama**: Connect to your local Ollama instance for AI completion
+- **RAG Integration**: Retrieval Augmented Generation with resume data
+- **Vim-Like Experience**: Normal/insert modes, command history, terminal commands
+
+## Tech Stack
+
+- **Frontend**: Next.js, TypeScript, TailwindCSS
+- **Animation**: Framer Motion for smooth transitions
+- **AI Integration**: Ollama API, RAG implementation
+- **UI**: Terminal-inspired components with Vim-like interactions
+- **Icons**: Lucide React
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+ and npm
+- [Ollama](https://ollama.ai/) installed locally
+- A language model pulled in Ollama (e.g., `ollama pull llama2`)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository
+   ```
+   git clone <repository-url>
+   cd ai-portfolio
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies
+   ```
+   npm install
+   ```
 
-## Learn More
+3. Set up environment variables
+   ```
+   cp .env.local.example .env.local
+   ```
+   Edit `.env.local` to configure your Ollama instance and model.
 
-To learn more about Next.js, take a look at the following resources:
+### Running the Development Server
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Start your local Ollama server
+   ```
+   ollama serve
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. In another terminal, start the Next.js development server
+   ```
+   npm run dev
+   ```
 
-## Deploy on Vercel
+3. Open [http://localhost:3000](http://localhost:3000) with your browser
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Terminal Commands
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The terminal interface supports several commands:
+- `help`: Show available commands
+- `clear` or `cls`: Clear the terminal
+- `switch`: Switch between professional and personal agents
+- `about`: Show information about the terminal
+
+## Vim-Like Keybindings
+
+- Press `i` to enter insert mode (type commands)
+- Press `Esc` to return to normal mode
+- Use up/down arrows to navigate command history
+
+## Customization
+
+To customize this portfolio for your own use:
+
+1. Update the resume data in `src/lib/rag/loader.ts` to reflect your own details
+2. Configure the Ollama model in `.env.local`
+3. Modify agent prompts in `src/lib/ollama/prompts.ts` to match your communication style
+4. Replace social links in `src/app/page.tsx`
+
+## RAG Implementation
+
+The portfolio uses a simple Retrieval Augmented Generation (RAG) approach:
+1. Resume data is chunked into sections
+2. User queries are matched against relevant sections
+3. Matching sections are included in the context sent to Ollama
+4. The AI generates responses grounded in your actual resume data
+
+## Deployment
+
+For production deployment, you'll need to:
+1. Set up an Ollama instance accessible to your deployed application
+2. Configure environment variables on your hosting platform
+3. Deploy the Next.js application to Vercel, Netlify, or similar
+
+## License
+
+MIT
+
+## Acknowledgements
+
+- [Ollama](https://ollama.ai/) for local AI capabilities
+- [Next.js](https://nextjs.org/) for the application framework
+- [TailwindCSS](https://tailwindcss.com/) for styling
+- [Framer Motion](https://www.framer.com/motion/) for animations
