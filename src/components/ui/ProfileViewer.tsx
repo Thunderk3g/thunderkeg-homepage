@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Resume } from '@/types/Resume';
 import { Briefcase, GraduationCap, Code, Activity, User, Calendar, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 
 interface ProfileViewerProps {
   resumeData?: Resume;
@@ -59,11 +60,16 @@ const ProfileViewer: React.FC<ProfileViewerProps> = ({ resumeData }) => {
       <div className="mb-6 border-b border-gray-700 pb-6">
         <div className="flex items-center mb-4">
           {resume.basics.image && (
-            <img 
-              src={resume.basics.image} 
-              alt={resume.basics.name} 
-              className="w-16 h-16 rounded-full mr-4 object-cover border border-gray-600"
-            />
+            <div className="relative w-16 h-16 mr-4 rounded-full overflow-hidden border border-gray-600">
+              <Image 
+                src={resume.basics.image} 
+                alt={resume.basics.name || 'Profile picture'} 
+                fill
+                sizes="64px"
+                className="object-cover"
+                priority
+              />
+            </div>
           )}
           <div>
             <h2 className="text-2xl font-bold text-white">{resume.basics.name}</h2>

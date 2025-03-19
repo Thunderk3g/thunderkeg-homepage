@@ -74,14 +74,18 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
       prevPosition.current = position;
       prevSize.current = size;
       
-      // Calculate safe viewport dimensions accounting for UI elements
+      // Calculate safe viewport dimensions accounting for UI elements and padding
       const navbarHeight = 48; // Height of the top navigation bar
       const margin = 16; // Margin to maintain around the edges
       
-      // Set to maximum size with safe margins
+      // Get viewport dimensions
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Set to maximum size with safe margins, ensuring it doesn't exceed viewport
       setSize({ 
-        width: Math.min(window.innerWidth - (margin * 2), 1600), // Cap at 1600px width
-        height: Math.min(window.innerHeight - navbarHeight - (margin * 2), 900) // Cap at 900px height
+        width: Math.min(viewportWidth - (margin * 2), 1600), // Cap at 1600px or viewport width - margins
+        height: Math.min(viewportHeight - navbarHeight - (margin * 2), 900) // Cap at 900px or viewport height - navbar - margins
       });
       
       // Center the terminal in the viewport
@@ -212,7 +216,7 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
         onDragStart={() => setIsDragging(true)}
         onDragEnd={() => setIsDragging(false)}
         onClick={handleWindowClick}
-        className={`bg-gray-900 border rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm ${
+        className={`bg-gray-900 border rounded-lg shadow-2xl backdrop-blur-sm ${
           isMaximized
             ? 'fixed z-50 max-w-[calc(100vw-32px)] max-h-[calc(100vh-80px)]'
             : isMinimized
@@ -236,10 +240,14 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
               : size.height
         }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
-        style={isMaximized 
-          ? { position: 'fixed', left: '16px', top: '64px' }
-          : { position: 'absolute', left: position.x, top: position.y }
-        }
+        style={{
+          position: isMaximized ? 'fixed' : 'absolute',
+          left: isMaximized ? '16px' : position.x,
+          top: isMaximized ? '64px' : position.y,
+          maxWidth: 'calc(100vw - 32px)',
+          maxHeight: 'calc(100vh - 80px)',
+          overflow: 'hidden'
+        }}
         layout
         id={id}
       >

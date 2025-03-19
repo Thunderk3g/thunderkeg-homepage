@@ -4,6 +4,29 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ZoomIn, ZoomOut, Move } from 'lucide-react';
 
+// Define Node and Edge types
+interface FlowNode {
+  id: string;
+  position: { x: number; y: number };
+  data: {
+    label: string;
+    description?: string;
+    color?: string;
+  };
+}
+
+interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  animated?: boolean;
+  style?: {
+    stroke?: string;
+    strokeWidth?: number;
+  };
+}
+
 // Simple node component
 const SimpleNode = ({ 
   data, 
@@ -14,7 +37,7 @@ const SimpleNode = ({
   isActive,
   scale,
 }: { 
-  data: any; 
+  data: FlowNode['data']; 
   id: string;
   position: { x: number; y: number };
   onClick?: (id: string) => void;
@@ -79,15 +102,8 @@ const SimpleEdge = ({
   scale,
   pan,
 }: { 
-  edge: { 
-    id: string; 
-    source: string; 
-    target: string;
-    label?: string;
-    animated?: boolean;
-    style?: any;
-  };
-  nodesMap: Map<string, any>;
+  edge: FlowEdge;
+  nodesMap: Map<string, FlowNode>;
   isActive?: boolean;
   scale: number;
   pan: { x: number, y: number };
@@ -136,8 +152,8 @@ const SimpleEdge = ({
 };
 
 export interface FlowChartProps {
-  initialNodes: any[];
-  initialEdges: any[];
+  initialNodes: FlowNode[];
+  initialEdges: FlowEdge[];
   title?: string;
   description?: string;
   isVisible?: boolean;

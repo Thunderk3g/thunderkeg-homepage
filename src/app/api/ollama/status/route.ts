@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { isOllamaAvailable } from '@/lib/ollama/client';
 
+// Define the model interface
+interface OllamaModel {
+  name: string;
+  modified_at: string;
+  size: number;
+  digest: string;
+}
+
 export async function GET() {
   try {
     const available = await isOllamaAvailable();
     
     // If Ollama is available, also fetch available models
-    let models = [];
+    let models: string[] = [];
     if (available) {
       try {
         const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
@@ -17,7 +25,7 @@ export async function GET() {
         
         if (response.ok) {
           const data = await response.json();
-          models = data.models.map((model: any) => model.name);
+          models = data.models.map((model: OllamaModel) => model.name);
         }
       } catch (error) {
         console.error('Error fetching Ollama models:', error);
