@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import FlowChart from './FlowChart';
+import FlowChart, { Edge as FlowChartEdge } from './FlowChart';
 import { terminalNodes, terminalEdges } from '@/lib/flowcharts/terminal-workflow';
 import { Terminal, Code, Keyboard, MessageSquare, FileText, Zap } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const TerminalExplainer: React.FC = () => {
   }));
 
   // Enhanced edges that highlight when connected nodes are active
-  const enhancedEdges = terminalEdges.map(edge => ({
+  const enhancedEdges: FlowChartEdge[] = terminalEdges.map(edge => ({
     ...edge,
     animated: edge.source === activeNodeId || edge.target === activeNodeId || edge.animated,
     style: {

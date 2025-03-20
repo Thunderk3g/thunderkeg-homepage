@@ -5,19 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ZoomIn, ZoomOut, Move } from 'lucide-react';
 
 // Define types for nodes and edges
-interface NodeData {
+export interface NodeData {
   label: string;
   description?: string;
   color?: string;
 }
 
-interface Node {
+export interface Node {
   id: string;
   data: NodeData;
   position: { x: number; y: number };
 }
 
-interface Edge {
+export interface Edge {
   id: string;
   source: string;
   target: string;

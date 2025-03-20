@@ -1,4 +1,5 @@
-import { Node, Edge } from 'reactflow';
+import { Node } from 'reactflow';
+import { Edge } from '@/components/ui/FlowChart';
 
 export const terminalNodes: Node[] = [
   {
@@ -122,7 +123,6 @@ export const terminalEdges: Edge[] = [
     id: 'e7-1',
     source: '7',
     target: '1',
-    type: 'smoothstep',
     label: 'Input Control',
     animated: false,
     style: { stroke: '#10b981' },

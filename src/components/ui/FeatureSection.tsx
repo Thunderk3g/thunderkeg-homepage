@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FlowChart from './FlowChart';
-import { Node, Edge } from 'reactflow';
+import { Node } from 'reactflow';
+import type { Edge as FlowChartEdge } from './FlowChart';
 
 export interface FeatureSectionProps {
   title: string;
@@ -12,7 +13,7 @@ export interface FeatureSectionProps {
   flowTitle: string;
   flowDescription: string;
   flowNodes: Node[];
-  flowEdges: Edge[];
+  flowEdges: FlowChartEdge[];
   triggerType?: 'hover' | 'click';
   children?: React.ReactNode;
 }

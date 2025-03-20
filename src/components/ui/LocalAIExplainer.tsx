@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import FlowChart from './FlowChart';
+import FlowChart, { Edge as FlowChartEdge } from './FlowChart';
 import { localAiNodes, localAiEdges } from '@/lib/flowcharts/local-ai-workflow';
 import { Brain, Server, CheckCircle, Database, Cpu, Terminal, Play } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const LocalAIExplainer: React.FC = () => {
   }));
 
   // Enhanced edges that highlight when connected nodes are active
-  const enhancedEdges = localAiEdges.map(edge => ({
+  const enhancedEdges: FlowChartEdge[] = localAiEdges.map(edge => ({
     ...edge,
     animated: edge.source === activeNodeId || edge.target === activeNodeId || edge.animated,
     style: {

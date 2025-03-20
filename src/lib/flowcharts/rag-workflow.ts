@@ -1,4 +1,5 @@
-import { Node, Edge } from 'reactflow';
+import { Node } from 'reactflow';
+import { Edge } from '@/components/ui/FlowChart';
 
 export const ragNodes: Node[] = [
   {
@@ -113,7 +114,6 @@ export const ragEdges: Edge[] = [
     id: 'e7-4',
     source: '7',
     target: '4',
-    type: 'smoothstep',
     animated: true,
     label: 'Provides data',
     style: { stroke: '#10b981' },

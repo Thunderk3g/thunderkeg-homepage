@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import FlowChart from './FlowChart';
+import FlowChart, { Edge as FlowChartEdge } from './FlowChart';
 import { ragNodes, ragEdges } from '@/lib/flowcharts/rag-workflow';
 import { Brain, Database, FileText, Search, Zap, MessageSquare } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const RAGExplainer: React.FC = () => {
   }));
 
   // Enhanced edges that highlight when connected nodes are active
-  const enhancedEdges = ragEdges.map(edge => ({
+  const enhancedEdges: FlowChartEdge[] = ragEdges.map(edge => ({
     ...edge,
     animated: edge.source === activeNodeId || edge.target === activeNodeId || edge.animated,
     style: {

@@ -1,4 +1,5 @@
-import { Node, Edge } from 'reactflow';
+import { Node } from 'reactflow';
+import { Edge } from '@/components/ui/FlowChart';
 
 export const localAiNodes: Node[] = [
   {
