@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect, memo } from 'react';
 import { useVimKeybindings } from '@/lib/utils/vimKeybindings';
-import { Terminal, Command, Keyboard, History, Lightbulb } from 'lucide-react';
+import { Terminal, Command, Keyboard, Cpu, Clock, Bookmark, History, Lightbulb } from 'lucide-react';
+import { Trash as TrashIcon } from 'lucide-react';
 import ModelSelector from '@/components/ui/ModelSelector';
 import PromptSuggestions from '@/components/ui/PromptSuggestions';
-import { getOllamaModels, streamChatMessage } from '@/lib/ollama/client-helpers';
+import { getOllamaModels, sendChatMessage, streamChatMessage } from '@/lib/ollama/client-helpers';
+import { useVirtualizer, VirtualItem } from '@tanstack/react-virtual';
 import { AnimatePresence } from 'framer-motion';
 
 type Message = {
@@ -176,7 +178,7 @@ export default function TerminalChat({
       localStorage.setItem(chatStorageKey, JSON.stringify(messages));
       saveChatSession();
     }
-  }, [messages, chatId, chatStorageKey, saveChatSession]);
+  }, [messages, chatId, chatStorageKey]);
   
   // Create or update the current chat session in the sessions list
   const saveChatSession = () => {
@@ -305,7 +307,7 @@ export default function TerminalChat({
         clearInterval(statusCheckIntervalRef.current);
       }
     };
-  }, [isCheckingStatus, selectedModel]);
+  }, []); // Empty dependency array - only run on mount
   
   // Vim keybindings setup - only active when vimModeEnabled is true
   const { handleKeyDown } = useVimKeybindings({
