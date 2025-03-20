@@ -2,7 +2,7 @@
  * Vim-like keybindings for terminal interfaces
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 interface VimKeybindingsOptions {
   onEscape?: () => void;
@@ -11,6 +11,8 @@ interface VimKeybindingsOptions {
   onHistoryDown?: () => void;
   onSearch?: () => void;
   onCommandMode?: (command: string) => void;
+  onCommandExecuted?: (command: string) => void;
+  enabled?: boolean;
 }
 
 export function useVimKeybindings({
@@ -20,8 +22,15 @@ export function useVimKeybindings({
   onHistoryDown,
   onSearch,
   onCommandMode,
+  onCommandExecuted,
+  enabled = true,
 }: VimKeybindingsOptions) {
+  const [vimMode, setVimMode] = useState(enabled);
+  const [currentVimCommand, setCurrentVimCommand] = useState<string>('');
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!enabled) return;
+    
     // Escape key (exit insert mode)
     if (e.key === 'Escape' && onEscape) {
       e.preventDefault();
@@ -67,11 +76,17 @@ export function useVimKeybindings({
       e.preventDefault();
       const command = prompt('Enter command:');
       if (command) {
+        setCurrentVimCommand(command);
         onCommandMode(command);
+        
+        // Execute command if handler is provided
+        if (onCommandExecuted) {
+          onCommandExecuted(command);
+        }
       }
       return;
     }
-  }, [onEscape, onInsertMode, onHistoryUp, onHistoryDown, onSearch, onCommandMode]);
+  }, [onEscape, onInsertMode, onHistoryUp, onHistoryDown, onSearch, onCommandMode, onCommandExecuted, enabled]);
   
-  return { handleKeyDown };
+  return { handleKeyDown, vimMode, setVimMode, currentVimCommand };
 } 

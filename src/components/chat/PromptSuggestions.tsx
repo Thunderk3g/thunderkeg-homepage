@@ -1,100 +1,70 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
-export type PromptCategory = 'personal' | 'professional';
-
-export interface Prompt {
-  id: string;
-  text: string;
-  category: PromptCategory;
-}
-
+// Define the props interface
 interface PromptSuggestionsProps {
   onSelectPrompt: (prompt: string) => void;
-  userRole?: 'recruiter' | 'collaborator' | null;
+  role: 'recruiter' | 'collaborator';
 }
 
-const personalPrompts: Prompt[] = [
-  { id: 'p1', text: "Tell me about your background and experience.", category: 'personal' },
-  { id: 'p2', text: "What projects are you most proud of?", category: 'personal' },
-  { id: 'p3', text: "How do you approach problem-solving?", category: 'personal' },
-  { id: 'p4', text: "What are your career goals?", category: 'personal' },
-  { id: 'p5', text: "What technologies are you most passionate about?", category: 'personal' },
-];
+const PromptSuggestions = ({ onSelectPrompt, role }: PromptSuggestionsProps) => {
+  const [expanded, setExpanded] = useState(false);
 
-const professionalPrompts: Prompt[] = [
-  { id: 'pr1', text: "How would you implement a secure authentication system?", category: 'professional' },
-  { id: 'pr2', text: "Explain your approach to API design.", category: 'professional' },
-  { id: 'pr3', text: "How do you ensure code quality and maintainability?", category: 'professional' },
-  { id: 'pr4', text: "What's your experience with CI/CD pipelines?", category: 'professional' },
-  { id: 'pr5', text: "How would you optimize performance for a React application?", category: 'professional' },
-];
+  // Define prompts based on role
+  const prompts = {
+    recruiter: [
+      "What projects have you worked on recently?",
+      "Tell me about your experience with React",
+      "What are your career goals?",
+      "How do you approach problem-solving?",
+      "What are your strengths and weaknesses?"
+    ],
+    collaborator: [
+      "What's the architecture of this project?",
+      "How can we improve performance?",
+      "Let's discuss the tech stack",
+      "Can you explain this component?",
+      "What testing strategies are we using?"
+    ]
+  };
 
-const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({
-  onSelectPrompt,
-  userRole = 'recruiter',
-}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<PromptCategory>('personal');
-
-  // Filter prompts based on selected category
-  const prompts = selectedCategory === 'personal' ? personalPrompts : professionalPrompts;
+  const selectedPrompts = prompts[role];
 
   return (
-    <div className="w-full bg-gray-800/50 rounded-lg border border-gray-700 mb-2 overflow-hidden">
+    <div className="w-full">
       <div 
-        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-700/50 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between px-3 py-2 text-sm text-gray-400 cursor-pointer hover:bg-neutral-800"
+        onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-2">
-          <MessageSquare size={16} className="text-blue-400" />
-          <span className="text-sm font-medium text-gray-200">Suggested prompts</span>
-        </div>
-        <button className="text-gray-400 hover:text-white">
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
+        <span className="text-xs">Suggested prompts</span>
+        {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </div>
       
-      {isExpanded && (
-        <div className="px-2 py-2 border-t border-gray-700">
-          <div className="flex gap-2 mb-2">
-            <button
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                selectedCategory === 'personal' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-              onClick={() => setSelectedCategory('personal')}
-            >
-              Personal
-            </button>
-            <button
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                selectedCategory === 'professional' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-              onClick={() => setSelectedCategory('professional')}
-            >
-              Professional
-            </button>
-          </div>
-          
-          <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-600">
-            {prompts.map((prompt) => (
-              <button
-                key={prompt.id}
-                className="w-full text-left px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-600/70 
-                           rounded border border-gray-600/50 text-gray-200 transition-colors"
-                onClick={() => onSelectPrompt(prompt.text)}
+      {expanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="overflow-hidden"
+        >
+          <div className="p-2 grid grid-cols-1 gap-1">
+            {selectedPrompts.map((prompt, index) => (
+              <div
+                key={index}
+                className="text-xs p-2 bg-neutral-800 rounded cursor-pointer hover:bg-neutral-700"
+                onClick={() => {
+                  onSelectPrompt(prompt);
+                  setExpanded(false);
+                }}
               >
-                {prompt.text}
-              </button>
+                {prompt}
+              </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

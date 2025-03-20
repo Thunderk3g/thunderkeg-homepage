@@ -4,7 +4,24 @@
 
 // Define Resume interface
 interface ResumeData {
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+// Define message interface
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp?: number;
+}
+
+// Define model details interface
+export interface ModelDetails {
+  name: string;
+  description?: string;
+  parameters?: number;
+  quantization?: string;
+  size?: string;
+  [key: string]: unknown;
 }
 
 // Cache for resume data
@@ -76,7 +93,7 @@ export async function getOllamaModels(): Promise<string[]> {
 /**
  * Get Ollama model details from the model name
  */
-export async function getOllamaModelDetails(modelName: string): Promise<any> {
+export async function getOllamaModelDetails(modelName: string): Promise<ModelDetails | null> {
   try {
     const response = await fetch(`/api/ollama/model?name=${encodeURIComponent(modelName)}`);
     if (response.ok) {
@@ -92,7 +109,7 @@ export async function getOllamaModelDetails(modelName: string): Promise<any> {
 /**
  * Send a chat message to Ollama via our API
  */
-export async function sendChatMessage(messages: any[], model: string, agentType: string): Promise<string> {
+export async function sendChatMessage(messages: ChatMessage[], model: string, agentType: string): Promise<string> {
   // Fetch resume data if needed
   const resumeData = await getResumeData();
   
@@ -126,7 +143,7 @@ export async function sendChatMessage(messages: any[], model: string, agentType:
  * Stream a chat message from Ollama via our API
  */
 export async function streamChatMessage(
-  messages: any[], 
+  messages: ChatMessage[], 
   model: string, 
   agentType: string,
   onChunk: (chunk: string) => void

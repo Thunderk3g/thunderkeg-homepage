@@ -20,7 +20,7 @@ const eslintConfig = [
       "react-hooks/exhaustive-deps": "warn",
       "@next/next/no-img-element": "off"
     },
-    ignorePatterns: ["node_modules/", ".next/", "public/"]
+    ignores: ["node_modules/**", ".next/**", "public/**"]
   }
 ];
 
