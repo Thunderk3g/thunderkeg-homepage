@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateChatCompletion, isOllamaAvailable, OllamaChatMessage } from '@/lib/ollama/client';
+import { generateChatCompletion, isOllamaAvailable, OllamaChatMessage, discoverOllamaEndpoint } from '@/lib/ollama/client';
 import { AGENT_PROMPTS } from '@/lib/ollama/prompts';
 
 // Define the type for chat messages
@@ -91,7 +91,11 @@ You can still use basic terminal commands in this interface while Ollama is offl
       const stream = new ReadableStream({
         async start(controller) {
           try {
-            const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
+            // Use our robust Ollama endpoint discovery function
+            const ollamaUrl = await discoverOllamaEndpoint();
+            if (!ollamaUrl) {
+              throw new Error("Could not connect to Ollama server. Please make sure it's running.");
+            }
             
             const payload = {
               model: model || 'llama3:latest',

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isOllamaAvailable } from '@/lib/ollama/client';
+import { isOllamaAvailable, discoverOllamaEndpoint } from '@/lib/ollama/client';
 
 export async function GET() {
   try {
@@ -9,15 +9,17 @@ export async function GET() {
     let models = [];
     if (available) {
       try {
-        const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
-        const response = await fetch(`${ollamaUrl}/api/tags`, {
-          method: 'GET',
-          cache: 'no-store'
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          models = data.models.map((model: any) => model.name);
+        const ollamaUrl = await discoverOllamaEndpoint();
+        if (ollamaUrl) {
+          const response = await fetch(`${ollamaUrl}/api/tags`, {
+            method: 'GET',
+            cache: 'no-store'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            models = data.models.map((model: any) => model.name);
+          }
         }
       } catch (error) {
         console.error('Error fetching Ollama models:', error);

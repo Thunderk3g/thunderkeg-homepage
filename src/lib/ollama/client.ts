@@ -3,6 +3,15 @@
  * For connecting to a local Ollama server with improved error handling and connection testing
  */
 
+// Cache the successful Ollama endpoint once found
+let cachedOllamaEndpoint: string | null = null;
+const POSSIBLE_HOSTS = [
+  'http://localhost:11434',
+  'http://host.docker.internal:11434', // For Docker environments
+  'http://172.17.0.1:11434', // Common Docker host IP
+  'http://127.0.0.1:11434', // Alternative localhost
+];
+
 export interface OllamaCompletionRequest {
   model: string;
   prompt: string;
@@ -54,17 +63,58 @@ export interface OllamaChatResponse {
 }
 
 /**
- * Check if Ollama is available and running
+ * Discover the working Ollama endpoint by trying multiple possible URLs
+ * This helps handle different environments like Docker, local dev, etc.
  */
-export async function isOllamaAvailable(): Promise<boolean> {
-  const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
+export async function discoverOllamaEndpoint(forceRefresh = false): Promise<string | null> {
+  // Return cached endpoint if available and not forcing refresh
+  if (cachedOllamaEndpoint && !forceRefresh) {
+    return cachedOllamaEndpoint;
+  }
   
+  // First try the environment variable if set
+  const envEndpoint = process.env.OLLAMA_API_URL;
+  if (envEndpoint) {
+    try {
+      const isAvailable = await testEndpoint(envEndpoint);
+      if (isAvailable) {
+        cachedOllamaEndpoint = envEndpoint;
+        console.log(`Found Ollama at configured endpoint: ${envEndpoint}`);
+        return envEndpoint;
+      }
+    } catch (error) {
+      console.warn(`Could not connect to configured Ollama endpoint ${envEndpoint}:`, error);
+    }
+  }
+  
+  // Try each possible host until one works
+  for (const host of POSSIBLE_HOSTS) {
+    try {
+      const isAvailable = await testEndpoint(host);
+      if (isAvailable) {
+        cachedOllamaEndpoint = host;
+        console.log(`Found Ollama at: ${host}`);
+        return host;
+      }
+    } catch (error) {
+      console.warn(`Could not connect to Ollama at ${host}:`, error);
+    }
+  }
+  
+  console.error('Could not find Ollama running on any tested endpoint');
+  return null;
+}
+
+/**
+ * Test if Ollama is available at a specific endpoint
+ */
+async function testEndpoint(endpoint: string): Promise<boolean> {
   try {
     // Use AbortController to set a timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 1000); // 1-second timeout
     
-    const response = await fetch(`${ollamaUrl}/api/version`, {
+    const response = await fetch(`${endpoint}/api/version`, {
       method: 'GET',
       signal: controller.signal
     });
@@ -72,24 +122,30 @@ export async function isOllamaAvailable(): Promise<boolean> {
     clearTimeout(timeoutId);
     return response.ok;
   } catch (error) {
-    console.error('Error checking Ollama availability:', error);
     return false;
   }
+}
+
+/**
+ * Check if Ollama is available and running
+ */
+export async function isOllamaAvailable(): Promise<boolean> {
+  const endpoint = await discoverOllamaEndpoint();
+  return endpoint !== null;
 }
 
 /**
  * Generate a completion response from Ollama with enhanced error handling
  */
 export async function generateCompletion(request: OllamaCompletionRequest): Promise<string> {
-  const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
+  // Try to discover the Ollama endpoint
+  const ollamaUrl = await discoverOllamaEndpoint();
+  
+  if (!ollamaUrl) {
+    return "Terminal Error: Could not connect to Ollama server. Make sure Ollama is installed and running locally.\n\nFor installation instructions, visit: https://ollama.ai";
+  }
   
   try {
-    // Test connection first with a short timeout
-    const isAvailable = await isOllamaAvailable();
-    if (!isAvailable) {
-      throw new Error("Could not connect to Ollama server. Make sure Ollama is installed and running.");
-    }
-    
     // Prepare the request payload
     const payload = {
       model: request.model,
@@ -187,15 +243,14 @@ async function handleStreamingResponse(response: Response): Promise<string> {
  * Generate a chat completion response from Ollama
  */
 export async function generateChatCompletion(request: OllamaChatRequest): Promise<string> {
-  const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
+  // Try to discover the Ollama endpoint
+  const ollamaUrl = await discoverOllamaEndpoint();
+  
+  if (!ollamaUrl) {
+    return "Terminal Error: Could not connect to Ollama server. Make sure Ollama is installed and running locally.\n\nFor installation instructions, visit: https://ollama.ai";
+  }
   
   try {
-    // Test connection first with a short timeout
-    const isAvailable = await isOllamaAvailable();
-    if (!isAvailable) {
-      throw new Error("Could not connect to Ollama server. Make sure Ollama is installed and running.");
-    }
-    
     // Prepare the request payload
     const payload = {
       model: request.model,
