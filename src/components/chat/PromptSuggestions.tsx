@@ -13,8 +13,7 @@ export interface Prompt {
 
 interface PromptSuggestionsProps {
   onSelectPrompt: (prompt: string) => void;
-  onClose: () => void;
-  _userRole?: 'recruiter' | 'collaborator' | null;
+  userRole?: 'recruiter' | 'collaborator' | null;
 }
 
 const personalPrompts: Prompt[] = [
@@ -35,8 +34,7 @@ const professionalPrompts: Prompt[] = [
 
 const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({
   onSelectPrompt,
-  onClose,
-  _userRole = 'recruiter',
+  userRole = 'recruiter',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<PromptCategory>('personal');
