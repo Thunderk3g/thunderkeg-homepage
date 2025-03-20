@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect, memo } from 'react';
 import { useVimKeybindings } from '@/lib/utils/vimKeybindings';
-import { Terminal, Command, Keyboard, Cpu, Clock, Bookmark, History, Lightbulb } from 'lucide-react';
+import { Terminal, Command, Keyboard, History, Lightbulb } from 'lucide-react';
 import { Trash as TrashIcon } from 'lucide-react';
 import ModelSelector from '@/components/ui/ModelSelector';
 import PromptSuggestions from '@/components/ui/PromptSuggestions';
-import { getOllamaModels, sendChatMessage, streamChatMessage } from '@/lib/ollama/client-helpers';
-import { useVirtualizer, VirtualItem } from '@tanstack/react-virtual';
+import { getOllamaModels, streamChatMessage } from '@/lib/ollama/client-helpers';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { AnimatePresence } from 'framer-motion';
 
 type Message = {
