@@ -1,9 +1,27 @@
 import { NextResponse } from 'next/server';
-import { discoverOllamaEndpoint, getOllamaModels, isOllamaAvailable } from '@/lib/ollama/client';
+import { 
+  discoverOllamaEndpoint, 
+  getOllamaModels, 
+  isOllamaAvailable, 
+  isVercelDeployment,
+  DEMO_MODELS
+} from '@/lib/ollama/client';
 
 export async function GET() {
   try {
-    // Try to discover the Ollama endpoint
+    // Check if this is a Vercel deployment
+    if (isVercelDeployment()) {
+      // Return demo mode info for Vercel deployments
+      return NextResponse.json({
+        available: true, // We report as available even though it's demo mode
+        isDemo: true,
+        endpoint: null,
+        models: DEMO_MODELS.map(model => model.name),
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    // For local development, try to discover the Ollama endpoint
     const ollamaEndpoint = await discoverOllamaEndpoint();
     const available = ollamaEndpoint !== null;
     
@@ -20,6 +38,7 @@ export async function GET() {
     
     return NextResponse.json({
       available: available,
+      isDemo: false,
       endpoint: ollamaEndpoint,
       models: models,
       timestamp: new Date().toISOString(),
@@ -29,6 +48,7 @@ export async function GET() {
     return NextResponse.json(
       {
         available: false,
+        isDemo: false,
         models: [],
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
