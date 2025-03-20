@@ -1,43 +1,39 @@
 import { NextResponse } from 'next/server';
-import { isOllamaAvailable, discoverOllamaEndpoint } from '@/lib/ollama/client';
+import { discoverOllamaEndpoint, getOllamaModels, isOllamaAvailable } from '@/lib/ollama/client';
 
 export async function GET() {
   try {
-    const available = await isOllamaAvailable();
+    // Try to discover the Ollama endpoint
+    const ollamaEndpoint = await discoverOllamaEndpoint();
+    const available = ollamaEndpoint !== null;
     
-    // If Ollama is available, also fetch available models
-    let models = [];
+    let models: string[] = [];
+    
+    // Only try to fetch models if we have a valid endpoint
     if (available) {
       try {
-        const ollamaUrl = await discoverOllamaEndpoint();
-        if (ollamaUrl) {
-          const response = await fetch(`${ollamaUrl}/api/tags`, {
-            method: 'GET',
-            cache: 'no-store'
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            models = data.models.map((model: any) => model.name);
-          }
-        }
+        models = await getOllamaModels();
       } catch (error) {
-        console.error('Error fetching Ollama models:', error);
+        console.error('Error fetching models:', error);
       }
     }
     
     return NextResponse.json({
-      available,
-      models,
+      available: available,
+      endpoint: ollamaEndpoint,
+      models: models,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error checking Ollama status:', error);
-    
-    return NextResponse.json({
-      available: false,
-      error: 'Failed to check Ollama status',
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+    console.error('Error in status route:', error);
+    return NextResponse.json(
+      {
+        available: false,
+        models: [],
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 } 

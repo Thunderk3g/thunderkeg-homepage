@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateChatCompletion, isOllamaAvailable, OllamaChatMessage, discoverOllamaEndpoint } from '@/lib/ollama/client';
+import { generateChatCompletion, isOllamaAvailable, discoverOllamaEndpoint } from '@/lib/ollama/client';
+import { OllamaChatMessage } from '@/lib/ollama/types';
 import { AGENT_PROMPTS } from '@/lib/ollama/prompts';
 
 // Define the type for chat messages
@@ -11,6 +12,18 @@ interface ChatCompletionRequestMessage {
 // Define the type for resume data
 interface ResumeData {
   [key: string]: any;
+}
+
+/**
+ * Format resume data for inclusion in the context
+ */
+function formatResumeForContext(resumeData: any): string {
+  try {
+    return JSON.stringify(resumeData, null, 2);
+  } catch (error) {
+    console.error('Error formatting resume data:', error);
+    return JSON.stringify({ error: 'Failed to format resume data' });
+  }
 }
 
 /**
@@ -55,7 +68,7 @@ You can still use basic terminal commands in this interface while Ollama is offl
           role: 'system',
           content: systemPrompt
         },
-        ...messages.map((msg: ChatCompletionRequestMessage) => ({
+        ...messages.map((msg: any) => ({
           role: msg.role,
           content: msg.content
         }))
@@ -77,7 +90,7 @@ You can still use basic terminal commands in this interface while Ollama is offl
       }
       
       formattedMessages.push(
-        ...messages.map((msg: ChatCompletionRequestMessage) => ({
+        ...messages.map((msg: any) => ({
           role: msg.role,
           content: msg.content
         }))
@@ -118,7 +131,7 @@ You can still use basic terminal commands in this interface while Ollama is offl
             
             if (!response.ok) {
               const errorText = await response.text();
-              throw new Error(`Ollama API error (${response.status}): ${errorText || response.statusText}`);
+              throw new Error(`Ollama API error: ${errorText || response.statusText}`);
             }
             
             const reader = response.body?.getReader();
@@ -202,82 +215,6 @@ You can still use basic terminal commands in this interface while Ollama is offl
       fallback: true,
     });
   }
-}
-
-/**
- * Format resume data for context injection in prompts
- */
-function formatResumeForContext(resumeData: ResumeData): string {
-  if (!resumeData) return '';
-  
-  let formattedResume = '';
-  
-  // Personal information
-  if (resumeData.personal_information) {
-    formattedResume += 'Personal Information:\n';
-    const personalInfo = resumeData.personal_information;
-    for (const [key, value] of Object.entries(personalInfo)) {
-      if (value) {
-        formattedResume += `- ${key.replace(/_/g, ' ')}: ${value}\n`;
-      }
-    }
-    formattedResume += '\n';
-  }
-  
-  // Summary
-  if (resumeData.summary) {
-    formattedResume += `Summary:\n${resumeData.summary}\n\n`;
-  }
-  
-  // Skills
-  if (resumeData.skills && resumeData.skills.length > 0) {
-    formattedResume += 'Skills:\n';
-    resumeData.skills.forEach((skill: string) => {
-      formattedResume += `- ${skill}\n`;
-    });
-    formattedResume += '\n';
-  }
-  
-  // Work experience
-  if (resumeData.work_experience && resumeData.work_experience.length > 0) {
-    formattedResume += 'Work Experience:\n';
-    resumeData.work_experience.forEach((job: any) => {
-      formattedResume += `${job.job_title} at ${job.company} (${job.start_date} - ${job.end_date || 'Present'})\n`;
-      if (job.location) {
-        formattedResume += `Location: ${job.location}\n`;
-      }
-      if (job.responsibilities && job.responsibilities.length > 0) {
-        formattedResume += 'Responsibilities:\n';
-        job.responsibilities.forEach((resp: string) => {
-          formattedResume += `- ${resp}\n`;
-        });
-      }
-      formattedResume += '\n';
-    });
-  }
-  
-  // Education
-  if (resumeData.education && resumeData.education.length > 0) {
-    formattedResume += 'Education:\n';
-    resumeData.education.forEach((edu: any) => {
-      formattedResume += `${edu.degree} in ${edu.major} from ${edu.university} (${edu.start_date} - ${edu.end_date})\n`;
-      if (edu.cgpa) {
-        formattedResume += `CGPA: ${edu.cgpa}\n`;
-      }
-      formattedResume += '\n';
-    });
-  }
-  
-  // Projects
-  if (resumeData.projects && resumeData.projects.length > 0) {
-    formattedResume += 'Projects:\n';
-    resumeData.projects.forEach((project: any) => {
-      formattedResume += `- ${project.title}: ${project.description}\n`;
-    });
-    formattedResume += '\n';
-  }
-  
-  return formattedResume;
 }
 
 /**

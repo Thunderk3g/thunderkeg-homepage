@@ -2,73 +2,11 @@
  * Client-side helpers for Ollama integration
  */
 
-// Define Resume interface
-export interface ResumeData {
-  basics?: {
-    name?: string;
-    label?: string;
-    image?: string;
-    email?: string;
-    phone?: string;
-    url?: string;
-    summary?: string;
-    location?: {
-      address?: string;
-      postalCode?: string;
-      city?: string;
-      countryCode?: string;
-      region?: string;
-    };
-    profiles?: Array<{
-      network?: string;
-      username?: string;
-      url?: string;
-    }>;
-  };
-  work?: Array<{
-    company?: string;
-    position?: string;
-    website?: string;
-    startDate?: string;
-    endDate?: string;
-    summary?: string;
-    highlights?: string[];
-  }>;
-  education?: Array<{
-    institution?: string;
-    area?: string;
-    studyType?: string;
-    startDate?: string;
-    endDate?: string;
-    gpa?: string;
-    courses?: string[];
-  }>;
-  skills?: Array<{
-    name?: string;
-    level?: string;
-    keywords?: string[];
-  }>;
-  projects?: Array<{
-    name?: string;
-    description?: string;
-    highlights?: string[];
-    keywords?: string[];
-    startDate?: string;
-    endDate?: string;
-    url?: string;
-    roles?: string[];
-    entity?: string;
-    type?: string;
-  }>;
-  [key: string]: unknown;
-}
+import { isOllamaAvailable, generateChatCompletion, getOllamaModels as fetchOllamaModels } from '@/lib/ollama/client';
+import type { ChatMessage, ResumeData } from '@/lib/ollama/types';
 
-// Define message interface
-export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp?: number;
-}
+// Re-export the types
+export type { ResumeData, ChatMessage } from '@/lib/ollama/types';
 
 // Define model details interface
 export interface ModelDetails {
@@ -130,37 +68,22 @@ export function isDeployedEnvironment(): boolean {
 
 /**
  * Check if Ollama is available and return status
- * Uses multiple connection strategies for robustness
+ * Uses the direct Ollama API connection
  */
 export async function checkOllamaAvailability(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/ollama/status');
-    if (response.ok) {
-      const data = await response.json();
-      return data.available;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error checking Ollama availability:', error);
-    return false;
-  }
+  return isOllamaAvailable();
 }
 
 /**
- * Get available Ollama models
- * Uses multiple connection strategies for robustness
+ * Get available Ollama models directly from the Ollama API
  */
 export async function getOllamaModels(): Promise<string[]> {
   try {
-    const response = await fetch('/api/ollama/status');
-    if (response.ok) {
-      const data = await response.json();
-      if (data.available && Array.isArray(data.models) && data.models.length > 0) {
-        return data.models;
-      }
-      // Return default models if no models are available from Ollama
-      return DEFAULT_MODELS;
+    const models = await fetchOllamaModels();
+    if (models.length > 0) {
+      return models;
     }
+    // Return default models if no models are available from Ollama
     return DEFAULT_MODELS;
   } catch (error) {
     console.error('Error fetching Ollama models:', error);
@@ -185,7 +108,7 @@ export async function getOllamaModelDetails(modelName: string): Promise<ModelDet
 }
 
 /**
- * Send a chat message to Ollama via our API
+ * Send a chat message to Ollama directly via the client API
  */
 export async function sendChatMessage(messages: ChatMessage[], model: string, agentType: string): Promise<string> {
   // Fetch resume data if needed
@@ -198,25 +121,34 @@ export async function sendChatMessage(messages: ChatMessage[], model: string, ag
       throw new Error("Could not connect to Ollama server");
     }
     
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages,
-        model,
-        agentType,
-        resumeData, // Include resume data in request
-      }),
-    });
+    // Convert ChatMessage format to OllamaChatMessage format
+    const formattedMessages = messages.map(msg => ({
+      role: msg.role, 
+      content: msg.content
+    }));
     
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
+    // Add system message with context if we have resume data
+    if (resumeData) {
+      const systemPrompt = agentType === 'recruiter' 
+        ? `You are a professional assistant helping with resume and career questions. Here's the resume data: ${JSON.stringify(resumeData)}`
+        : `You are a personal assistant helping with projects and collaboration. Here's the resume data: ${JSON.stringify(resumeData)}`;
+        
+      formattedMessages.unshift({
+        role: 'system',
+        content: systemPrompt
+      });
     }
     
-    const data = await response.json();
-    return data.content || '';
+    // Call the Ollama API directly
+    const response = await generateChatCompletion({
+      model,
+      messages: formattedMessages,
+      options: {
+        temperature: 0.7
+      }
+    });
+    
+    return response;
   } catch (error) {
     console.error('Error sending chat message:', error);
     
@@ -231,7 +163,7 @@ Error details: ${error instanceof Error ? error.message : 'Unknown error'}`;
 }
 
 /**
- * Stream a chat message from Ollama via our API
+ * Stream a chat message from Ollama
  */
 export async function streamChatMessage(
   messages: ChatMessage[], 
@@ -239,63 +171,18 @@ export async function streamChatMessage(
   agentType: string,
   onChunk: (chunk: string) => void
 ): Promise<void> {
-  // Fetch resume data if needed
-  const resumeData = await getResumeData();
+  // Implementation will need to be updated to use direct Ollama API streaming
+  // For now, using the non-streaming version with simulated streaming
   
   try {
-    // First check if Ollama is available
-    const ollamaAvailable = await checkOllamaAvailability();
-    if (!ollamaAvailable) {
-      const errorMessage = `Sorry, I couldn't connect to the Ollama server. Please make sure:
-      
-1. Ollama is installed on your system (https://ollama.com)
-2. The Ollama service is running (run 'ollama serve' in a terminal)
-3. Your browser isn't blocking connections to the Ollama API`;
-      
-      // Simulate streaming for better UX
-      const words = errorMessage.split(' ');
-      for (let i = 0; i < words.length; i++) {
-        const word = words[i] + ' ';
-        onChunk(word);
-        await new Promise(resolve => setTimeout(resolve, 30)); // Slight delay between words
-      }
-      return;
-    }
+    const response = await sendChatMessage(messages, model, agentType);
     
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messages,
-        model,
-        agentType,
-        resumeData, // Include resume data in request
-        stream: true,
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
-    }
-    
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('No reader available from response');
-    }
-    
-    const decoder = new TextDecoder();
-    let done = false;
-    
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      
-      if (value) {
-        const chunk = decoder.decode(value, { stream: !done });
-        onChunk(chunk);
-      }
+    // Simulate streaming for better UX
+    const words = response.split(' ');
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i] + ' ';
+      onChunk(word);
+      await new Promise(resolve => setTimeout(resolve, 30)); // Slight delay between words
     }
   } catch (error) {
     console.error('Error streaming chat message:', error);

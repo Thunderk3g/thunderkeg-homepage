@@ -314,7 +314,7 @@ const TerminalChat = ({
   // Handle prompt selection
   const handlePromptSelect = (prompt: string) => {
     setInput(prompt);
-    inputRef.current?.focus();
+    inputRef.current?.focus(); 
   };
   
   // Scroll to bottom of messages

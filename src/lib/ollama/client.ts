@@ -1,133 +1,64 @@
 /**
- * Enhanced Ollama API Client
- * For connecting to a local Ollama server with improved error handling and connection testing
+ * Ollama API client
  */
 
-// Cache the successful Ollama endpoint once found
+// Use absolute path to ensure TypeScript finds the module
+import { OllamaGenerateParams, OllamaChatParams, OllamaChatMessage } from '@/lib/ollama/types';
+
+// Store the successful Ollama endpoint
 let cachedOllamaEndpoint: string | null = null;
+
+// Possible Ollama hosts to try when discovering endpoint
 const POSSIBLE_HOSTS = [
   'http://localhost:11434',
-  'http://host.docker.internal:11434', // For Docker environments
-  'http://172.17.0.1:11434', // Common Docker host IP
-  'http://127.0.0.1:11434', // Alternative localhost
+  'http://host.docker.internal:11434',
+  'http://172.17.0.1:11434',
+  'http://127.0.0.1:11434',
 ];
 
-export interface OllamaCompletionRequest {
-  model: string;
-  prompt: string;
-  stream?: boolean;
-  format?: 'json' | Record<string, any>;
-  options?: {
-    temperature?: number;
-    top_p?: number;
-    top_k?: number;
-    num_predict?: number;
-    stop?: string[];
-  };
-}
-
-export interface OllamaChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-export interface OllamaChatRequest {
-  model: string;
-  messages: OllamaChatMessage[];
-  stream?: boolean;
-  format?: 'json' | Record<string, any>;
-  options?: {
-    temperature?: number;
-    top_p?: number;
-    top_k?: number;
-    num_predict?: number;
-    stop?: string[];
-  };
-}
-
-export interface OllamaCompletionResponse {
-  model: string;
-  created_at: string;
-  response: string;
-  done: boolean;
-}
-
-export interface OllamaChatResponse {
-  model: string;
-  created_at: string;
-  message: {
-    role: string;
-    content: string;
-  };
-  done: boolean;
-}
-
 /**
- * Discover the working Ollama endpoint by trying multiple possible URLs
- * This helps handle different environments like Docker, local dev, etc.
+ * Discover Ollama API endpoint by trying different possible URLs
  */
-export async function discoverOllamaEndpoint(forceRefresh = false): Promise<string | null> {
-  // Return cached endpoint if available and not forcing refresh
-  if (cachedOllamaEndpoint && !forceRefresh) {
+export async function discoverOllamaEndpoint(): Promise<string | null> {
+  // Check if we already have a cached endpoint
+  if (cachedOllamaEndpoint) {
     return cachedOllamaEndpoint;
   }
-  
-  // First try the environment variable if set
+
+  // Check for environment variable first
   const envEndpoint = process.env.OLLAMA_API_URL;
   if (envEndpoint) {
     try {
-      const isAvailable = await testEndpoint(envEndpoint);
-      if (isAvailable) {
+      const response = await fetch(`${envEndpoint}/api/models`);
+      if (response.ok) {
         cachedOllamaEndpoint = envEndpoint;
-        console.log(`Found Ollama at configured endpoint: ${envEndpoint}`);
         return envEndpoint;
       }
-    } catch (error) {
-      console.warn(`Could not connect to configured Ollama endpoint ${envEndpoint}:`, error);
+    } catch (e) {
+      console.warn(`Failed to connect to Ollama at ${envEndpoint}`);
     }
   }
-  
-  // Try each possible host until one works
+
+  // Try each possible host
   for (const host of POSSIBLE_HOSTS) {
     try {
-      const isAvailable = await testEndpoint(host);
-      if (isAvailable) {
+      // Use the /api/models endpoint to check availability
+      const response = await fetch(`${host}/api/models`);
+      if (response.ok) {
         cachedOllamaEndpoint = host;
-        console.log(`Found Ollama at: ${host}`);
         return host;
       }
-    } catch (error) {
-      console.warn(`Could not connect to Ollama at ${host}:`, error);
+    } catch (e) {
+      // Connection failed, try next host
+      console.warn(`Failed to connect to Ollama at ${host}`);
     }
   }
-  
-  console.error('Could not find Ollama running on any tested endpoint');
+
   return null;
 }
 
 /**
- * Test if Ollama is available at a specific endpoint
- */
-async function testEndpoint(endpoint: string): Promise<boolean> {
-  try {
-    // Use AbortController to set a timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000); // 1-second timeout
-    
-    const response = await fetch(`${endpoint}/api/version`, {
-      method: 'GET',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-}
-
-/**
- * Check if Ollama is available and running
+ * Check if Ollama is available
  */
 export async function isOllamaAvailable(): Promise<boolean> {
   const endpoint = await discoverOllamaEndpoint();
@@ -135,211 +66,116 @@ export async function isOllamaAvailable(): Promise<boolean> {
 }
 
 /**
- * Generate a completion response from Ollama with enhanced error handling
+ * Get available Ollama models
  */
-export async function generateCompletion(request: OllamaCompletionRequest): Promise<string> {
-  // Try to discover the Ollama endpoint
-  const ollamaUrl = await discoverOllamaEndpoint();
-  
-  if (!ollamaUrl) {
-    return "Terminal Error: Could not connect to Ollama server. Make sure Ollama is installed and running locally.\n\nFor installation instructions, visit: https://ollama.ai";
+export async function getOllamaModels(): Promise<string[]> {
+  const endpoint = await discoverOllamaEndpoint();
+  if (!endpoint) {
+    return [];
   }
-  
+
   try {
-    // Prepare the request payload
-    const payload = {
-      model: request.model,
-      prompt: request.prompt,
-      stream: request.stream === undefined ? false : request.stream,
-      options: request.options || {},
-    };
-    
-    // Add format if specified
-    if (request.format) {
-      Object.assign(payload, { format: request.format });
-    }
-    
-    console.log('Sending to Ollama API:', JSON.stringify(payload));
-    
-    // Proceed with the actual request
-    const response = await fetch(`${ollamaUrl}/api/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-    
+    const response = await fetch(`${endpoint}/api/models`);
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Ollama API error (${response.status}): ${errorText || response.statusText}`);
+      throw new Error(`Failed to fetch models: ${response.statusText}`);
     }
-    
-    if (request.stream) {
-      // Handle streaming response
-      return handleStreamingResponse(response);
-    } else {
-      // Handle regular response
-      const data = await response.json() as OllamaCompletionResponse;
-      return data.response;
-    }
+
+    const data = await response.json();
+    return data.models?.map((model: any) => model.name) || [];
   } catch (error) {
-    console.error('Error calling Ollama API:', error);
-    
-    // Provide helpful fallback messages based on error type
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      return "Terminal Error: Could not connect to Ollama server. Make sure Ollama is installed and running locally.\n\nFor installation instructions, visit: https://ollama.ai";
-    } else if (error instanceof DOMException && error.name === 'AbortError') {
-      return "Terminal Error: Connection to Ollama timed out. The server might be too busy or not responding.";
-    } else if (error instanceof Error) {
-      return `Terminal Error: ${error.message}\n\nTry checking that Ollama is running with 'ollama serve' in a terminal window.`;
-    }
-    
-    return "Terminal Error: Failed to generate completion from Ollama. See console for details.";
+    console.error('Error fetching Ollama models:', error);
+    return [];
   }
 }
 
 /**
- * Process streaming response from Ollama
+ * Generate a completion with Ollama
  */
-async function handleStreamingResponse(response: Response): Promise<string> {
-  const reader = response.body!.getReader();
-  let result = '';
-  
+export async function generateCompletion(params: OllamaGenerateParams): Promise<string> {
+  const endpoint = await discoverOllamaEndpoint();
+  if (!endpoint) {
+    return "Couldn't connect to Ollama. Please make sure it's running locally.";
+  }
+
   try {
+    const response = await fetch(`${endpoint}/api/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ollama API error: ${errorText || response.statusText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Failed to get reader from response');
+    }
+
+    let fullResponse = '';
+    
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       
-      // Parse the chunks
       const chunk = new TextDecoder().decode(value);
       const lines = chunk.split('\n').filter(line => line.trim() !== '');
       
       for (const line of lines) {
         try {
-          const data = JSON.parse(line) as OllamaCompletionResponse;
-          result += data.response;
-          
-          if (data.done) {
-            return result;
-          }
+          const data = JSON.parse(line);
+          fullResponse += data.response || '';
         } catch (error) {
-          console.error('Error parsing JSON in stream:', error, line);
-          continue; // Skip this line if it's not valid JSON
+          console.error('Error parsing JSON in generate response:', error);
+          continue;
         }
       }
     }
     
-    return result;
+    return fullResponse;
   } catch (error) {
-    console.error('Error processing streaming response:', error);
-    throw error;
-  } finally {
-    reader.releaseLock();
+    console.error('Error generating completion:', error);
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
 
 /**
- * Generate a chat completion response from Ollama
+ * Generate a chat completion with Ollama
  */
-export async function generateChatCompletion(request: OllamaChatRequest): Promise<string> {
-  // Try to discover the Ollama endpoint
-  const ollamaUrl = await discoverOllamaEndpoint();
-  
-  if (!ollamaUrl) {
-    return "Terminal Error: Could not connect to Ollama server. Make sure Ollama is installed and running locally.\n\nFor installation instructions, visit: https://ollama.ai";
+export async function generateChatCompletion(params: OllamaChatParams): Promise<string> {
+  const endpoint = await discoverOllamaEndpoint();
+  if (!endpoint) {
+    return "Couldn't connect to Ollama. Please make sure it's running locally.";
   }
-  
+
   try {
-    // Prepare the request payload
-    const payload = {
-      model: request.model,
-      messages: request.messages,
-      stream: request.stream === undefined ? false : request.stream,
-      options: request.options || {},
-    };
-    
-    // Add format if specified
-    if (request.format) {
-      Object.assign(payload, { format: request.format });
-    }
-    
-    console.log('Sending to Ollama chat API:', JSON.stringify(payload));
-    
-    // Proceed with the actual request
-    const response = await fetch(`${ollamaUrl}/api/chat`, {
+    const response = await fetch(`${endpoint}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...params,
+        stream: false, // We'll handle the full response directly
+      }),
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Ollama API error (${response.status}): ${errorText || response.statusText}`);
+      throw new Error(`Ollama API error: ${errorText || response.statusText}`);
     }
-    
-    if (request.stream) {
-      // Handle streaming response
-      return handleChatStreamingResponse(response);
-    } else {
-      // Handle regular response
-      const data = await response.json() as OllamaChatResponse;
-      return data.message.content;
-    }
+
+    const data = await response.json();
+    return data.message?.content || '';
   } catch (error) {
-    console.error('Error calling Ollama Chat API:', error);
-    
-    // Provide helpful fallback messages based on error type
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      return "Terminal Error: Could not connect to Ollama server. Make sure Ollama is installed and running locally.\n\nFor installation instructions, visit: https://ollama.ai";
-    } else if (error instanceof DOMException && error.name === 'AbortError') {
-      return "Terminal Error: Connection to Ollama timed out. The server might be too busy or not responding.";
-    } else if (error instanceof Error) {
-      return `Terminal Error: ${error.message}\n\nTry checking that Ollama is running with 'ollama serve' in a terminal window.`;
-    }
-    
-    return "Terminal Error: Failed to generate chat completion from Ollama. See console for details.";
+    console.error('Error generating chat completion:', error);
+    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
 
-/**
- * Process streaming chat response from Ollama
- */
-async function handleChatStreamingResponse(response: Response): Promise<string> {
-  const reader = response.body!.getReader();
-  let result = '';
-  
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      // Parse the chunks
-      const chunk = new TextDecoder().decode(value);
-      const lines = chunk.split('\n').filter(line => line.trim() !== '');
-      
-      for (const line of lines) {
-        try {
-          const data = JSON.parse(line) as OllamaChatResponse;
-          result += data.message.content;
-          
-          if (data.done) {
-            return result;
-          }
-        } catch (error) {
-          console.error('Error parsing JSON in chat stream:', error, line);
-          continue; // Skip this line if it's not valid JSON
-        }
-      }
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error processing chat streaming response:', error);
-    throw error;
-  } finally {
-    reader.releaseLock();
-  }
-} 
+// Exports
+export type { OllamaChatMessage }; 
