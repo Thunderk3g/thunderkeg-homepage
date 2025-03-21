@@ -5,9 +5,7 @@
 import { 
   isOllamaAvailable, 
   generateChatCompletion, 
-  getOllamaModels as fetchOllamaModels,
-  isVercelDeployment,
-  DEMO_MODELS
+  getOllamaModels as fetchOllamaModels
 } from '@/lib/ollama/client';
 import type { ChatMessage, ResumeData } from '@/lib/ollama/types';
 
@@ -54,21 +52,10 @@ export async function getResumeData(): Promise<ResumeData | null> {
 }
 
 /**
- * Check if we're running in demo mode (Vercel deployment)
- */
-export function isDemoMode(): boolean {
-  return isVercelDeployment();
-}
-
-/**
  * Check if Ollama is available and return status
  * Uses the direct Ollama API connection
  */
 export async function checkOllamaAvailability(): Promise<boolean> {
-  // In demo mode, we pretend Ollama is available
-  if (isDemoMode()) {
-    return true;
-  }
   return isOllamaAvailable();
 }
 
@@ -93,22 +80,6 @@ export async function getOllamaModels(): Promise<string[]> {
  * Get Ollama model details from the model name
  */
 export async function getOllamaModelDetails(modelName: string): Promise<ModelDetails | null> {
-  // In demo mode, return mock model details
-  if (isDemoMode()) {
-    const demoModel = DEMO_MODELS.find(model => model.name === modelName);
-    if (demoModel) {
-      return {
-        name: demoModel.name,
-        description: `Demo ${demoModel.name} model`,
-        parameters: demoModel.details?.parameter_size?.replace('B', '000000000') 
-          ? parseInt(demoModel.details.parameter_size.replace('B', '000000000')) 
-          : undefined,
-        quantization: demoModel.details?.quantization_level,
-        size: `${Math.round(demoModel.size / 1024 / 1024 / 1024)} GB`
-      };
-    }
-  }
-
   try {
     const response = await fetch(`/api/ollama/model?name=${encodeURIComponent(modelName)}`);
     if (response.ok) {
@@ -129,23 +100,6 @@ export async function sendChatMessage(messages: ChatMessage[], model: string, ag
   const resumeData = await getResumeData();
   
   try {
-    // In demo mode, return a friendly message explaining the limitations
-    if (isDemoMode()) {
-      return `This is a demo deployment of the AI Portfolio app running on Vercel. 
-      
-Since Ollama runs locally on your machine and not on Vercel's servers, this deployed version cannot connect to real AI models.
-
-You're seeing this message because you're using the deployed version. To use real AI models:
-
-1. Install Ollama on your local machine from https://ollama.com
-2. Clone this project repository from GitHub
-3. Run it locally with 'npm install' and 'npm run dev'
-
-Then you'll be able to use all features with your local Ollama models.
-
-This demo version is meant to showcase the UI and features without requiring local installation.`;
-    }
-    
     // First check if Ollama is available
     const ollamaAvailable = await checkOllamaAvailability();
     if (!ollamaAvailable) {

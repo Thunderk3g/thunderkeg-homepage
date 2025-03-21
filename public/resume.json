@@ -1,0 +1,100 @@
+{
+    "personal_information": {
+      "full_name": "Diwakar Adhikari",
+      "email": "diwakar.adhikari0@gmail.com",
+      "phone": "+91 9378067880",
+      "location": "Pune, India",
+      "linkedin": null,
+      "github": null
+    },
+    "summary": "Results-oriented Senior Software Engineer and certified Full Stack Developer specializing in both MEAN and Java & Angular Stack. Proven track record in API design, Angular development, and improving system integration and operational efficiency. Recognized for exceptional performance with multiple awards. Proficient in modern technology stacks like Redis and Apache Kafka, with a commitment to agile methodologies and enhancing user experiences.",
+    "skills": [
+      "Java",
+      "Angular",
+      "HTML & CSS",
+      "Node.js",
+      "JavaScript",
+      "API Design & Integration",
+      "Redis",
+      "Apache Kafka",
+      "SQL Databases",
+      "NoSQL Databases",
+      "AWS Cloud Services"
+    ],
+    "work_experience": [
+      {
+        "job_title": "Senior Software Engineer-I",
+        "company": "Bajaj Finserv Direct Ltd",
+        "location": "Pune, India",
+        "start_date": "June 2022",
+        "end_date": "Present",
+        "responsibilities": [
+          "Managed team members in parallel to ensure crucial deliveries and was part of the AMC core team responsible for key module delivery and handling critical situations.",
+          "Led API design and deployment, enhancing system integration and operational efficiency by 25%. Recognized with the Deployment Star Award for exceptional performance.",
+          "Developed and optimized Angular components, improving application performance by 30% using behavior subjects and pipes. Integrated Angular Universal, boosting SEO and server-side rendering, and increasing organic traffic by 15%.",
+          "Directed critical projects, including the development of new Angular components for motor and mutual funds projects, incorporating custom designs and third-party APIs, resulting in a 20% increase in user engagement.",
+          "Executed agile methodologies to prioritize and implement features, leading to a 40% improvement in user experience and application functionality.",
+          "Enhanced code quality and scalability by 35%, supporting high-traffic user conditions and strengthening security measures.",
+          "Played a pivotal role in launching Bajaj Finserv Asset Management NFO, contributing to a 50% increase in user adoption and earning the Esteemed Contributor to Financial Innovation award.",
+          "Resolved critical VAPT bugs related to authentication and authorization, improving system security by 45%."
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Technology",
+        "major": "Computer Science Engineering",
+        "university": "SRM University",
+        "cgpa": "8.8",
+        "start_date": "April 2018",
+        "end_date": "May 2022"
+      }
+    ],
+    "certifications": [
+      {
+        "title": "Full-Stack Java Developer",
+        "issuer": "Bajaj Finserv",
+        "duration": "3 Months"
+      }
+    ],
+    "awards": [
+      "Deployment Star Award",
+      "Esteemed Contributor to Financial Innovation Award",
+      "COMPEX Scholarship Scheme Awardee"
+    ],
+    "projects": [
+      {
+        "title": "METAPOD",
+        "description": "Cryptographic algorithm for generating secure and unique hashes for tokenization."
+      },
+      {
+        "title": "KRYPTO-TRACKER",
+        "description": "Cryptocurrency portfolio tracker for managing digital coin values."
+      },
+      {
+        "title": "PSEUDOSERVE",
+        "description": "PseudoServe is a dynamic API mocking tool designed to streamline frontend development by allowing developers to create temporary backend services on-the-fly."
+      }
+    ],
+    "research_and_recognition": [
+      {
+        "title": "International Recognition for Excellence in Sustainable Energy Research",
+        "institution": "California State University, USA, and the International Association of Academicians (IAASSE), USA"
+      },
+      {
+        "title": "Advancing Rice Disease Identification Through Artificial Neural Networks and Image Processing"
+      }
+    ],
+    "technologies_and_tools": [
+      "Java",
+      "Angular",
+      "Node.js",
+      "JavaScript",
+      "Redis",
+      "Apache Kafka",
+      "SQL Databases",
+      "NoSQL Databases",
+      "AWS Cloud Services"
+    ]
+  }
+  

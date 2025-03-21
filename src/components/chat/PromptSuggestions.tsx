@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 // Define the props interface
 interface PromptSuggestionsProps {
-  onSelectPrompt: (prompt: string) => void;
-  role: 'recruiter' | 'collaborator';
+  onSelect: (prompt: string) => void;
+  onClose: () => void;
+  agentType: 'recruiter' | 'collaborator';
 }
 
-const PromptSuggestions = ({ onSelectPrompt, role }: PromptSuggestionsProps) => {
-  const [expanded, setExpanded] = useState(false);
+const PromptSuggestions = ({ onSelect, onClose, agentType }: PromptSuggestionsProps) => {
+  const [expanded, setExpanded] = useState(true);
 
   // Define prompts based on role
   const prompts = {
@@ -31,42 +32,37 @@ const PromptSuggestions = ({ onSelectPrompt, role }: PromptSuggestionsProps) => 
     ]
   };
 
-  const selectedPrompts = prompts[role];
+  const selectedPrompts = prompts[agentType];
 
   return (
-    <div className="w-full">
-      <div 
-        className="flex items-center justify-between px-3 py-2 text-sm text-gray-400 cursor-pointer hover:bg-neutral-800"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className="text-xs">Suggested prompts</span>
-        {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="absolute bottom-16 left-0 right-0 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10 mx-4"
+    >
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+        <span className="text-sm font-semibold text-green-400">Suggested prompts</span>
+        <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <X size={16} />
+        </button>
       </div>
       
-      {expanded && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          className="overflow-hidden"
-        >
-          <div className="p-2 grid grid-cols-1 gap-1">
-            {selectedPrompts.map((prompt, index) => (
-              <div
-                key={index}
-                className="text-xs p-2 bg-neutral-800 rounded cursor-pointer hover:bg-neutral-700"
-                onClick={() => {
-                  onSelectPrompt(prompt);
-                  setExpanded(false);
-                }}
-              >
-                {prompt}
-              </div>
-            ))}
+      <div className="p-2 max-h-56 overflow-y-auto">
+        {selectedPrompts.map((prompt, index) => (
+          <div
+            key={index}
+            className="text-sm p-2 mb-1 bg-gray-700 rounded cursor-pointer hover:bg-gray-600 text-white"
+            onClick={() => {
+              onSelect(prompt);
+              onClose();
+            }}
+          >
+            {prompt}
           </div>
-        </motion.div>
-      )}
-    </div>
+        ))}
+      </div>
+    </motion.div>
   );
 };
 

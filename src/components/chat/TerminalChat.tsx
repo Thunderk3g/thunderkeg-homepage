@@ -27,6 +27,37 @@ interface CommandInfo {
   icon: React.ReactNode;
 }
 
+// Helper function to chunk large messages
+const chunkText = (text: string, maxLength: number = 2000): string[] => {
+  if (text.length <= maxLength) return [text];
+  
+  const chunks: string[] = [];
+  let remaining = text;
+  
+  while (remaining.length > 0) {
+    // Try to find a natural breaking point (newline, space, period)
+    let breakPoint = Math.min(remaining.length, maxLength);
+    
+    if (breakPoint < remaining.length) {
+      // Look for natural breaking points
+      const newlinePos = remaining.lastIndexOf('\n', breakPoint);
+      const spacePos = remaining.lastIndexOf(' ', breakPoint);
+      const periodPos = remaining.lastIndexOf('.', breakPoint);
+      
+      // Choose the closest natural break point if available
+      const naturalBreak = Math.max(newlinePos, spacePos, periodPos);
+      if (naturalBreak > 0) {
+        breakPoint = naturalBreak + 1; // Include the delimiter in the chunk
+      }
+    }
+    
+    chunks.push(remaining.substring(0, breakPoint));
+    remaining = remaining.substring(breakPoint);
+  }
+  
+  return chunks;
+};
+
 // Component starts here
 const TerminalChat = ({
   agentType,
@@ -52,6 +83,7 @@ const TerminalChat = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
+  const streamedContentRef = useRef<string>('');
   
   // Setup Vim keybindings
   const { vimMode, setVimMode, currentVimCommand } = useVimKeybindings({
@@ -91,12 +123,17 @@ const TerminalChat = ({
     fetchModels();
   }, []);
   
-  // Set up the virtualized scroller
+  // Set up the virtualized scroller with improved settings
   const rowVirtualizer = useVirtualizer({
     count: messages.length,
     getScrollElement: () => messageContainerRef.current,
-    estimateSize: () => 80, // Estimated row height
-    overscan: 5,
+    estimateSize: () => 180, // Increased estimated row height to better accommodate larger messages
+    overscan: 15, // Increased overscan to render more items off-screen
+    // Add a dynamic size measurement function with extra padding
+    measureElement: (element) => {
+      // Add more padding to ensure no truncation
+      return element.getBoundingClientRect().height + 40;
+    },
   });
 
   // Load chat history from localStorage on component mount
@@ -140,10 +177,20 @@ const TerminalChat = ({
     }
   }, [commandHistory, chatId]);
   
-  // Scroll to bottom when messages change
+  // Auto-scroll when messages change or during streaming
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, currentStreamedContent]); // Add currentStreamedContent as dependency
+  
+  // Load model preference from localStorage
+  useEffect(() => {
+    if (chatId) {
+      const savedModel = localStorage.getItem(`model-${chatId}`);
+      if (savedModel && ollamaModels.includes(savedModel)) {
+        setSelectedModel(savedModel);
+      }
+    }
+  }, [chatId, ollamaModels]);
   
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,7 +229,7 @@ const TerminalChat = ({
     }
   };
   
-  // Handle form submission
+  // Handle form submission with chunking support
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isStreaming) return;
@@ -213,102 +260,144 @@ const TerminalChat = ({
     // Start streaming indicator
     setIsStreaming(true);
     setCurrentStreamedContent('');
+    streamedContentRef.current = '';
     
     // Get recent message context (up to 10 messages)
     const recentMessages = [...messages.slice(-10), userMessage];
     
-    // Stream response
-    await streamChatMessage(
-      recentMessages,
-      selectedModel,
-      agentType,
-      (chunk) => {
-        setCurrentStreamedContent(prev => prev + chunk);
-      }
-    );
-    
-    // Add assistant message
-    const assistantMessage: ChatMessage = {
-      role: 'assistant',
-      content: currentStreamedContent,
-      timestamp: Date.now(),
-    };
-    
-    setMessages(prev => [...prev, assistantMessage]);
-    setIsStreaming(false);
-    setCurrentStreamedContent('');
+    // Stream response with improved handling for large messages
+    try {
+      await streamChatMessage(
+        recentMessages,
+        selectedModel,
+        agentType,
+        (chunk) => {
+          // Update both the ref and the state
+          streamedContentRef.current += chunk;
+          setCurrentStreamedContent(streamedContentRef.current);
+        }
+      );
+      
+      // Capture the final content from our ref
+      const finalContent = streamedContentRef.current;
+      
+      // Add assistant message with final content
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: finalContent,
+        timestamp: Date.now(),
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error streaming message:', error);
+      // Add error message
+      const errorMessage: ChatMessage = {
+        role: 'system',
+        content: 'An error occurred while generating the response. Please try again.',
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsStreaming(false);
+      setCurrentStreamedContent('');
+      streamedContentRef.current = '';
+    }
   };
   
   // Handle terminal commands
   const handleCommand = (cmd: string) => {
-    const command = cmd.toLowerCase().trim();
+    const args = cmd.toLowerCase().split(' ');
     
-    switch (command) {
-      case 'clear':
-        setMessages([]);
-        break;
-        
-      case 'help':
-        const helpMessage: ChatMessage = {
+    if (args[0] === 'help') {
+      const helpMessage: ChatMessage = {
+        role: 'system',
+        content: `Available commands:
+- help: Show this help message
+- clear: Clear the terminal
+- exit: Exit the terminal
+- vim: Toggle vim mode
+- history: Show command history
+- model: Select LLM model
+        `,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, helpMessage]);
+    } else if (args[0] === 'clear') {
+      setMessages([]);
+    } else if (args[0] === 'exit') {
+      onBackToLanding?.();
+    } else if (args[0] === 'vim') {
+      onToggleVimMode?.();
+    } else if (args[0] === 'history') {
+      if (commandHistory.length === 0) {
+        const historyMessage: ChatMessage = {
           role: 'system',
-          content: commands.map(c => `${c.name} - ${c.description}`).join('\n'),
+          content: 'No command history available.',
           timestamp: Date.now(),
         };
-        setMessages(prev => [...prev, helpMessage]);
-        break;
+        setMessages(prev => [...prev, historyMessage]);
+      } else {
+        const historyContent = commandHistory
+          .map((cmd, index) => `${commandHistory.length - index}. ${cmd}`)
+          .join('\n');
         
-      case 'exit':
-        onBackToLanding?.();
-        break;
-        
-      case 'vim':
-        setVimMode(!vimMode);
-        onToggleVimMode?.();
-        break;
-        
-      case 'history':
-        if (commandHistory.length === 0) {
-          const noHistoryMessage: ChatMessage = {
+        const historyMessage: ChatMessage = {
+          role: 'system',
+          content: `Command history:\n${historyContent}`,
+          timestamp: Date.now(),
+        };
+        setMessages(prev => [...prev, historyMessage]);
+      }
+    } else if (args[0] === 'model') {
+      if (args.length > 1) {
+        // Set model directly if provided
+        const modelName = args[1];
+        if (ollamaModels.includes(modelName)) {
+          setSelectedModel(modelName);
+          // Persist the selection to localStorage
+          localStorage.setItem(`model-${chatId}`, modelName);
+          
+          const modelMessage: ChatMessage = {
             role: 'system',
-            content: 'No command history available.',
+            content: `Model changed to ${modelName}`,
             timestamp: Date.now(),
           };
-          setMessages(prev => [...prev, noHistoryMessage]);
+          setMessages(prev => [...prev, modelMessage]);
         } else {
-          const historyMessage: ChatMessage = {
+          const errorMessage: ChatMessage = {
             role: 'system',
-            content: commandHistory.map((cmd, i) => `${i + 1}. ${cmd}`).join('\n'),
+            content: `Unknown model: ${modelName}. Available models: ${ollamaModels.join(', ')}`,
             timestamp: Date.now(),
           };
-          setMessages(prev => [...prev, historyMessage]);
+          setMessages(prev => [...prev, errorMessage]);
         }
-        break;
-        
-      case 'model':
+      } else {
+        // Show model selector UI
         setShowModelSelector(true);
-        break;
-        
-      default:
-        const unknownCommandMessage: ChatMessage = {
-          role: 'system',
-          content: `Unknown command: ${command}. Type /help for available commands.`,
-          timestamp: Date.now(),
-        };
-        setMessages(prev => [...prev, unknownCommandMessage]);
+      }
+    } else {
+      const unknownCommandMessage: ChatMessage = {
+        role: 'system',
+        content: `Unknown command: ${cmd}. Type 'help' for available commands.`,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, unknownCommandMessage]);
     }
   };
   
   // Handle model selection
   const handleModelSelect = (model: string) => {
     setSelectedModel(model);
-    setShowModelSelector(false);
+    // Persist the selection to localStorage
+    localStorage.setItem(`model-${chatId}`, model);
     
-    const modelChangeMessage: ChatMessage = {
+    const modelSelectedMessage: ChatMessage = {
       role: 'system',
-      content: `Model switched to: ${model}`,
+      content: `Model changed to ${model}`,
       timestamp: Date.now(),
     };
-    setMessages(prev => [...prev, modelChangeMessage]);
+    setMessages(prev => [...prev, modelSelectedMessage]);
   };
   
   // Handle prompt selection
@@ -328,36 +417,40 @@ const TerminalChat = ({
   };
   
   // Format timestamp
-  const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTimestamp = (timestamp: number | undefined) => {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
   };
   
-  // Get message style based on role
+  // Get message style based on role - updated for Kali Linux theme
   const getMessageStyle = (role: string) => {
     switch (role) {
       case 'user':
-        return 'bg-blue-900/30 border-l-blue-500';
+        return 'bg-gray-900/30 border-l-blue-500 text-blue-400';
       case 'assistant':
-        return 'bg-green-900/30 border-l-green-500';
+        return 'bg-gray-900/30 border-l-green-500 text-green-400';
       case 'system':
-        return 'bg-gray-800 border-l-gray-500 text-gray-300 font-mono text-xs';
+        return 'bg-gray-900/30 border-l-gray-500 text-gray-300 font-mono text-xs';
       default:
-        return 'bg-gray-800 border-l-gray-500';
+        return 'bg-gray-900/30 border-l-gray-500';
     }
   };
   
-  // Render the UI
+  // Render the UI with improved message display
   return (
-    <div className="flex flex-col h-full bg-gray-900 text-gray-100 rounded-md font-mono">
-      {/* Messages container with virtualization */}
+    <div className="h-full flex flex-col bg-gray-900 text-green-400 font-mono">
+      {/* Messages container */}
       <div 
         ref={messageContainerRef}
-        className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
-        style={{
-          height: `calc(100% - 3rem)`, // Adjust based on input height
-          overflowY: 'auto',
-        }}
+        className="flex-1 overflow-y-auto p-4"
       >
+        {/* Render virtualized list */}
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -369,7 +462,9 @@ const TerminalChat = ({
             const message = messages[virtualItem.index];
             return (
               <div
-                key={virtualItem.index}
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                ref={rowVirtualizer.measureElement}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -377,21 +472,20 @@ const TerminalChat = ({
                   width: '100%',
                   transform: `translateY(${virtualItem.start}px)`,
                 }}
+                className={getMessageStyle(message.role)}
               >
-                <div 
-                  className={`my-2 p-2 rounded border-l-2 ${getMessageStyle(message.role)}`}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-bold text-xs">
-                      {message.role === 'user' ? 'You' : message.role === 'assistant' ? 'AI' : 'System'}
+                <div className="flex flex-col">
+                  <div className="flex justify-between items-start">
+                    <span className="font-bold">
+                      {message.role === 'user' ? '> ' : ''}
+                      {message.role === 'assistant' ? 'AI: ' : ''}
+                      {message.role === 'system' ? 'SYSTEM: ' : ''}
                     </span>
-                    {message.timestamp && (
-                      <span className="text-xs text-gray-400">
-                        {formatTimestamp(message.timestamp)}
-                      </span>
-                    )}
+                    <span className="text-xs text-gray-500">
+                      {formatTimestamp(message.timestamp)}
+                    </span>
                   </div>
-                  <div className="whitespace-pre-wrap break-words">
+                  <div className="mt-1 whitespace-pre-wrap break-words">
                     {message.content}
                   </div>
                 </div>
@@ -400,71 +494,108 @@ const TerminalChat = ({
           })}
         </div>
         
-        {/* End of messages marker for scrolling */}
-        <div ref={messagesEndRef} />
-        
-        {/* Streaming indicator */}
+        {/* Streaming content */}
         {isStreaming && (
-          <div className="my-2 p-2 rounded border-l-2 bg-green-900/30 border-l-green-500">
-            <div className="flex justify-between items-start mb-1">
-              <span className="font-bold text-xs">AI</span>
-              <span className="text-xs text-gray-400">
-                {formatTimestamp(Date.now())}
-              </span>
-            </div>
-            <div className="whitespace-pre-wrap break-words">
-              {currentStreamedContent}
-              <span className="inline-block w-2 h-4 ml-1 bg-gray-200 animate-blink"></span>
+          <div className={getMessageStyle('assistant')}>
+            <div className="flex flex-col">
+              <div className="flex justify-between items-start">
+                <span className="font-bold">AI: </span>
+                <span className="text-xs text-gray-500">
+                  {formatTimestamp(Date.now())}
+                </span>
+              </div>
+              <div className="mt-1 whitespace-pre-wrap break-words">
+                {currentStreamedContent}
+                <span className="animate-pulse">▋</span>
+              </div>
             </div>
           </div>
         )}
+        
+        <div ref={messagesEndRef} />
       </div>
       
-      {/* Input form */}
-      <form onSubmit={handleSubmit} className="p-2 border-t border-gray-700 relative">
-        {showPromptSuggestions && (
-          <PromptSuggestions 
-            onSelectPrompt={handlePromptSelect}
-            role={agentType}
-          />
-        )}
-        
-        <div className="flex items-center bg-gray-800 rounded overflow-hidden">
-          <div 
-            className="px-2 text-gray-400 cursor-pointer hover:text-gray-200"
-            onClick={() => setShowPromptSuggestions(!showPromptSuggestions)}
-          >
-            <Lightbulb size={14} />
+      {/* Input area */}
+      <form onSubmit={handleSubmit} className="border-t border-gray-800 p-4">
+        <div className="flex">
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={vimMode ? `:${currentVimCommand}` : input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={vimMode ? "Vim command mode" : "Type a message..."}
+              className="w-full bg-gray-800 border border-gray-700 rounded-l px-4 py-2 focus:outline-none focus:border-blue-500 text-green-400"
+              disabled={isStreaming || vimMode}
+            />
+            {!isStreaming && !vimMode && (
+              <button
+                type="button"
+                onClick={() => setShowPromptSuggestions(!showPromptSuggestions)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-400"
+              >
+                <Lightbulb size={18} />
+              </button>
+            )}
           </div>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder={vimMode ? `${currentVimCommand || 'Normal mode'}` : "Type a message or /command..."}
-            className="flex-1 bg-gray-800 py-2 px-3 focus:outline-none text-sm"
-            disabled={vimMode}
-            autoFocus
-          />
           <button
             type="submit"
-            className="py-2 px-4 bg-gray-700 hover:bg-gray-600 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!input.trim() || isStreaming || vimMode}
+            disabled={isStreaming || vimMode || !input.trim()}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-black font-semibold rounded-r px-4 py-2"
           >
             Send
           </button>
         </div>
+        
+        {/* Status line showing model info */}
+        <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => setShowModelSelector(true)}
+              className="flex items-center space-x-1 text-blue-400 hover:text-blue-300"
+            >
+              <span>Model: {selectedModel}</span>
+            </button>
+            <button 
+              onClick={onToggleVimMode}
+              className={`flex items-center space-x-1 ${vimModeEnabled ? 'text-green-400' : 'text-gray-500'} hover:text-green-300`}
+            >
+              <span>Vim: {vimModeEnabled ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
+          
+          <div>
+            <button 
+              onClick={() => setMessages([])}
+              className="text-gray-500 hover:text-red-400 flex items-center space-x-1"
+            >
+              <TrashIcon size={12} />
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
       </form>
       
-      {/* Model selector modal */}
+      {/* Model selector dialog */}
       <AnimatePresence>
         {showModelSelector && (
           <ModelSelector
-            models={ollamaModels}
             selectedModel={selectedModel}
+            models={ollamaModels}
             onSelect={handleModelSelect}
             onClose={() => setShowModelSelector(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Prompt suggestions */}
+      <AnimatePresence>
+        {showPromptSuggestions && (
+          <PromptSuggestions
+            onSelect={handlePromptSelect}
+            onClose={() => setShowPromptSuggestions(false)}
+            agentType={agentType}
           />
         )}
       </AnimatePresence>

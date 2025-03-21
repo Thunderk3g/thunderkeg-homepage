@@ -3,6 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --desktop-background: #1a1b26;
+  --window-header: #24283b;
+  --window-bg: #1a1b26;
+  --accent-color: #7aa2f7;
+  --dock-bg: rgba(26, 27, 38, 0.85);
 }
 
 @theme inline {
@@ -16,6 +21,11 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --desktop-background: #1a1b26;
+    --window-header: #24283b;
+    --window-bg: #1a1b26;
+    --accent-color: #7aa2f7;
+    --dock-bg: rgba(26, 27, 38, 0.85);
   }
 }
 
@@ -23,6 +33,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 @keyframes dash {
@@ -33,4 +46,158 @@ body {
 
 .animate-dash {
   animation: dash 1.5s linear infinite;
+}
+
+/* Linux Desktop Styles */
+.linux-desktop {
+  width: 100vw;
+  height: 100vh;
+  background: var(--desktop-background);
+  background-image: url('/wallpaper.jpg');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.desktop-icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 80px);
+  grid-gap: 20px;
+  padding: 20px;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  width: 80px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.desktop-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.desktop-icon img {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+}
+
+.desktop-icon span {
+  color: white;
+  font-size: 12px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.window {
+  background: var(--window-bg);
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  resize: both;
+}
+
+.window-header {
+  background: var(--window-header);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: move;
+}
+
+.window-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.window-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.window-button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.window-close {
+  background-color: #ff5f57;
+}
+
+.window-minimize {
+  background-color: #febc2e;
+}
+
+.window-maximize {
+  background-color: #28c840;
+}
+
+.window-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.dock {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  padding: 8px 16px;
+  background: var(--dock-bg);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.dock-item {
+  width: 48px;
+  height: 48px;
+  margin: 0 8px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-item:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dock-item img {
+  width: 32px;
+  height: 32px;
+}
+
+.clock {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: white;
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 10px;
+  border-radius: 4px;
 }

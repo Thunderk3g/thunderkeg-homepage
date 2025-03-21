@@ -2,7 +2,7 @@
 
 import React, { useState, ReactNode, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { X, Minimize2, Maximize2 } from 'lucide-react';
+import { X, Minimize2, Maximize2, Keyboard } from 'lucide-react';
 import TerminalTabs, { Tab } from './TerminalTabs';
 
 interface TerminalWindowProps {
@@ -22,6 +22,8 @@ interface TerminalWindowProps {
   onTabClose?: (tabId: string) => void;
   onNewTab?: () => void;
   userRole?: 'recruiter' | 'collaborator' | null;
+  vimModeEnabled?: boolean;
+  agentType?: 'recruiter' | 'collaborator';
 }
 
 const TerminalWindow: React.FC<TerminalWindowProps> = ({
@@ -41,6 +43,8 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
   onTabClose,
   onNewTab,
   userRole,
+  vimModeEnabled = false,
+  agentType = 'recruiter'
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -56,6 +60,7 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
   const resizeStartSize = useRef<{ width: number, height: number } | null>(null);
   const prevPosition = useRef<{ x: number, y: number } | null>(null);
   const prevSize = useRef<{ width: number, height: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const handleMaximize = () => {
     setIsMaximized(!isMaximized);
@@ -111,6 +116,10 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
     setResizeDirection(direction);
     resizeStartPos.current = { x: e.clientX, y: e.clientY };
     resizeStartSize.current = { width: size.width, height: size.height };
+    onFocus?.();
+    
+    // Prevent text selection during resize
+    document.body.style.userSelect = 'none';
   };
 
   const handleResizeMove = useCallback((e: MouseEvent) => {
@@ -156,6 +165,7 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
     setResizeDirection(null);
     resizeStartPos.current = null;
     resizeStartSize.current = null;
+    document.body.style.userSelect = '';
   }, []);
 
   // Focus handling
@@ -205,6 +215,93 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
     };
   }, [isResizing, handleResizeMove, handleResizeEnd, resizeDirection]);
 
+  // Handle window dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left click
+    onFocus?.();
+    
+    // Check if target is the header and not a control button
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('.window-controls') ||
+      target.closest('.vim-indicator') ||
+      target.closest('.agent-indicator')
+    ) {
+      return;
+    }
+    
+    setIsDragging(true);
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+    
+    // Prevent text selection during drag
+    e.preventDefault();
+  };
+  
+  // Global mouse move handler
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Handle dragging
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        });
+      }
+      
+      // Handle resizing
+      if (isResizing) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        
+        // Minimum size
+        const minWidth = 300;
+        const minHeight = 200;
+        
+        // Calculate new size based on resize direction
+        if (resizeDirection?.includes('e')) {
+          const newWidth = Math.max(minWidth, e.clientX - rect.left);
+          setSize(prev => ({ ...prev, width: newWidth }));
+        }
+        if (resizeDirection?.includes('s')) {
+          const newHeight = Math.max(minHeight, e.clientY - rect.top);
+          setSize(prev => ({ ...prev, height: newHeight }));
+        }
+        if (resizeDirection?.includes('w')) {
+          const newWidth = Math.max(minWidth, rect.right - e.clientX);
+          setSize(prev => ({ ...prev, width: newWidth }));
+          setPosition(prev => ({ ...prev, x: e.clientX }));
+        }
+        if (resizeDirection?.includes('n')) {
+          const newHeight = Math.max(minHeight, rect.bottom - e.clientY);
+          setSize(prev => ({ ...prev, height: newHeight }));
+          setPosition(prev => ({ ...prev, y: e.clientY }));
+        }
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+      document.body.style.userSelect = '';
+    };
+    
+    if (isDragging || isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, isResizing, dragOffset, resizeDirection]);
+
   return (
     <div ref={dragConstraintsRef} className="relative w-full h-full">
       <motion.div
@@ -213,7 +310,10 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
         dragMomentum={false}
         dragConstraints={dragConstraintsRef}
         dragElastic={0}
-        onDragStart={() => setIsDragging(true)}
+        onDragStart={() => {
+          setIsDragging(true);
+          onFocus?.();
+        }}
         onDragEnd={() => setIsDragging(false)}
         onClick={handleWindowClick}
         className={`bg-gray-900 border rounded-lg shadow-2xl backdrop-blur-sm ${
@@ -253,96 +353,64 @@ const TerminalWindow: React.FC<TerminalWindowProps> = ({
       >
         {/* Terminal header with controls */}
         <div 
-          ref={dragRef}
-          className={`terminal-handle flex items-center justify-between px-4 py-3 border-b cursor-grab active:cursor-grabbing ${
-            isFocused 
-              ? 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-600' 
-              : 'bg-gradient-to-r from-gray-900 to-gray-950 border-gray-800'
-          }`}
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          className={`${isFocused ? 'bg-gray-800' : 'bg-gray-900'} px-3 py-2 flex items-center justify-between transition-colors`}
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
-          <div className="flex items-center">
-            <div className="flex space-x-2 mr-4">
-              <button 
-                onClick={onClose}
-                className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1 focus:ring-offset-gray-800 flex items-center justify-center group"
-                title="Close"
-                aria-label="Close terminal"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-2 w-2 text-red-800 opacity-0 group-hover:opacity-100 transition-opacity" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                >
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button 
-                onClick={handleMinimize}
-                className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-1 focus:ring-offset-gray-800 flex items-center justify-center group"
-                title={isMinimized ? "Expand" : "Minimize"}
-                aria-label={isMinimized ? "Expand terminal" : "Minimize terminal"}
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-2 w-2 text-yellow-800 opacity-0 group-hover:opacity-100 transition-opacity" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                >
-                  <path fillRule="evenodd" d="M5 10a1 1 0 01.707.293l4 4a1 1 0 01-1.414 1.414L5 12.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4A1 1 0 015 10z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button 
-                onClick={handleMaximize}
-                className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-1 focus:ring-offset-gray-800 flex items-center justify-center group"
-                title={isMaximized ? "Restore" : "Maximize"}
-                aria-label={isMaximized ? "Restore terminal size" : "Maximize terminal"}
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-2 w-2 text-green-800 opacity-0 group-hover:opacity-100 transition-opacity" 
-                  viewBox="0 0 20 20" 
-                  fill="currentColor"
-                >
-                  {isMaximized ? (
-                    <path fillRule="evenodd" d="M5 4a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H5zm5 12h5a1 1 0 001-1V6a1 1 0 00-1-1h-5a1 1 0 00-1 1v10a1 1 0 001 1z" clipRule="evenodd" />
-                  ) : (
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  )}
-                </svg>
-              </button>
-            </div>
-            <span className={`font-medium select-none tracking-tight ${isFocused ? 'text-gray-300' : 'text-gray-500'}`}>
+          {/* Window title and controls */}
+          <div className="window-controls flex items-center space-x-2">
+            <button 
+              className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
+              onClick={onClose}
+            >
+              {isMaximized && <X size={8} className="mx-auto" />}
+            </button>
+            <button 
+              className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors"
+              onClick={handleMinimize}
+            >
+              {isMaximized && <Minimize2 size={8} className="mx-auto" />}
+            </button>
+            <button 
+              className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors"
+              onClick={handleMaximize}
+            >
+              {isMaximized && <Maximize2 size={8} className="mx-auto" />}
+            </button>
+          </div>
+          
+          {/* Window title with vim mode and agent indicators */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
+            <span className="text-xs text-gray-300 font-medium truncate max-w-[150px]">
               {title}
             </span>
+            
+            {/* Vim mode indicator */}
+            {vimModeEnabled && (
+              <div className="vim-indicator px-1.5 py-0.5 bg-purple-700/50 rounded text-xs text-purple-200 font-bold flex items-center space-x-1">
+                <Keyboard size={10} />
+                <span>VIM</span>
+              </div>
+            )}
+            
+            {/* Agent indicator */}
+            {agentType && (
+              <div 
+                className={`agent-indicator px-1.5 py-0.5 rounded text-xs font-bold flex items-center
+                  ${agentType === 'recruiter' 
+                    ? 'bg-blue-700/50 text-blue-200' 
+                    : 'bg-green-700/50 text-green-200'
+                  }`}
+              >
+                <span>{agentType === 'recruiter' ? 'PRO' : 'PER'}</span>
+              </div>
+            )}
           </div>
-
-          <div className="flex space-x-2">
-            <button
-              onClick={handleMinimize}
-              className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700/50 transition-colors focus:outline-none"
-              title={isMinimized ? "Expand" : "Minimize"}
-              aria-label={isMinimized ? "Expand terminal" : "Minimize terminal"}
-            >
-              <Minimize2 size={16} />
-            </button>
-            <button
-              onClick={handleMaximize}
-              className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700/50 transition-colors focus:outline-none"
-              title={isMaximized ? "Restore" : "Maximize"}
-              aria-label={isMaximized ? "Restore terminal size" : "Maximize terminal"}
-            >
-              {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-gray-700/50 transition-colors focus:outline-none"
-              title="Close"
-              aria-label="Close terminal"
-            >
-              <X size={16} />
-            </button>
+          
+          {/* Empty space to balance the title */}
+          <div className="invisible window-controls flex items-center space-x-2">
+            <div className="w-3 h-3 rounded-full" />
+            <div className="w-3 h-3 rounded-full" />
+            <div className="w-3 h-3 rounded-full" />
           </div>
         </div>
 

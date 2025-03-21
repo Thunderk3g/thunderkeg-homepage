@@ -8,9 +8,6 @@ import { OllamaGenerateParams, OllamaChatParams, OllamaChatMessage } from '@/lib
 // Store the successful Ollama endpoint
 let cachedOllamaEndpoint: string | null = null;
 
-// Flag to determine if we're running in demo mode (Vercel deployment)
-let isDemoMode = false;
-
 // Possible Ollama hosts to try when discovering endpoint
 const POSSIBLE_HOSTS = [
   'http://localhost:11434',
@@ -19,66 +16,10 @@ const POSSIBLE_HOSTS = [
   'http://127.0.0.1:11434',
 ];
 
-// Mock models for demo mode (Vercel deployment)
-const DEMO_MODELS = [
-  {
-    name: 'llama3',
-    model: 'llama3',
-    modified_at: new Date().toISOString(),
-    size: 4661230977,
-    details: {
-      format: 'gguf',
-      family: 'llama',
-      parameter_size: '8B',
-      quantization_level: 'Q4_0'
-    }
-  },
-  {
-    name: 'mistral',
-    model: 'mistral',
-    modified_at: new Date().toISOString(),
-    size: 4108668321,
-    details: {
-      format: 'gguf',
-      family: 'mistral',
-      parameter_size: '7B',
-      quantization_level: 'Q4_0'
-    }
-  },
-  {
-    name: 'gemma',
-    model: 'gemma',
-    modified_at: new Date().toISOString(),
-    size: 3986512123,
-    details: {
-      format: 'gguf',
-      family: 'gemma',
-      parameter_size: '7B',
-      quantization_level: 'Q4_0'
-    }
-  }
-];
-
-/**
- * Check if the application is running on Vercel
- */
-export function isVercelDeployment(): boolean {
-  return process.env.VERCEL === '1' || 
-         Boolean(process.env.VERCEL_URL) || 
-         Boolean(process.env.NEXT_PUBLIC_VERCEL_URL);
-}
-
 /**
  * Discover Ollama API endpoint by trying different possible URLs
  */
 export async function discoverOllamaEndpoint(): Promise<string | null> {
-  // Check if we're in Vercel deployment - if so, return null as Ollama isn't available
-  if (isVercelDeployment()) {
-    isDemoMode = true;
-    console.log('Running in Vercel deployment - Ollama will not be available');
-    return null;
-  }
-
   // Check if we already have a cached endpoint
   if (cachedOllamaEndpoint) {
     return cachedOllamaEndpoint;
@@ -120,11 +61,6 @@ export async function discoverOllamaEndpoint(): Promise<string | null> {
  * Check if Ollama is available
  */
 export async function isOllamaAvailable(): Promise<boolean> {
-  // If we're in demo mode (Vercel), return true to allow the app to function
-  if (isDemoMode) {
-    return true;
-  }
-  
   const endpoint = await discoverOllamaEndpoint();
   return endpoint !== null;
 }
@@ -133,11 +69,6 @@ export async function isOllamaAvailable(): Promise<boolean> {
  * Get available Ollama models
  */
 export async function getOllamaModels(): Promise<string[]> {
-  // If we're in demo mode (Vercel), return demo models
-  if (isDemoMode) {
-    return DEMO_MODELS.map(model => model.name);
-  }
-  
   const endpoint = await discoverOllamaEndpoint();
   if (!endpoint) {
     return [];
@@ -162,11 +93,6 @@ export async function getOllamaModels(): Promise<string[]> {
  * Generate a completion with Ollama
  */
 export async function generateCompletion(params: OllamaGenerateParams): Promise<string> {
-  // If we're in demo mode, return a mock response
-  if (isDemoMode) {
-    return `This is a demo response from the ${params.model} model. In this deployment, Ollama is not available as it runs locally. To use real AI models, please run this application locally with Ollama installed.`;
-  }
-  
   const endpoint = await discoverOllamaEndpoint();
   if (!endpoint) {
     return "Couldn't connect to Ollama. Please make sure it's running locally.";
@@ -222,11 +148,6 @@ export async function generateCompletion(params: OllamaGenerateParams): Promise<
  * Generate a chat completion with Ollama
  */
 export async function generateChatCompletion(params: OllamaChatParams): Promise<string> {
-  // If we're in demo mode, return a mock response
-  if (isDemoMode) {
-    return `This is a demo response from the ${params.model} model. In this deployment, Ollama is not available as it runs locally. To use real AI models, please run this application locally with Ollama installed.`;
-  }
-  
   const endpoint = await discoverOllamaEndpoint();
   if (!endpoint) {
     return "Couldn't connect to Ollama. Please make sure it's running locally.";
@@ -258,5 +179,4 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
 }
 
 // Exports
-export type { OllamaChatMessage };
-export { DEMO_MODELS }; 
+export type { OllamaChatMessage }; 
