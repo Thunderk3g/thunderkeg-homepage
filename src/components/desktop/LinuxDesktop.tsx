@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import TerminalWindow from './TerminalWindow';
-import { X, Minus, Square, ChevronRight, File, Coffee, Code, Info, User, Home } from 'lucide-react';
+import { X, Minus, Square, ChevronRight, File, Coffee, Code, Info, User, Home, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import LandingAnimation from '@/components/landing/LandingAnimation';
@@ -8,6 +8,7 @@ import TerminalAgentSelector from '@/components/agents/TerminalAgentSelector';
 import JSONResumeViewer from './JSONResumeViewer';
 import DesktopIcons from './DesktopIcons';
 import Taskbar from './Taskbar';
+import JarvisAssistant from './JarvisAssistant';
 
 // Kali Linux theme colors
 const kaliTheme = {
@@ -54,6 +55,7 @@ interface LinuxDesktopProps {
   onRoleSelect?: (role: UserRole) => void;
   renderActiveTerminal?: () => React.ReactNode;
   ollamaAvailable: boolean;
+  onOpenJarvis?: () => void;
 }
 
 const LinuxDesktop = ({
@@ -62,7 +64,8 @@ const LinuxDesktop = ({
   userRole,
   onRoleSelect,
   renderActiveTerminal,
-  ollamaAvailable
+  ollamaAvailable,
+  onOpenJarvis
 }: LinuxDesktopProps) => {
   // State for windows
   const [windows, setWindows] = useState<Window[]>([]);
@@ -78,6 +81,22 @@ const LinuxDesktop = ({
   const dragRef = useRef<{ clientX: number, clientY: number } | null>(null);
   const [showStartMenu, setShowStartMenu] = useState(false);
   const startMenuRef = useRef<HTMLDivElement | null>(null);
+  // Add wallpaper state with localStorage persistence
+  const [wallpaper, setWallpaper] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('kali-wallpaper') || '/images/kali-wallpaper.png';
+    }
+    return '/images/kali-wallpaper.png';
+  });
+  const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
+  const [wallpaperMenuPosition, setWallpaperMenuPosition] = useState({ x: 0, y: 0 });
+  const [jarvisWindowOpen, setJarvisWindowOpen] = useState(false);
+
+  // Available wallpapers
+  const availableWallpapers = [
+    { name: 'Kali Default', path: '/images/kali-wallpaper.jpg' },
+    { name: 'Kali Badass', path: '/images/kali-dark.jpg' },
+  ];
 
   // Track view changes
   useEffect(() => {
@@ -464,6 +483,15 @@ const LinuxDesktop = ({
     }
   };
 
+  // Handle Jarvis open
+  const handleJarvisOpen = useCallback(() => {
+    setJarvisWindowOpen(true);
+    
+    // Bring Jarvis window to front by increasing z-index
+    const newZIndex = highestZIndex + 1;
+    setHighestZIndex(newZIndex);
+  }, [highestZIndex]);
+
   // Window management functions
   const handleCloseWindow = (id: string) => {
     setWindows(windows.filter(window => window.id !== id));
@@ -779,6 +807,11 @@ const LinuxDesktop = ({
       name: 'Home',
       icon: <Home size={30} className="text-red-400" />,
       action: () => onViewChange('landing')
+    },
+    {
+      name: 'Jarvis',
+      icon: <Volume2 className="w-4 h-4 text-cyan-400" />,
+      action: handleJarvisOpen
     }
   ];
 
@@ -858,16 +891,61 @@ const LinuxDesktop = ({
     );
   };
 
+  // Handle desktop right-click for wallpaper menu
+  const handleDesktopRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setWallpaperMenuPosition({ x: e.clientX, y: e.clientY });
+    setShowWallpaperMenu(true);
+  };
+
+  // Handle wallpaper change
+  const handleWallpaperChange = (path: string) => {
+    setWallpaper(path);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kali-wallpaper', path);
+    }
+    setShowWallpaperMenu(false);
+  };
+
+  // Handle click outside wallpaper menu
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowWallpaperMenu(false);
+    };
+
+    if (showWallpaperMenu) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showWallpaperMenu]);
+
+  // Fix the useEffect for handling onOpenJarvis prop
+  useEffect(() => {
+    if (onOpenJarvis) {
+      // Use a local function reference to avoid assignment to prop
+      const openJarvis = () => {
+        handleJarvisOpen();
+      };
+      
+      // Update the reference to our handler
+      onOpenJarvis = openJarvis;
+    }
+  }, [onOpenJarvis, handleJarvisOpen]);
+
   return (
     <div className="relative h-screen bg-black overflow-hidden">
       {/* Desktop background */}
       <div 
         className="absolute inset-0 bg-gray-900 bg-opacity-90"
         style={{
-          backgroundImage: "url('/images/kali-wallpaper.png')",
+          backgroundImage: `url('${wallpaper}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
+        onContextMenu={handleDesktopRightClick}
       >
         {/* Desktop icons using the new component */}
         <DesktopIcons
@@ -876,7 +954,36 @@ const LinuxDesktop = ({
           onOpenAbout={handleAboutOpen}
           onOpenProjects={handleProjectsOpen}
           onOpenSocialLinks={handleSocialLinksOpen}
+          onOpenJarvis={handleJarvisOpen}
         />
+
+        {/* Wallpaper selection menu */}
+        {showWallpaperMenu && (
+          <div 
+            className="absolute z-50 bg-gray-800 border border-gray-700 rounded-md shadow-lg overflow-hidden"
+            style={{ left: wallpaperMenuPosition.x, top: wallpaperMenuPosition.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-2 text-white text-sm font-medium border-b border-gray-700">
+              Change Wallpaper
+            </div>
+            <div className="p-1">
+              {availableWallpapers.map((wp) => (
+                <div 
+                  key={wp.path} 
+                  className="flex items-center p-2 hover:bg-gray-700 cursor-pointer rounded-sm"
+                  onClick={() => handleWallpaperChange(wp.path)}
+                >
+                  <div 
+                    className="w-8 h-8 rounded mr-2 bg-cover"
+                    style={{ backgroundImage: `url('${wp.path}')` }}
+                  />
+                  <span className="text-white text-sm">{wp.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Windows */}
@@ -955,6 +1062,42 @@ const LinuxDesktop = ({
           }}
           currentAgent={userRole || 'recruiter'}
         />
+      )}
+
+      {/* Jarvis Assistant Window */}
+      {jarvisWindowOpen && (
+        <div 
+          className="absolute rounded overflow-hidden shadow-lg"
+          style={{
+            top: 150,
+            left: 450,
+            width: 400,
+            height: 500,
+            zIndex: highestZIndex + 1,
+            border: `1px solid ${kaliTheme.window.border}`
+          }}
+        >
+          <div 
+            className="flex items-center justify-between p-1 bg-gray-900 text-white cursor-move"
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <div className="flex items-center">
+              <Volume2 className="w-4 h-4 text-cyan-400 mr-2" />
+              <span className="text-sm">Jarvis Assistant</span>
+            </div>
+            <div className="flex">
+              <button 
+                className="p-1 hover:bg-gray-700 rounded"
+                onClick={() => setJarvisWindowOpen(false)}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+          <div className="h-full">
+            <JarvisAssistant />
+          </div>
+        </div>
       )}
     </div>
   );

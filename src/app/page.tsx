@@ -339,7 +339,15 @@ export default function Home() {
   const handleLandingComplete = () => {
     setView('roleSelect');
   };
-  
+
+  // Function to handle view changes with proper type
+  const handleViewChange = (newView: string) => {
+    // Only set the view if it matches one of our defined types
+    if (newView === 'landing' || newView === 'roleSelect' || newView === 'terminals') {
+      setView(newView as 'landing' | 'roleSelect' | 'terminals');
+    }
+  };
+
   return (
     <main className="h-screen w-full overflow-hidden">
       {view === 'landing' && (
@@ -358,7 +366,7 @@ export default function Home() {
       
       <LinuxDesktop 
         initialView={view}
-        onViewChange={setView}
+        onViewChange={handleViewChange}
         userRole={userRole}
         onRoleSelect={handleRoleSelect}
         renderActiveTerminal={renderActiveTerminal}

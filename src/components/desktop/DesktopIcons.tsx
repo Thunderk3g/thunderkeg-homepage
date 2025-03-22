@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Terminal, File, User, Info, Code, Link, Folder } from 'lucide-react';
+import { Terminal, File, User, Info, Code, Link, Folder, Volume2 } from 'lucide-react';
 
 interface DesktopIcon {
   id: string;
@@ -17,6 +17,7 @@ interface DesktopIconsProps {
   onOpenAbout: () => void;
   onOpenProjects: () => void;
   onOpenSocialLinks: () => void;
+  onOpenJarvis: () => void;
 }
 
 const DesktopIcons: React.FC<DesktopIconsProps> = ({
@@ -25,6 +26,7 @@ const DesktopIcons: React.FC<DesktopIconsProps> = ({
   onOpenAbout,
   onOpenProjects,
   onOpenSocialLinks,
+  onOpenJarvis,
 }) => {
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   
@@ -66,11 +68,18 @@ const DesktopIcons: React.FC<DesktopIconsProps> = ({
       position: { gridRow: 5, gridColumn: 1 }
     },
     {
+      id: 'jarvis',
+      label: 'Jarvis',
+      icon: <Volume2 className="w-8 h-8 text-cyan-400" />,
+      action: onOpenJarvis,
+      position: { gridRow: 6, gridColumn: 1 }
+    },
+    {
       id: 'documents',
       label: 'Documents',
       icon: <Folder className="w-8 h-8 text-yellow-300" />,
       action: () => {}, // Placeholder for future functionality
-      position: { gridRow: 6, gridColumn: 1 }
+      position: { gridRow: 7, gridColumn: 1 }
     }
   ];
   
