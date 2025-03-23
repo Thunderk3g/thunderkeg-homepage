@@ -28,18 +28,25 @@ export default function Doom({ onClose }: DoomProps) {
     const initDoom = () => {
       // Check if script is already loaded
       if (window.jsDoom) {
+        console.log('jsDoom already loaded, starting game...');
         startGame();
         return;
       }
       
+      console.log('Loading JS-Doom engine script...');
       // Load the JS-Doom engine
       script = document.createElement('script');
       script.src = '/js/doom.js';
       script.async = true;
       script.onload = () => {
-        startGame();
+        console.log('JS-Doom script loaded successfully');
+        // Add a small delay to ensure script is fully initialized
+        setTimeout(() => {
+          startGame();
+        }, 100);
       };
-      script.onerror = () => {
+      script.onerror = (error) => {
+        console.error('Failed to load the DOOM engine script:', error);
         setError('Failed to load the DOOM engine');
         setIsLoading(false);
       };
@@ -47,13 +54,20 @@ export default function Doom({ onClose }: DoomProps) {
     };
     
     const startGame = () => {
-      if (!canvasRef.current || !window.jsDoom) {
-        setError('Failed to initialize game canvas');
+      if (!canvasRef.current) {
+        setError('Failed to initialize game canvas - canvas reference is null');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!window.jsDoom) {
+        setError('Failed to initialize game canvas - Doom engine is not loaded');
         setIsLoading(false);
         return;
       }
       
       try {
+        console.log('Starting Doom with canvas:', canvasRef.current);
         // Initialize the JS-Doom engine with our canvas
         gameInstanceRef.current = new window.jsDoom({
           canvas: canvasRef.current,
@@ -63,11 +77,13 @@ export default function Doom({ onClose }: DoomProps) {
           muted: isMuted,
         });
         
+        console.log('Doom instance created successfully:', gameInstanceRef.current);
         // Start the game paused
         gameInstanceRef.current.pause();
         setIsPlaying(false);
         setIsLoading(false);
       } catch (err) {
+        console.error('Error initializing Doom:', err);
         setError(`Error starting Doom: ${err instanceof Error ? err.message : 'Unknown error'}`);
         setIsLoading(false);
       }

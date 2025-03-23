@@ -9,15 +9,38 @@
 (function() {
   // Define the jsDoom constructor function
   window.jsDoom = function(config) {
+    console.log('Creating jsDoom instance with config:', config);
+    
+    // Validate required parameters
+    if (!config || !config.canvas) {
+      console.error('jsDoom initialization error: Canvas is required');
+      throw new Error('Canvas is required for jsDoom initialization');
+    }
+    
     // Store configuration options
     this.config = config || {};
     this.canvas = config.canvas;
+    
+    // Validate the canvas
+    if (!this.canvas.getContext) {
+      console.error('jsDoom initialization error: Invalid canvas element');
+      throw new Error('Invalid canvas element');
+    }
+    
     this.context = this.canvas.getContext('2d');
+    if (!this.context) {
+      console.error('jsDoom initialization error: Could not get 2d context from canvas');
+      throw new Error('Could not get 2d context from canvas');
+    }
+    
     this.width = config.width || 640;
     this.height = config.height || 400;
     this.wads = config.wads || [];
     this.isMuted = config.muted || false;
     this.running = false;
+    
+    // Log successful creation
+    console.log('jsDoom instance created successfully');
     
     // Initialize the game
     this.init();
@@ -31,21 +54,33 @@
     // Initialize the game
     init: function() {
       console.log('Initializing JS-Doom engine...');
-      this.setupCanvas();
-      this.renderLoadingScreen();
-      
-      // Simulate loading the WAD files
-      setTimeout(() => {
-        this.renderMenuScreen();
-      }, 1500);
+      try {
+        this.setupCanvas();
+        this.renderLoadingScreen();
+        
+        // Simulate loading the WAD files
+        console.log('Loading WAD files:', this.wads);
+        setTimeout(() => {
+          this.renderMenuScreen();
+        }, 1500);
+      } catch (error) {
+        console.error('Error in jsDoom initialization:', error);
+        throw error;
+      }
     },
     
     // Set up the canvas
     setupCanvas: function() {
-      this.canvas.width = this.width;
-      this.canvas.height = this.height;
-      this.context.fillStyle = '#000';
-      this.context.fillRect(0, 0, this.width, this.height);
+      console.log('Setting up canvas with dimensions:', this.width, 'x', this.height);
+      try {
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        this.context.fillStyle = '#000';
+        this.context.fillRect(0, 0, this.width, this.height);
+      } catch (error) {
+        console.error('Error setting up canvas:', error);
+        throw new Error('Canvas setup failed: ' + error.message);
+      }
     },
     
     // Render the loading screen
