@@ -8,6 +8,12 @@ import { OllamaGenerateParams, OllamaChatParams, OllamaChatMessage } from '@/lib
 // Store the successful Ollama endpoint
 let cachedOllamaEndpoint: string | null = null;
 
+// Determine if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Determine if we're in production or development
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Possible Ollama hosts to try when discovering endpoint
 const POSSIBLE_HOSTS = [
   'http://localhost:11434',
@@ -25,6 +31,25 @@ export async function discoverOllamaEndpoint(): Promise<string | null> {
     return cachedOllamaEndpoint;
   }
 
+  // In browser + production environment, use our Next.js API routes as a proxy
+  if (isBrowser && isProduction) {
+    try {
+      const response = await fetch('/api/ollama/status');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.available) {
+          // We don't directly use the endpoint from the server, 
+          // but indicate we should use the API proxy
+          cachedOllamaEndpoint = '/api/ollama/proxy';
+          return cachedOllamaEndpoint;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to check Ollama status via API route');
+    }
+    return null;
+  }
+
   // Check for environment variable first
   const envEndpoint = process.env.OLLAMA_API_URL;
   if (envEndpoint) {
@@ -39,18 +64,20 @@ export async function discoverOllamaEndpoint(): Promise<string | null> {
     }
   }
 
-  // Try each possible host
-  for (const host of POSSIBLE_HOSTS) {
-    try {
-      // Use the /api/tags endpoint to check availability (per Ollama docs)
-      const response = await fetch(`${host}/api/tags`);
-      if (response.ok) {
-        cachedOllamaEndpoint = host;
-        return host;
+  // Try each possible host (only in non-production or server-side)
+  if (!isBrowser || !isProduction) {
+    for (const host of POSSIBLE_HOSTS) {
+      try {
+        // Use the /api/tags endpoint to check availability (per Ollama docs)
+        const response = await fetch(`${host}/api/tags`);
+        if (response.ok) {
+          cachedOllamaEndpoint = host;
+          return host;
+        }
+      } catch (e) {
+        // Connection failed, try next host
+        console.warn(`Failed to connect to Ollama at ${host}`);
       }
-    } catch (e) {
-      // Connection failed, try next host
-      console.warn(`Failed to connect to Ollama at ${host}`);
     }
   }
 
@@ -75,8 +102,13 @@ export async function getOllamaModels(): Promise<string[]> {
   }
 
   try {
+    // If the endpoint is our proxy, use the API route
+    const apiUrl = endpoint === '/api/ollama/proxy' 
+      ? `${endpoint}/api/tags` 
+      : `${endpoint}/api/tags`;
+      
     // Use the /api/tags endpoint per Ollama docs
-    const response = await fetch(`${endpoint}/api/tags`);
+    const response = await fetch(apiUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch models: ${response.statusText}`);
     }
@@ -99,7 +131,12 @@ export async function generateCompletion(params: OllamaGenerateParams): Promise<
   }
 
   try {
-    const response = await fetch(`${endpoint}/api/generate`, {
+    // If the endpoint is our proxy, use the API route
+    const apiUrl = endpoint === '/api/ollama/proxy' 
+      ? `${endpoint}/api/generate` 
+      : `${endpoint}/api/generate`;
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -110,6 +147,12 @@ export async function generateCompletion(params: OllamaGenerateParams): Promise<
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Ollama API error: ${errorText || response.statusText}`);
+    }
+
+    // If using the proxy, handle the response differently as it won't be streamed
+    if (endpoint === '/api/ollama/proxy') {
+      const data = await response.json();
+      return data.response || '';
     }
 
     const reader = response.body?.getReader();
@@ -154,7 +197,12 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
   }
 
   try {
-    const response = await fetch(`${endpoint}/api/chat`, {
+    // If the endpoint is our proxy, use the API route
+    const apiUrl = endpoint === '/api/ollama/proxy' 
+      ? `${endpoint}/api/chat` 
+      : `${endpoint}/api/chat`;
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
