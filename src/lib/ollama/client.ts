@@ -5,7 +5,7 @@
 // Use absolute path to ensure TypeScript finds the module
 import { OllamaGenerateParams, OllamaChatParams, OllamaChatMessage } from '@/lib/ollama/types';
 
-// Add OllamaBridge type declaration
+// Add type declarations
 declare global {
   interface Window {
     OllamaBridge?: {
@@ -31,9 +31,15 @@ const POSSIBLE_HOSTS = [
   'http://127.0.0.1:11434',
 ];
 
-// Safe access to chrome APIs
-const runtime = typeof chrome !== 'undefined' ? chrome.runtime : undefined;
-const getManifest = runtime ? () => runtime.getManifest() : () => ({ version: '1.0.0' });
+// Safe access to browser extension APIs (avoid direct chrome reference)
+const getExtensionVersion = (): string => {
+  try {
+    // @ts-ignore - Ignore chrome reference for runtime
+    return typeof window !== 'undefined' && window.chrome?.runtime?.getManifest?.()?.version || '1.0.0';
+  } catch (e) {
+    return '1.0.0';
+  }
+};
 
 /**
  * Configure whether to prefer using the extension even when direct connection is possible
@@ -158,6 +164,24 @@ export async function isOllamaAvailable(): Promise<boolean> {
 }
 
 /**
+ * Helper function to get the correct API path based on whether extension is being used
+ */
+export function getApiPath(path: string): string {
+  // If using the extension, use relative paths (the extension expects relative paths)
+  if (typeof window !== 'undefined' && window.OllamaBridge && window.OllamaBridge.isAvailable) {
+    return path; // e.g. '/api/chat'
+  }
+  
+  // If we have a cached endpoint, use it with the path
+  if (cachedOllamaEndpoint) {
+    return `${cachedOllamaEndpoint}${path}`;
+  }
+  
+  // Default to localhost if we don't know yet
+  return `http://localhost:11434${path}`;
+}
+
+/**
  * Get available Ollama models
  */
 export async function getOllamaModels(): Promise<string[]> {
@@ -167,8 +191,11 @@ export async function getOllamaModels(): Promise<string[]> {
   }
 
   try {
-    // Use the /api/tags endpoint per Ollama docs
-    const response = await fetch(`${endpoint}/api/tags`);
+    // Use the getApiPath helper for consistent URL handling
+    const apiUrl = getApiPath('/api/tags');
+    console.log(`Fetching models from: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch models: ${response.statusText}`);
     }
@@ -199,12 +226,35 @@ export async function generateCompletion(params: OllamaGenerateParams): Promise<
   }
 
   try {
-    const response = await fetch(`${endpoint}/api/generate`, {
+    // Use the getApiPath helper for consistent URL handling
+    const apiUrl = getApiPath('/api/generate');
+    
+    // Validate required parameters
+    if (!params.model || typeof params.model !== 'string') {
+      throw new Error('Invalid model parameter: model must be a string');
+    }
+    
+    if (!params.prompt || typeof params.prompt !== 'string') {
+      throw new Error('Invalid prompt parameter: prompt must be a string');
+    }
+    
+    // Format the request exactly as Ollama API expects
+    const requestBody = {
+      model: params.model,
+      prompt: params.prompt,
+      options: params.options || {},
+      format: params.format,
+      stream: true // Ollama generate uses streaming by default
+    };
+    
+    console.log(`Making generate request to: ${apiUrl}`, requestBody);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(params),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -254,15 +304,34 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
   }
 
   try {
-    const response = await fetch(`${endpoint}/api/chat`, {
+    // Use the getApiPath helper for consistent URL handling
+    const apiUrl = getApiPath('/api/chat');
+    
+    // Validate required parameters
+    if (!params.model || typeof params.model !== 'string') {
+      throw new Error('Invalid model parameter: model must be a string');
+    }
+    
+    if (!params.messages || !Array.isArray(params.messages) || params.messages.length === 0) {
+      throw new Error('Invalid messages parameter: messages must be a non-empty array');
+    }
+    
+    // Format the request exactly as Ollama API expects
+    const requestBody = {
+      model: params.model,
+      messages: params.messages,
+      options: params.options || {},
+      stream: false
+    };
+    
+    console.log(`Making chat request to: ${apiUrl}`, requestBody);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        ...params,
-        stream: false, // We'll handle the full response directly
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -274,7 +343,19 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
     return data.message?.content || '';
   } catch (error) {
     console.error('Error generating chat completion:', error);
-    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    
+    // Check if we're on HTTPS and might need the extension
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const extensionAvailable = typeof window !== 'undefined' && window.OllamaBridge && window.OllamaBridge.isAvailable;
+    
+    let errorMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    
+    // Add helpful extension-related message for HTTPS sites
+    if (isHttps && !extensionAvailable) {
+      errorMessage += `\n\nSince this site is using HTTPS, you may need to install the Ollama Bridge extension to connect to your local Ollama instance.`;
+    }
+    
+    return errorMessage;
   }
 }
 
@@ -293,6 +374,13 @@ export async function debugOllamaStatus(): Promise<void> {
   
   console.group('🔍 Ollama Bridge Debug Info');
   
+  // Window object inspection
+  console.log(`OllamaBridge object exists on window: ${typeof window.OllamaBridge !== 'undefined' ? '✅ Yes' : '❌ No'}`);
+  if (window.OllamaBridge) {
+    console.log('OllamaBridge properties:', Object.keys(window.OllamaBridge));
+    console.log('OllamaBridge.isAvailable:', window.OllamaBridge.isAvailable);
+  }
+  
   // Extension status
   const extensionAvailable = await checkExtensionAvailability();
   console.log(`Extension detected: ${extensionAvailable ? '✅ Yes' : '❌ No'}`);
@@ -303,19 +391,46 @@ export async function debugOllamaStatus(): Promise<void> {
   console.log(`Active endpoint: ${endpoint || 'None'}`);
   console.log(`Connection status: ${endpoint ? '✅ Connected' : '❌ Disconnected'}`);
   
+  // Path detection test
+  const chatApiPath = getApiPath('/api/chat');
+  const tagsApiPath = getApiPath('/api/tags');
+  console.log(`Chat API path: ${chatApiPath}`);
+  console.log(`Tags API path: ${tagsApiPath}`);
+  
   // Try a basic API call
-  if (endpoint) {
-    try {
-      const response = await fetch(`${endpoint}/api/tags`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ API test successful', data);
-      } else {
-        console.log(`❌ API test failed: ${response.status} ${response.statusText}`);
-      }
-    } catch (error) {
-      console.log(`❌ API test error: ${error instanceof Error ? error.message : String(error)}`);
+  console.log('Attempting API test call...');
+  try {
+    // Use getApiPath to get the correct URL
+    const apiUrl = getApiPath('/api/tags');
+    console.log(`Making test request to: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ API test successful', data);
+    } else {
+      const errorText = await response.text();
+      console.log(`❌ API test failed: ${response.status} ${response.statusText}`);
+      console.log(`Error details: ${errorText}`);
     }
+  } catch (error) {
+    console.log(`❌ API test error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log('Full error:', error);
+  }
+  
+  console.log('Testing chat completion API...');
+  try {
+    const result = await generateChatCompletion({
+      model: 'llama3',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+    console.log('✅ Chat completion test successful:', result.slice(0, 50) + '...');
+  } catch (error) {
+    console.log(`❌ Chat completion test error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log('Full error:', error);
   }
   
   console.groupEnd();
