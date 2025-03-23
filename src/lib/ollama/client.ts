@@ -31,6 +31,10 @@ const POSSIBLE_HOSTS = [
   'http://127.0.0.1:11434',
 ];
 
+// Safe access to chrome APIs
+const runtime = typeof chrome !== 'undefined' ? chrome.runtime : undefined;
+const getManifest = runtime ? () => runtime.getManifest() : () => ({ version: '1.0.0' });
+
 /**
  * Configure whether to prefer using the extension even when direct connection is possible
  */
