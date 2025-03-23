@@ -9,6 +9,12 @@ import JSONResumeViewer from './JSONResumeViewer';
 import DesktopIcons from './DesktopIcons';
 import Taskbar from './Taskbar';
 import JarvisAssistant from './JarvisAssistant';
+import MP3Player from './media/MP3Player';
+import VLCPlayer from './media/VLCPlayer';
+import Terminal from './Terminal';
+import TerminalChat from './TerminalChat';
+import TextEditor from './TextEditor';
+import DOSPlayer from './games/Doom';
 
 // Kali Linux theme colors
 const kaliTheme = {
@@ -42,6 +48,7 @@ interface Window {
   isResizing?: boolean;
   minSize?: { width: number; height: number };
   maxSize?: { width: number; height: number };
+  type: string;
 }
 
 // Using string type for agent instead of enum to match component expectations
@@ -60,8 +67,6 @@ interface LinuxDesktopProps {
 
 // Import new components
 import Doom from './games/Doom';
-import MP3Player from './media/MP3Player';
-import VLCPlayer from './media/VLCPlayer';
 
 const LinuxDesktop = ({
   initialView,
@@ -140,7 +145,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 100, y: 50 },
         size: { width: 800, height: 600 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'terminal'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -179,7 +185,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 150, y: 70 },
         size: { width: 800, height: 800 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'resume'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -238,7 +245,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 200, y: 100 },
         size: { width: 600, height: 500 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'about'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -323,7 +331,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 200, y: 120 },
         size: { width: 400, height: 500 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'social'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -398,7 +407,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 250, y: 100 },
         size: { width: 600, height: 500 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'projects'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -438,7 +448,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 120, y: 60 },
         size: { width: 900, height: 700 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'flowchart'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -480,7 +491,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 150, y: 80 },
         size: { width: 900, height: 700 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'agent-select'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -514,13 +526,14 @@ const LinuxDesktop = ({
       // Create a new Doom window
       const newWindow: Window = {
         id: 'doom',
-        title: 'DOOM - Kali Linux',
-        content: <Doom />,
+        title: 'DOS Games',
+        content: <DOSPlayer onClose={() => handleCloseWindow('doom')} />,
         isActive: true,
         isMinimized: false,
         position: { x: 180, y: 80 },
         size: { width: 640, height: 600 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'dosplayer'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -551,7 +564,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 220, y: 100 },
         size: { width: 350, height: 600 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'mp3player'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
@@ -582,7 +596,8 @@ const LinuxDesktop = ({
         isMinimized: false,
         position: { x: 200, y: 120 },
         size: { width: 700, height: 500 },
-        zIndex: highestZIndex + 1
+        zIndex: highestZIndex + 1,
+        type: 'vlcplayer'
       };
       
       setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
