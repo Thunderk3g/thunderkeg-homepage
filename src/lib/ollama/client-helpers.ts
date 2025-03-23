@@ -5,12 +5,14 @@
 import { 
   isOllamaAvailable, 
   generateChatCompletion, 
-  getOllamaModels as fetchOllamaModels
+  getOllamaModels as fetchOllamaModels,
+  isUsingExtension
 } from '@/lib/ollama/client';
 import type { ChatMessage, ResumeData } from '@/lib/ollama/types';
 
-// Re-export the types
+// Re-export the types and functions
 export type { ResumeData, ChatMessage } from '@/lib/ollama/types';
+export { isUsingExtension } from '@/lib/ollama/client';
 
 // Define model details interface
 export interface ModelDetails {
@@ -137,11 +139,19 @@ export async function sendChatMessage(messages: ChatMessage[], model: string, ag
   } catch (error) {
     console.error('Error sending chat message:', error);
     
+    // Check if we're on HTTPS and might need the extension
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    let extensionMessage = '';
+    
+    if (isHttps) {
+      extensionMessage = `\n4. If you're accessing this site via HTTPS, install the Ollama Bridge extension to connect securely to your local Ollama instance`;
+    }
+    
     return `Sorry, I couldn't connect to the Ollama server. Please make sure:
     
 1. Ollama is installed on your system (https://ollama.com)
 2. The Ollama service is running (run 'ollama serve' in a terminal)
-3. Your browser isn't blocking connections to the Ollama API
+3. Your browser isn't blocking connections to the Ollama API${extensionMessage}
 
 Error details: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }

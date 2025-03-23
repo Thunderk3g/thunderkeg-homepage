@@ -10,6 +10,7 @@ An interactive terminal-style portfolio website featuring AI agents powered by O
   - **Personal Agent**: Shares information about interests, projects, and collaboration opportunities
   
 - **Local AI with Ollama**: Connect to your local Ollama instance for AI completion
+- **Ollama Bridge Extension**: Securely connect to local Ollama API from HTTPS sites
 - **RAG Integration**: Retrieval Augmented Generation with resume data
 - **Vim-Like Experience**: Normal/insert modes, command history, terminal commands
 
@@ -18,6 +19,7 @@ An interactive terminal-style portfolio website featuring AI agents powered by O
 - **Frontend**: Next.js, TypeScript, TailwindCSS
 - **Animation**: Framer Motion for smooth transitions
 - **AI Integration**: Ollama API, RAG implementation
+- **Browser Extension**: Chrome/Firefox extension for secure Ollama access
 - **UI**: Terminal-inspired components with Vim-like interactions
 - **Icons**: Lucide React
 
@@ -99,6 +101,22 @@ For production deployment, you'll need to:
 1. Set up an Ollama instance accessible to your deployed application
 2. Configure environment variables on your hosting platform
 3. Deploy the Next.js application to Vercel, Netlify, or similar
+
+## Ollama Bridge Extension
+
+This portfolio includes an optional browser extension that allows secure communication between the HTTPS website and your local Ollama API (HTTP). This solves the "mixed content" security restriction in modern browsers.
+
+### Why the Extension is Needed
+
+When accessing the portfolio via HTTPS, browsers block requests to HTTP services (like the local Ollama API) due to security restrictions. The extension creates a secure bridge to enable this communication.
+
+### Using the Extension
+
+1. Install the extension from the Chrome/Firefox store
+2. Make sure Ollama is running locally
+3. Visit the portfolio website - it will automatically detect and use the extension
+
+For more details about the extension, see [OLLAMA_BRIDGE.md](./OLLAMA_BRIDGE.md).
 
 ## License
 

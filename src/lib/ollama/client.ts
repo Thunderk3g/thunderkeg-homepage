@@ -5,8 +5,20 @@
 // Use absolute path to ensure TypeScript finds the module
 import { OllamaGenerateParams, OllamaChatParams, OllamaChatMessage } from '@/lib/ollama/types';
 
+// Add OllamaBridge type declaration
+declare global {
+  interface Window {
+    OllamaBridge?: {
+      isAvailable: boolean;
+    };
+  }
+}
+
 // Store the successful Ollama endpoint
 let cachedOllamaEndpoint: string | null = null;
+
+// Add extension detection
+let isExtensionAvailable: boolean | null = null;
 
 // Possible Ollama hosts to try when discovering endpoint
 const POSSIBLE_HOSTS = [
@@ -17,11 +29,37 @@ const POSSIBLE_HOSTS = [
 ];
 
 /**
+ * Check if Ollama Bridge extension is available
+ */
+export async function checkExtensionAvailability(): Promise<boolean> {
+  if (isExtensionAvailable !== null) {
+    return isExtensionAvailable;
+  }
+  
+  if (typeof window !== 'undefined' && window.OllamaBridge && window.OllamaBridge.isAvailable) {
+    isExtensionAvailable = true;
+    return true;
+  }
+  
+  isExtensionAvailable = false;
+  return false;
+}
+
+/**
  * Discover Ollama API endpoint by trying different possible URLs
  */
 export async function discoverOllamaEndpoint(): Promise<string | null> {
   // Check if we already have a cached endpoint
   if (cachedOllamaEndpoint) {
+    return cachedOllamaEndpoint;
+  }
+
+  // First check if the extension is available
+  const extensionAvailable = await checkExtensionAvailability();
+  if (extensionAvailable) {
+    // If extension is available, we can use localhost directly
+    // The extension will intercept these requests
+    cachedOllamaEndpoint = 'http://localhost:11434';
     return cachedOllamaEndpoint;
   }
 
@@ -87,6 +125,14 @@ export async function getOllamaModels(): Promise<string[]> {
     console.error('Error fetching Ollama models:', error);
     return [];
   }
+}
+
+/**
+ * Check if we're using the Ollama Bridge extension
+ */
+export async function isUsingExtension(): Promise<boolean> {
+  await discoverOllamaEndpoint(); // This will set the extension availability
+  return isExtensionAvailable === true;
 }
 
 /**

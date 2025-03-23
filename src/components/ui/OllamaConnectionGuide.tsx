@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { checkOllamaAvailability, getOllamaModels } from '@/lib/ollama/client-helpers';
+import { isUsingExtension } from '@/lib/ollama/client';
 import { motion } from 'framer-motion';
-import { Code } from 'lucide-react';
+import { Code, Download } from 'lucide-react';
 
 const OllamaConnectionGuide = () => {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [showGuide, setShowGuide] = useState(false);
+  const [usingExtension, setUsingExtension] = useState<boolean>(false);
 
   // Periodically check Ollama availability
   useEffect(() => {
@@ -20,6 +22,10 @@ const OllamaConnectionGuide = () => {
         if (available) {
           const models = await getOllamaModels();
           setAvailableModels(models);
+          
+          // Check if we're using the extension
+          const extensionEnabled = await isUsingExtension();
+          setUsingExtension(extensionEnabled);
         }
       } catch (error) {
         console.error('Error checking Ollama status:', error);
@@ -59,7 +65,7 @@ const OllamaConnectionGuide = () => {
               {isAvailable === null 
                 ? 'Checking...' 
                 : isAvailable 
-                  ? 'Connected' 
+                  ? usingExtension ? 'Connected via Extension' : 'Connected'
                   : 'Disconnected'}
             </span>
           </div>
@@ -69,7 +75,7 @@ const OllamaConnectionGuide = () => {
       <div className="mb-4">
         <p className="text-gray-300">
           {isAvailable 
-            ? `Connected to Ollama with ${availableModels.length} models available.` 
+            ? `Connected to Ollama with ${availableModels.length} models available${usingExtension ? ' via Ollama Bridge extension' : ''}.` 
             : 'Connect to your local Ollama instance to use AI features offline.'}
         </p>
       </div>
@@ -126,7 +132,28 @@ const OllamaConnectionGuide = () => {
           </div>
           
           <div>
-            <h4 className="text-white font-medium mb-2">5. Privacy Benefits</h4>
+            <h4 className="text-white font-medium mb-2">5. Ollama Bridge Extension</h4>
+            <p className="text-gray-300 mb-2">
+              If you're accessing this site via HTTPS, you'll need our browser extension to securely connect to your local Ollama instance.
+            </p>
+            <a 
+              href="#" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Extension
+            </a>
+            <p className="text-gray-400 text-sm mt-2">
+              {usingExtension 
+                ? '✓ Extension detected - you can now use local Ollama models securely over HTTPS!'
+                : 'The extension creates a secure bridge between this website and your local Ollama instance.'}
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-medium mb-2">6. Privacy Benefits</h4>
             <p className="text-gray-300">
               Using Ollama locally means all your data and interactions remain on your machine. No data is sent to external servers, providing complete privacy and control.
             </p>
