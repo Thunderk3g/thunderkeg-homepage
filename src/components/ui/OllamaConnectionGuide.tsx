@@ -9,12 +9,6 @@ const OllamaConnectionGuide = () => {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [showGuide, setShowGuide] = useState(false);
-  const [isProduction, setIsProduction] = useState(false);
-
-  // Check if we're in production environment
-  useEffect(() => {
-    setIsProduction(process.env.NODE_ENV === 'production');
-  }, []);
 
   // Periodically check Ollama availability
   useEffect(() => {
@@ -73,14 +67,6 @@ const OllamaConnectionGuide = () => {
       </div>
 
       <div className="mb-4">
-        {isProduction && (
-          <div className="bg-blue-900/50 border border-blue-700 p-3 rounded mb-3">
-            <p className="text-blue-200 text-sm">
-              <strong>Note:</strong> In production, all Ollama API requests are securely proxied through this site's API.
-              For this to work, you still need to run Ollama locally on your computer.
-            </p>
-          </div>
-        )}
         <p className="text-gray-300">
           {isAvailable 
             ? `Connected to Ollama with ${availableModels.length} models available.` 
