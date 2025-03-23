@@ -20,6 +20,9 @@ let cachedOllamaEndpoint: string | null = null;
 // Add extension detection
 let isExtensionAvailable: boolean | null = null;
 
+// Add preference for using extension (defaults to true)
+let preferExtension: boolean = true;
+
 // Possible Ollama hosts to try when discovering endpoint
 const POSSIBLE_HOSTS = [
   'http://localhost:11434',
@@ -29,18 +32,57 @@ const POSSIBLE_HOSTS = [
 ];
 
 /**
+ * Configure whether to prefer using the extension even when direct connection is possible
+ */
+export function setPreferExtension(prefer: boolean): void {
+  preferExtension = prefer;
+  // Clear the cached endpoint to force rediscovery
+  cachedOllamaEndpoint = null;
+}
+
+/**
+ * Get current extension preference setting
+ */
+export function getPreferExtension(): boolean {
+  return preferExtension;
+}
+
+/**
  * Check if Ollama Bridge extension is available
+ * This uses a retry mechanism to handle cases where the extension
+ * might load after our code checks for it
  */
 export async function checkExtensionAvailability(): Promise<boolean> {
+  // If we've already checked, return the cached result
   if (isExtensionAvailable !== null) {
     return isExtensionAvailable;
   }
   
+  // If OllamaBridge already exists, return immediately
   if (typeof window !== 'undefined' && window.OllamaBridge && window.OllamaBridge.isAvailable) {
+    console.log('🔌 Ollama Bridge extension detected!');
     isExtensionAvailable = true;
     return true;
   }
   
+  // Otherwise, try a few times with a delay
+  const maxRetries = 3;
+  let retryCount = 0;
+  
+  while (retryCount < maxRetries) {
+    // Wait 500ms before trying again
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    if (typeof window !== 'undefined' && window.OllamaBridge && window.OllamaBridge.isAvailable) {
+      console.log(`🔌 Ollama Bridge extension detected after ${retryCount + 1} retries!`);
+      isExtensionAvailable = true;
+      return true;
+    }
+    
+    retryCount++;
+  }
+  
+  console.log(`Ollama Bridge extension not detected after ${maxRetries} attempts`);
   isExtensionAvailable = false;
   return false;
 }
@@ -56,9 +98,10 @@ export async function discoverOllamaEndpoint(): Promise<string | null> {
 
   // First check if the extension is available
   const extensionAvailable = await checkExtensionAvailability();
-  if (extensionAvailable) {
-    // If extension is available, we can use localhost directly
-    // The extension will intercept these requests
+  
+  // If extension is available and we prefer using it, use it immediately
+  if (extensionAvailable && preferExtension) {
+    console.log('Using Ollama Bridge extension for API communication');
     cachedOllamaEndpoint = 'http://localhost:11434';
     return cachedOllamaEndpoint;
   }
@@ -90,6 +133,13 @@ export async function discoverOllamaEndpoint(): Promise<string | null> {
       // Connection failed, try next host
       console.warn(`Failed to connect to Ollama at ${host}`);
     }
+  }
+
+  // If we couldn't connect directly but have the extension, use it as fallback
+  if (extensionAvailable) {
+    console.log('Using Ollama Bridge extension as fallback');
+    cachedOllamaEndpoint = 'http://localhost:11434';
+    return cachedOllamaEndpoint;
   }
 
   return null;
@@ -226,3 +276,48 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
 
 // Exports
 export type { OllamaChatMessage }; 
+
+/**
+ * Debug function to check Ollama status from browser console
+ * Call this with debugOllamaStatus() in the console to see current status
+ */
+export async function debugOllamaStatus(): Promise<void> {
+  if (typeof window === 'undefined') {
+    console.log('Cannot run debug in server context');
+    return;
+  }
+  
+  console.group('🔍 Ollama Bridge Debug Info');
+  
+  // Extension status
+  const extensionAvailable = await checkExtensionAvailability();
+  console.log(`Extension detected: ${extensionAvailable ? '✅ Yes' : '❌ No'}`);
+  console.log(`Extension preference: ${getPreferExtension() ? '✅ Preferred' : '❌ Not preferred'}`);
+  
+  // Connection status
+  const endpoint = await discoverOllamaEndpoint();
+  console.log(`Active endpoint: ${endpoint || 'None'}`);
+  console.log(`Connection status: ${endpoint ? '✅ Connected' : '❌ Disconnected'}`);
+  
+  // Try a basic API call
+  if (endpoint) {
+    try {
+      const response = await fetch(`${endpoint}/api/tags`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ API test successful', data);
+      } else {
+        console.log(`❌ API test failed: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.log(`❌ API test error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  console.groupEnd();
+}
+
+// Add debug function to window for easy console access
+if (typeof window !== 'undefined') {
+  (window as any).debugOllamaStatus = debugOllamaStatus;
+} 

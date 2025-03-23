@@ -2,20 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { checkOllamaAvailability, getOllamaModels } from '@/lib/ollama/client-helpers';
-import { isUsingExtension } from '@/lib/ollama/client';
+import { isUsingExtension, setPreferExtension, getPreferExtension } from '@/lib/ollama/client';
 import { motion } from 'framer-motion';
-import { Code, Download } from 'lucide-react';
+import { Code, Download, Check, X } from 'lucide-react';
 
 const OllamaConnectionGuide = () => {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [showGuide, setShowGuide] = useState(false);
   const [usingExtension, setUsingExtension] = useState<boolean>(false);
+  const [preferExtension, setPreferExtensionState] = useState<boolean>(true);
 
   // Periodically check Ollama availability
   useEffect(() => {
     const checkStatus = async () => {
       try {
+        // Get current preference setting
+        setPreferExtensionState(getPreferExtension());
+        
         const available = await checkOllamaAvailability();
         setIsAvailable(available);
         
@@ -43,6 +47,40 @@ const OllamaConnectionGuide = () => {
 
   const toggleGuide = () => {
     setShowGuide(!showGuide);
+  };
+  
+  // Handle toggling extension preference
+  const toggleExtensionPreference = () => {
+    const newValue = !preferExtension;
+    setPreferExtensionState(newValue);
+    setPreferExtension(newValue);
+    
+    // Force a status refresh
+    checkOllamaAvailability().then(available => {
+      setIsAvailable(available);
+      if (available) {
+        isUsingExtension().then(usingExt => setUsingExtension(usingExt));
+      }
+    });
+  };
+
+  // Manually check for extension
+  const checkForExtension = async () => {
+    // Force clear the cached result
+    setPreferExtensionState(getPreferExtension());
+    
+    // Check for extension
+    const extensionAvailable = await isUsingExtension();
+    setUsingExtension(extensionAvailable);
+    
+    // Now check connection
+    const available = await checkOllamaAvailability();
+    setIsAvailable(available);
+    
+    if (available) {
+      const models = await getOllamaModels();
+      setAvailableModels(models);
+    }
   };
 
   return (
@@ -78,6 +116,21 @@ const OllamaConnectionGuide = () => {
             ? `Connected to Ollama with ${availableModels.length} models available${usingExtension ? ' via Ollama Bridge extension' : ''}.` 
             : 'Connect to your local Ollama instance to use AI features offline.'}
         </p>
+      </div>
+      
+      {/* Extension preference toggle */}
+      <div className="mb-4 flex items-center justify-between bg-gray-900 p-3 rounded">
+        <span className="text-gray-300">Always use extension</span>
+        <button 
+          onClick={toggleExtensionPreference}
+          className={`w-12 h-6 rounded-full p-1 transition-colors ${
+            preferExtension ? 'bg-blue-600' : 'bg-gray-700'
+          }`}
+        >
+          <div className={`w-4 h-4 rounded-full bg-white transform transition-transform ${
+            preferExtension ? 'translate-x-6' : 'translate-x-0'
+          }`} />
+        </button>
       </div>
 
       <button
@@ -136,20 +189,54 @@ const OllamaConnectionGuide = () => {
             <p className="text-gray-300 mb-2">
               If you're accessing this site via HTTPS, you'll need our browser extension to securely connect to your local Ollama instance.
             </p>
-            <a 
-              href="#" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-2"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download Extension
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a 
+                href="#" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Extension
+              </a>
+              <button
+                onClick={checkForExtension}
+                className="inline-flex items-center bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded"
+              >
+                Check Extension
+              </button>
+            </div>
             <p className="text-gray-400 text-sm mt-2">
               {usingExtension 
                 ? '✓ Extension detected - you can now use local Ollama models securely over HTTPS!'
                 : 'The extension creates a secure bridge between this website and your local Ollama instance.'}
             </p>
+            
+            <div className="mt-2 bg-gray-900 p-3 rounded text-sm border-l-4 border-yellow-500">
+              <p className="text-gray-300">
+                <strong>Extension detection status:</strong><br/>
+                {usingExtension ? (
+                  <span className="flex items-center text-green-400">
+                    <Check size={16} className="mr-2" /> Extension detected and active
+                  </span>
+                ) : (
+                  <span className="flex items-center text-yellow-400">
+                    <X size={16} className="mr-2" /> Extension not detected
+                  </span>
+                )}
+              </p>
+              <p className="text-gray-400 mt-2">
+                {preferExtension 
+                  ? "The extension will be used whenever available, even for local HTTP connections."
+                  : "The extension will only be used when direct connections aren't possible."}
+              </p>
+              <p className="text-gray-400 mt-2">
+                <strong>Troubleshooting:</strong><br/>
+                1. Make sure extension is installed and enabled<br/>
+                2. Refresh this page after installing<br/>
+                3. Open DevTools console (F12) and run: <code>window.debugOllamaStatus()</code> 
+              </p>
+            </div>
           </div>
           
           <div>
