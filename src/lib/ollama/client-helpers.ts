@@ -102,15 +102,14 @@ export async function sendChatMessage(messages: ChatMessage[], model: string, ag
   const resumeData = await getResumeData();
   
   try {
-    // First check if Ollama is available
-    const ollamaAvailable = await checkOllamaAvailability();
-    if (!ollamaAvailable) {
-      throw new Error("Could not connect to Ollama server");
+    // Always include the model parameter
+    if (!model) {
+      throw new Error("Missing required 'model' parameter");
     }
     
     // Convert ChatMessage format to OllamaChatMessage format
     const formattedMessages = messages.map(msg => ({
-      role: msg.role, 
+      role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content
     }));
     
@@ -126,7 +125,44 @@ export async function sendChatMessage(messages: ChatMessage[], model: string, ag
       });
     }
     
-    // Call the Ollama API directly
+    if (agentType === 'resume') {
+      // For resume agent, use the resume endpoint
+      try {
+        const resumeResponse = await fetch('/api/resume', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: formattedMessages
+          })
+        });
+        
+        if (!resumeResponse.ok) {
+          const errorText = await resumeResponse.text();
+          throw new Error(`Resume API error: ${errorText || resumeResponse.statusText}`);
+        }
+        
+        const data = await resumeResponse.json();
+        
+        // Handle both chat and generate API response formats
+        if (data.message?.content) {
+          // Chat API format
+          return data.message.content;
+        } else if (data.response) {
+          // Generate API format
+          return data.response;
+        } else {
+          return data.toString();
+        }
+      } catch (error) {
+        console.error('Error using resume endpoint:', error);
+        throw error;
+      }
+    }
+    
+    // For other agent types, use the generateChatCompletion function
     const response = await generateChatCompletion({
       model,
       messages: formattedMessages,
@@ -142,16 +178,21 @@ export async function sendChatMessage(messages: ChatMessage[], model: string, ag
     // Check if we're on HTTPS and might need the extension
     const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
     let extensionMessage = '';
+    let corsMessage = '';
     
     if (isHttps) {
-      extensionMessage = `\n4. If you're accessing this site via HTTPS, install the Ollama Bridge extension to connect securely to your local Ollama instance`;
+      extensionMessage = `\n4. If you're accessing this site via HTTPS, make sure the Ollama Bridge extension is installed and enabled`;
+    }
+    
+    if (error instanceof Error && error.message.includes('403')) {
+      corsMessage = `\n5. You may need to restart Ollama with CORS enabled: "OLLAMA_ORIGINS=* ollama serve"`;
     }
     
     return `Sorry, I couldn't connect to the Ollama server. Please make sure:
     
 1. Ollama is installed on your system (https://ollama.com)
 2. The Ollama service is running (run 'ollama serve' in a terminal)
-3. Your browser isn't blocking connections to the Ollama API${extensionMessage}
+3. You have the required models installed (run 'ollama pull ${model}')${extensionMessage}${corsMessage}
 
 Error details: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }

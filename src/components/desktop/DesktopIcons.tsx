@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Terminal, File, User, Info, Code, Link, Folder, Volume2 } from 'lucide-react';
+import { Terminal, File, User, Info, Code, Link, Folder, Volume2, Music, Film, Gamepad2 } from 'lucide-react';
 
 interface DesktopIcon {
   id: string;
@@ -9,6 +9,7 @@ interface DesktopIcon {
   icon: React.ReactNode;
   action: () => void;
   position?: { gridRow: number; gridColumn: number };
+  role?: 'both' | 'recruiter' | 'collaborator'; // Which user role can see this icon
 }
 
 interface DesktopIconsProps {
@@ -18,6 +19,10 @@ interface DesktopIconsProps {
   onOpenProjects: () => void;
   onOpenSocialLinks: () => void;
   onOpenJarvis: () => void;
+  onOpenDoom?: () => void;
+  onOpenMP3Player?: () => void;
+  onOpenVLCPlayer?: () => void;
+  userRole: 'recruiter' | 'collaborator' | null;
 }
 
 const DesktopIcons: React.FC<DesktopIconsProps> = ({
@@ -27,59 +32,94 @@ const DesktopIcons: React.FC<DesktopIconsProps> = ({
   onOpenProjects,
   onOpenSocialLinks,
   onOpenJarvis,
+  onOpenDoom,
+  onOpenMP3Player,
+  onOpenVLCPlayer,
+  userRole
 }) => {
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
   
-  // Define desktop icons with specific grid positions
+  // Define desktop icons with specific grid positions and role requirements
   const icons: DesktopIcon[] = [
     {
       id: 'terminal',
       label: 'Terminal',
       icon: <Terminal className="w-8 h-8 text-green-400" />,
       action: onOpenTerminal,
-      position: { gridRow: 1, gridColumn: 1 }
+      position: { gridRow: 1, gridColumn: 1 },
+      role: 'both'
     },
     {
       id: 'resume',
       label: 'Resume',
       icon: <File className="w-8 h-8 text-blue-400" />,
       action: onOpenResume,
-      position: { gridRow: 2, gridColumn: 1 }
+      position: { gridRow: 2, gridColumn: 1 },
+      role: 'both'
     },
     {
       id: 'about',
       label: 'About Me',
       icon: <User className="w-8 h-8 text-purple-400" />,
       action: onOpenAbout,
-      position: { gridRow: 3, gridColumn: 1 }
+      position: { gridRow: 3, gridColumn: 1 },
+      role: 'both'
     },
     {
       id: 'projects',
       label: 'Projects',
       icon: <Code className="w-8 h-8 text-yellow-400" />,
       action: onOpenProjects,
-      position: { gridRow: 4, gridColumn: 1 }
+      position: { gridRow: 4, gridColumn: 1 },
+      role: 'both'
     },
     {
       id: 'social',
       label: 'Social Links',
       icon: <Link className="w-8 h-8 text-red-400" />,
       action: onOpenSocialLinks,
-      position: { gridRow: 5, gridColumn: 1 }
+      position: { gridRow: 5, gridColumn: 1 },
+      role: 'both'
     },
     {
       id: 'jarvis',
       label: 'Jarvis',
       icon: <Volume2 className="w-8 h-8 text-cyan-400" />,
       action: onOpenJarvis,
-      position: { gridRow: 6, gridColumn: 1 }
+      position: { gridRow: 6, gridColumn: 1 },
+      role: 'both'
     },
     {
       id: 'documents',
       label: 'Documents',
       icon: <Folder className="w-8 h-8 text-yellow-300" />,
       action: () => {}, // Placeholder for future functionality
-      position: { gridRow: 7, gridColumn: 1 }
+      position: { gridRow: 7, gridColumn: 1 },
+      role: 'both'
+    },
+    {
+      id: 'doom',
+      label: 'Doom',
+      icon: <Gamepad2 className="w-8 h-8 text-green-300" />,
+      action: onOpenDoom || (() => {}),
+      position: { gridRow: 1, gridColumn: 2 },
+      role: 'collaborator'
+    },
+    {
+      id: 'mp3player',
+      label: 'MP3 Player',
+      icon: <Music className="w-8 h-8 text-pink-400" />,
+      action: onOpenMP3Player || (() => {}),
+      position: { gridRow: 2, gridColumn: 2 },
+      role: 'collaborator'
+    },
+    {
+      id: 'vlcplayer',
+      label: 'VLC Player',
+      icon: <Film className="w-8 h-8 text-orange-400" />,
+      action: onOpenVLCPlayer || (() => {}),
+      position: { gridRow: 3, gridColumn: 2 },
+      role: 'collaborator'
     }
   ];
   
@@ -116,9 +156,15 @@ const DesktopIcons: React.FC<DesktopIconsProps> = ({
     // Future implementation for right-click menu
   };
   
+  // Filter icons based on user role
+  const filteredIcons = icons.filter(icon => {
+    if (!icon.role || icon.role === 'both') return true;
+    return userRole === icon.role;
+  });
+  
   return (
     <div className="desktop-icons-grid absolute left-0 top-0 grid grid-cols-12 gap-1 p-2 pointer-events-none">
-      {icons.map((icon) => (
+      {filteredIcons.map((icon) => (
         <div
           key={icon.id}
           className={`desktop-icon col-start-${icon.position?.gridColumn || 1} row-start-${icon.position?.gridRow || 1} w-20 h-24 flex flex-col items-center justify-center p-2 pointer-events-auto cursor-pointer ${

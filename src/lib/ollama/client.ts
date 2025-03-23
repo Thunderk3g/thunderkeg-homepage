@@ -167,9 +167,10 @@ export async function isOllamaAvailable(): Promise<boolean> {
  * Helper function to get the correct API path based on whether extension is being used
  */
 export function getApiPath(path: string): string {
-  // If using the extension, use relative paths (the extension expects relative paths)
+  // If using the extension, use the full localhost URL instead of relative paths
   if (typeof window !== 'undefined' && window.OllamaBridge && window.OllamaBridge.isAvailable) {
-    return path; // e.g. '/api/chat'
+    // The extension expects absolute URLs to the Ollama server
+    return `http://localhost:11434${path}`;
   }
   
   // If we have a cached endpoint, use it with the path
@@ -298,16 +299,13 @@ export async function generateCompletion(params: OllamaGenerateParams): Promise<
  * Generate a chat completion with Ollama
  */
 export async function generateChatCompletion(params: OllamaChatParams): Promise<string> {
-  const endpoint = await discoverOllamaEndpoint();
-  if (!endpoint) {
-    return "Couldn't connect to Ollama. Please make sure it's running locally.";
-  }
-
+  // First check if extension is available
+  const isExtensionAvailable = typeof window !== 'undefined' && 
+                               window.OllamaBridge && 
+                               window.OllamaBridge.isAvailable;
+  
   try {
-    // Use the getApiPath helper for consistent URL handling
-    const apiUrl = getApiPath('/api/chat');
-    
-    // Validate required parameters
+    // Make sure model is always included in the request
     if (!params.model || typeof params.model !== 'string') {
       throw new Error('Invalid model parameter: model must be a string');
     }
@@ -316,31 +314,163 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
       throw new Error('Invalid messages parameter: messages must be a non-empty array');
     }
     
-    // Format the request exactly as Ollama API expects
-    const requestBody = {
-      model: params.model,
-      messages: params.messages,
-      options: params.options || {},
-      stream: false
-    };
-    
-    console.log(`Making chat request to: ${apiUrl}`, requestBody);
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Ollama API error: ${errorText || response.statusText}`);
+    if (isExtensionAvailable) {
+      // Use the extension for all API calls when available
+      console.log(`Using Ollama Bridge extension with model: ${params.model}`);
+      
+      try {
+        // Try the /api/chat endpoint first (newer Ollama versions)
+        // Use getApiPath to get the correct URL for the Ollama server
+        const apiUrl = getApiPath('/api/chat');
+        console.log(`Making chat request via extension to: ${apiUrl}`, params);
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...params,
+            stream: false
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.message?.content || '';
+        } else if (response.status === 404) {
+          // Fall back to /api/generate for older Ollama versions
+          console.log('Chat endpoint not available, falling back to generate endpoint');
+          
+          // Convert messages to a prompt for the generate API
+          let prompt = '';
+          if (params.messages && params.messages.length > 0) {
+            for (const msg of params.messages) {
+              if (msg.role === 'system') {
+                prompt += `System: ${msg.content}\n\n`;
+              } else if (msg.role === 'user') {
+                prompt += `User: ${msg.content}\n\n`;
+              } else if (msg.role === 'assistant') {
+                prompt += `Assistant: ${msg.content}\n\n`;
+              }
+            }
+            
+            // Add final prompt if the last message is from user
+            if (params.messages[params.messages.length-1].role === 'user') {
+              prompt += 'Assistant: ';
+            }
+          }
+          
+          // Call the generate API using getApiPath
+          const generateUrl = getApiPath('/api/generate');
+          console.log(`Falling back to generate API via extension: ${generateUrl}`);
+          
+          const generateResponse = await fetch(generateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: params.model,
+              prompt: prompt,
+              options: params.options || { temperature: 0.7 },
+              stream: false
+            }),
+          });
+          
+          if (!generateResponse.ok) {
+            const errorText = await generateResponse.text();
+            throw new Error(`Ollama API error: ${errorText || generateResponse.statusText}`);
+          }
+          
+          const generateData = await generateResponse.json();
+          return generateData.response || '';
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Ollama API error: ${errorText || response.statusText}`);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('403')) {
+          throw new Error(`CORS Error: Try restarting Ollama with CORS enabled: "OLLAMA_ORIGINS=* ollama serve"`);
+        }
+        throw error;
+      }
+    } else {
+      // No extension - use direct connection to Ollama
+      const endpoint = await discoverOllamaEndpoint();
+      if (!endpoint) {
+        return "Couldn't connect to Ollama. Please make sure it's running locally.";
+      }
+      
+      try {
+        // Try the /api/chat endpoint first (newer Ollama versions)
+        const apiUrl = getApiPath('/api/chat');
+        console.log(`Making chat request to: ${apiUrl}`, params);
+        
+        const chatResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: params.model,
+            messages: params.messages,
+            options: params.options || {},
+            stream: false
+          }),
+        });
+        
+        if (chatResponse.ok) {
+          const data = await chatResponse.json();
+          return data.message?.content || '';
+        } else if (chatResponse.status === 404) {
+          // Fall back to /api/generate for older Ollama versions
+          console.log('Chat endpoint not available, falling back to generate endpoint');
+          
+          // Convert messages to a prompt for the generate API
+          let prompt = '';
+          if (params.messages && params.messages.length > 0) {
+            for (const msg of params.messages) {
+              if (msg.role === 'system') {
+                prompt += `System: ${msg.content}\n\n`;
+              } else if (msg.role === 'user') {
+                prompt += `User: ${msg.content}\n\n`;
+              } else if (msg.role === 'assistant') {
+                prompt += `Assistant: ${msg.content}\n\n`;
+              }
+            }
+            
+            // Add final prompt if the last message is from user
+            if (params.messages[params.messages.length-1].role === 'user') {
+              prompt += 'Assistant: ';
+            }
+          }
+          
+          // Call the generate API with getApiPath
+          const generateUrl = getApiPath('/api/generate');
+          console.log(`Falling back to generate API: ${generateUrl}`, { model: params.model, prompt });
+          
+          const generateResponse = await fetch(generateUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: params.model,
+              prompt: prompt,
+              options: params.options || { temperature: 0.7 },
+              stream: false
+            }),
+          });
+          
+          if (!generateResponse.ok) {
+            const errorText = await generateResponse.text();
+            throw new Error(`Ollama API error: ${errorText || generateResponse.statusText}`);
+          }
+          
+          const generateData = await generateResponse.json();
+          return generateData.response || '';
+        } else {
+          const errorText = await chatResponse.text();
+          throw new Error(`Ollama API error: ${errorText || chatResponse.statusText}`);
+        }
+      } catch (error) {
+        console.error('Error connecting to Ollama:', error);
+        throw error;
+      }
     }
-
-    const data = await response.json();
-    return data.message?.content || '';
   } catch (error) {
     console.error('Error generating chat completion:', error);
     
@@ -353,6 +483,11 @@ export async function generateChatCompletion(params: OllamaChatParams): Promise<
     // Add helpful extension-related message for HTTPS sites
     if (isHttps && !extensionAvailable) {
       errorMessage += `\n\nSince this site is using HTTPS, you may need to install the Ollama Bridge extension to connect to your local Ollama instance.`;
+    }
+    
+    // Add CORS error help
+    if (error instanceof Error && error.message.includes('403')) {
+      errorMessage += `\n\nYou may need to restart Ollama with CORS enabled: "OLLAMA_ORIGINS=* ollama serve"`;
     }
     
     return errorMessage;

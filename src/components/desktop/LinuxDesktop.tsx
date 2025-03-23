@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import TerminalWindow from './TerminalWindow';
-import { X, Minus, Square, ChevronRight, File, Coffee, Code, Info, User, Home, Volume2 } from 'lucide-react';
+import { X, Minus, Square, ChevronRight, File, Coffee, Code, Info, User, Home, Volume2, Gamepad2, Music, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import LandingAnimation from '@/components/landing/LandingAnimation';
@@ -57,6 +57,11 @@ interface LinuxDesktopProps {
   ollamaAvailable: boolean;
   onOpenJarvis?: () => void;
 }
+
+// Import new components
+import Doom from './games/Doom';
+import MP3Player from './media/MP3Player';
+import VLCPlayer from './media/VLCPlayer';
 
 const LinuxDesktop = ({
   initialView,
@@ -492,6 +497,99 @@ const LinuxDesktop = ({
     setHighestZIndex(newZIndex);
   }, [highestZIndex]);
 
+  // Handle Doom game open
+  const handleDoomOpen = () => {
+    const doomExists = windows.some(win => win.id === 'doom');
+    
+    if (doomExists) {
+      // Make the existing Doom window active
+      setWindows(windows.map(win => {
+        if (win.id === 'doom') {
+          return { ...win, isActive: true, isMinimized: false, zIndex: highestZIndex + 1 };
+        }
+        return { ...win, isActive: false };
+      }));
+      setHighestZIndex(prev => prev + 1);
+    } else {
+      // Create a new Doom window
+      const newWindow: Window = {
+        id: 'doom',
+        title: 'DOOM - Kali Linux',
+        content: <Doom />,
+        isActive: true,
+        isMinimized: false,
+        position: { x: 180, y: 80 },
+        size: { width: 640, height: 600 },
+        zIndex: highestZIndex + 1
+      };
+      
+      setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
+      setHighestZIndex(prev => prev + 1);
+    }
+  };
+
+  // Handle MP3 Player open
+  const handleMP3PlayerOpen = () => {
+    const mp3PlayerExists = windows.some(win => win.id === 'mp3player');
+    
+    if (mp3PlayerExists) {
+      // Make the existing MP3 Player window active
+      setWindows(windows.map(win => {
+        if (win.id === 'mp3player') {
+          return { ...win, isActive: true, isMinimized: false, zIndex: highestZIndex + 1 };
+        }
+        return { ...win, isActive: false };
+      }));
+      setHighestZIndex(prev => prev + 1);
+    } else {
+      // Create a new MP3 Player window
+      const newWindow: Window = {
+        id: 'mp3player',
+        title: 'MP3 Player - Kali Linux',
+        content: <MP3Player />,
+        isActive: true,
+        isMinimized: false,
+        position: { x: 220, y: 100 },
+        size: { width: 350, height: 600 },
+        zIndex: highestZIndex + 1
+      };
+      
+      setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
+      setHighestZIndex(prev => prev + 1);
+    }
+  };
+
+  // Handle VLC Player open
+  const handleVLCPlayerOpen = () => {
+    const vlcPlayerExists = windows.some(win => win.id === 'vlcplayer');
+    
+    if (vlcPlayerExists) {
+      // Make the existing VLC Player window active
+      setWindows(windows.map(win => {
+        if (win.id === 'vlcplayer') {
+          return { ...win, isActive: true, isMinimized: false, zIndex: highestZIndex + 1 };
+        }
+        return { ...win, isActive: false };
+      }));
+      setHighestZIndex(prev => prev + 1);
+    } else {
+      // Create a new VLC Player window
+      const newWindow: Window = {
+        id: 'vlcplayer',
+        title: 'VLC Media Player - Kali Linux',
+        content: <VLCPlayer />,
+        isActive: true,
+        isMinimized: false,
+        position: { x: 200, y: 120 },
+        size: { width: 700, height: 500 },
+        zIndex: highestZIndex + 1
+      };
+      
+      setWindows([...windows.map(win => ({ ...win, isActive: false })), newWindow]);
+      setHighestZIndex(prev => prev + 1);
+    }
+  };
+
   // Window management functions
   const handleCloseWindow = (id: string) => {
     setWindows(windows.filter(window => window.id !== id));
@@ -812,6 +910,21 @@ const LinuxDesktop = ({
       name: 'Jarvis',
       icon: <Volume2 className="w-4 h-4 text-cyan-400" />,
       action: handleJarvisOpen
+    },
+    {
+      name: 'Doom',
+      icon: <Gamepad2 size={30} className="text-purple-400" />,
+      action: handleDoomOpen
+    },
+    {
+      name: 'MP3 Player',
+      icon: <Music size={30} className="text-green-400" />,
+      action: handleMP3PlayerOpen
+    },
+    {
+      name: 'VLC Player',
+      icon: <Film size={30} className="text-red-400" />,
+      action: handleVLCPlayerOpen
     }
   ];
 
@@ -955,6 +1068,10 @@ const LinuxDesktop = ({
           onOpenProjects={handleProjectsOpen}
           onOpenSocialLinks={handleSocialLinksOpen}
           onOpenJarvis={handleJarvisOpen}
+          onOpenDoom={handleDoomOpen}
+          onOpenMP3Player={handleMP3PlayerOpen}
+          onOpenVLCPlayer={handleVLCPlayerOpen}
+          userRole={userRole}
         />
 
         {/* Wallpaper selection menu */}
@@ -995,16 +1112,12 @@ const LinuxDesktop = ({
       
       {/* Taskbar */}
       <Taskbar 
-        windows={windows}
-        onMinimize={handleWindowMinimize}
-        onRestore={handleWindowRestore}
-        onFocus={handleWindowFocus}
-        ollamaAvailable={ollamaAvailable}
+        windows={windows.map(({ id, title, isActive, isMinimized }) => ({ id, title, isActive, isMinimized }))}
+        onWindowSelect={handleWindowSelect}
         onShowStartMenu={() => setShowStartMenu(!showStartMenu)}
-        showStartMenu={showStartMenu}
       />
       
-      {/* Start menu */}
+      {/* Start Menu */}
       {showStartMenu && (
         <div 
           className="absolute bottom-8 left-0 w-64 bg-gray-900 border border-gray-700 rounded shadow-lg z-50"

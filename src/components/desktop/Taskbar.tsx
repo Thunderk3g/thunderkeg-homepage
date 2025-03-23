@@ -1,97 +1,77 @@
 'use client';
 
 import React from 'react';
-import { Terminal, Settings, Clock, Wifi, Volume2, MessageSquare } from 'lucide-react';
-
-interface Window {
-  id: string;
-  title: string;
-  isActive: boolean;
-  isMinimized: boolean;
-  zIndex: number;
-}
+import { Terminal, FileText, User, Code, Link, Home, Volume2, Gamepad2, Music, Film } from 'lucide-react';
 
 interface TaskbarProps {
-  windows: Window[];
-  onMinimize: (id: string) => void;
-  onRestore: (id: string) => void;
-  onFocus: (id: string) => void;
-  ollamaAvailable: boolean;
+  windows: Array<{
+    id: string;
+    title: string;
+    isActive: boolean;
+    isMinimized: boolean;
+  }>;
+  onWindowSelect: (id: string) => void;
   onShowStartMenu: () => void;
-  showStartMenu: boolean;
 }
 
-const Taskbar: React.FC<TaskbarProps> = ({
-  windows,
-  onMinimize,
-  onRestore,
-  onFocus,
-  ollamaAvailable,
-  onShowStartMenu,
-  showStartMenu,
-}) => {
-  // Get current time for the clock
-  const [time, setTime] = React.useState<string>(getTimeString());
-  
-  // Update time every minute
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(getTimeString());
-    }, 60000);
-    
-    return () => clearInterval(timer);
-  }, []);
-  
-  // Format time string
-  function getTimeString(): string {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
-  
+const Taskbar: React.FC<TaskbarProps> = ({ windows, onWindowSelect, onShowStartMenu }) => {
+  // Helper function to get the appropriate icon for a window
+  const getWindowIcon = (id: string) => {
+    switch (id) {
+      case 'terminal':
+        return <Terminal size={16} className="text-green-400" />;
+      case 'resume':
+        return <FileText size={16} className="text-blue-400" />;
+      case 'about':
+        return <User size={16} className="text-purple-400" />;
+      case 'projects':
+        return <Code size={16} className="text-yellow-400" />;
+      case 'social':
+        return <Link size={16} className="text-red-400" />;
+      case 'flowchart':
+        return <Code size={16} className="text-cyan-400" />;
+      case 'jarvis':
+        return <Volume2 size={16} className="text-cyan-400" />;
+      case 'tetris':
+        return <Gamepad2 size={16} className="text-green-300" />;
+      case 'mp3player':
+        return <Music size={16} className="text-pink-400" />;
+      case 'vlcplayer':
+        return <Film size={16} className="text-orange-400" />;
+      default:
+        return <FileText size={16} className="text-gray-400" />;
+    }
+  };
+
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gray-900 border-t border-gray-700 flex items-center px-2 z-50">
-      {/* Start button */}
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-900 h-10 border-t border-gray-800 flex items-center px-2 z-50">
+      {/* Start Button */}
       <button 
-        className={`bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-sm mr-4 flex items-center ${
-          showStartMenu ? 'bg-blue-700' : ''
-        }`}
+        className="flex items-center justify-center w-8 h-8 rounded-full bg-green-600 hover:bg-green-700 mr-2"
         onClick={onShowStartMenu}
       >
-        <span className="font-bold mr-1">K</span>
-        <span className="text-xs">Linux</span>
+        <Home size={16} className="text-white" />
       </button>
       
-      {/* Window buttons */}
-      <div className="flex-1 flex space-x-1 overflow-x-auto">
-        {windows.map(win => (
+      {/* Window Buttons */}
+      <div className="flex-1 flex items-center space-x-1 overflow-x-auto">
+        {windows.map(window => (
           <button
-            key={win.id}
-            className={`px-2 py-1 text-xs truncate max-w-xs rounded ${
-              win.isActive && !win.isMinimized
-                ? 'bg-gray-700 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+            key={window.id}
+            className={`px-3 py-1 rounded flex items-center max-w-xs truncate ${
+              window.isActive ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'
             }`}
-            onClick={() => win.isMinimized ? onRestore(win.id) : onFocus(win.id)}
+            onClick={() => onWindowSelect(window.id)}
           >
-            {win.title}
+            <span className="mr-2">{getWindowIcon(window.id)}</span>
+            <span className="truncate text-sm">{window.title}</span>
           </button>
         ))}
       </div>
       
-      {/* System indicators */}
-      <div className="flex items-center space-x-4 text-gray-300 text-xs pr-2">
-        {/* Ollama connection indicator */}
-        <div className="flex items-center space-x-1" title={ollamaAvailable ? "Ollama Connected" : "Ollama Not Available"}>
-          <div className={`w-2 h-2 rounded-full ${ollamaAvailable ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="hidden sm:inline text-xs">{ollamaAvailable ? "Ollama" : "Offline"}</span>
-        </div>
-        
-        {/* System tray icons */}
-        <div className="flex items-center space-x-3">
-          <MessageSquare size={14} className="text-gray-400 hover:text-white cursor-pointer" />
-          <Wifi size={14} className="text-gray-400 hover:text-white cursor-pointer" />
-          <Volume2 size={14} className="text-gray-400 hover:text-white cursor-pointer" />
-          <span className="text-gray-300">{time}</span>
-        </div>
+      {/* Time */}
+      <div className="text-white text-xs px-2">
+        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
     </div>
   );
