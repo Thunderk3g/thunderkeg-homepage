@@ -16,7 +16,7 @@
     "jspdf-autotable": "^3.8.1",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.309.0",
-    "next": "15.0.2",
+    "next": "15.2.3",
     "react": "^18",
     "react-dom": "^18",
     "reactflow": "^11.11.4",
