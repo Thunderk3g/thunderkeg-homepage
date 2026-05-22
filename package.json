@@ -17,8 +17,10 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.309.0",
     "next": "15.2.3",
+    "openai": "^6.39.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-rnd": "^10.5.3",
     "reactflow": "^11.11.4",
     "zod": "^3.24.2"
   },
