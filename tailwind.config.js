@@ -1,3 +1,5 @@
+const { tokens } = require("./src/lib/theme/tokens.cjs");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -8,53 +10,33 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        terminal: {
-          black: "#121212",
-          border: "#2a2a2a",
-          header: "#1a1a1a",
-          text: "#d4d4d4",
-          inactive: "#6e6e6e",
-          placeholder: "#4a4a4a",
-          active: "#2d2d2d",
-          hover: "#1f1f1f",
-          red: "#e06c75",
-          green: "#98c379",
-          yellow: "#e5c07b",
-          blue: "#61afef",
-          magenta: "#c678dd",
-          cyan: "#56b6c2",
-          prompt: "#61afef",
-          cursor: "#d4d4d4",
-          user: "#98c379",
-          assistant: "#d4d4d4",
-        },
+        bg: tokens.color.bg,
+        surface: tokens.color.surface,
+        elevated: tokens.color.elevated,
+        border: tokens.color.border,
+        fg: tokens.color.text,
+        muted: tokens.color.muted,
+        accent: tokens.color.accent,
+        accent2: tokens.color.accent2,
+        success: tokens.color.success,
+        warning: tokens.color.warning,
+        danger: tokens.color.danger,
+      },
+      borderRadius: tokens.radius,
+      boxShadow: { window: tokens.shadow.window },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "Menlo", "monospace"],
       },
       animation: {
         blink: "blink 1s step-end infinite",
-        typing: "typing 3.5s steps(40, end)",
+        pulse2: "pulse2 1.2s ease-in-out infinite alternate",
       },
       keyframes: {
-        blink: {
-          "0%, 100%": { opacity: 1 },
-          "50%": { opacity: 0 },
-        },
-        typing: {
-          from: { width: "0" },
-          to: { width: "100%" },
-        },
-      },
-      fontFamily: {
-        mono: [
-          "JetBrains Mono",
-          "Menlo",
-          "Monaco",
-          "Consolas",
-          "Liberation Mono",
-          "Courier New",
-          "monospace",
-        ],
+        blink: { "0%,100%": { opacity: 1 }, "50%": { opacity: 0 } },
+        pulse2: { "0%": { opacity: 0.4 }, "100%": { opacity: 1 } },
       },
     },
   },
   plugins: [],
-}; 
+};
