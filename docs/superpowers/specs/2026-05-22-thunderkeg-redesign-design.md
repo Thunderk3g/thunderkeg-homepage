@@ -481,13 +481,13 @@ After all app PRs merge: cross-app review, fix any z-index/style inconsistencies
 
 ---
 
-## 10. Open questions for the owner
+## 10. Decisions (resolved 2026-05-22)
 
-1. **Visual theme variant.** Default to *Kali purple* (`#7c5cff` accent on `#0b0d12` bg) or pivot to *Tokyo Night Storm* (`#7aa2f7` accent on `#1a1b26` bg)? Recommend Kali purple — keeps brand continuity.
-2. **Voice — keep or cut for v1?** Browser SpeechRecognition is Chrome-only on desktop and patchy elsewhere. We can ship v1 text-only and add the Voice app in PR #13 once Moshi backend is reachable.
-3. **Doom — keep or cut?** Cross-origin iframe means we can't make it feel native. Recommend keep with a clear "click to focus" hint; cut if even that feels janky.
-4. **Resume PDF.** Should the resume app embed the PDF inline (slow, but high-fidelity) or only offer it as a download?
-5. **Custom domain.** Currently the README assumes Vercel deploy — is there a custom domain already pointed at it?
+1. **Visual theme.** Kali purple — `#7c5cff` accent on `#0b0d12` bg. Tokens in §4.4 already reflect this.
+2. **Voice app — ships in v1.** Browser SpeechRecognition + browser TTS, gated behind a Chrome-only banner on Firefox/Safari. Shares the `useTerminalAgent` Groq hook with the Terminal.
+3. **Doom — kept.** Cross-origin iframe with a clear "click here to focus the game" hint on first load; the hint fades after the iframe has received focus once. Doom degrades to a static screenshot + "open in new tab" link on viewports <768px.
+4. **Resume PDF — embedded inline.** The Resume app opens with the structured `resume.json` tabs visible by default; a "View PDF" toggle in the title-bar menu swaps the body to an embedded `<iframe src="/resume.pdf">` (or `<embed>`) viewer. A "Download PDF" link is always present.
+5. **Custom domain.** Defaulting to fresh Vercel deploy (no custom domain configured yet). README will document the deploy steps. (Owner: flag if a domain already exists and we'll wire CNAME instructions in.)
 
 ---
 
