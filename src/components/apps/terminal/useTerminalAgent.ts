@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/llm/types";
+import { useChatStream } from "@/lib/agent/useChatStream";
 
 export type AgentRole = "recruiter" | "collaborator";
 
@@ -59,6 +60,8 @@ export function useTerminalAgent(): UseTerminalAgent {
   // imperatively as tokens arrive without depending on stale closures.
   const activeIdRef = useRef<string | null>(null);
 
+  const stream = useChatStream();
+
   const appendDelta = useCallback((id: string, delta: string) => {
     setMessages((prev) =>
       prev.map((m) =>
@@ -115,114 +118,23 @@ export function useTerminalAgent(): UseTerminalAgent {
       setIsStreaming(true);
       activeIdRef.current = assistantId;
 
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            messages: history,
-            model: opts?.model ?? model,
-            agentRole,
-          }),
-        });
+      let errorSeen: string | null = null;
 
-        if (!res.ok) {
-          let detail = `HTTP ${res.status}`;
-          try {
-            const data = (await res.json()) as { error?: string };
-            if (data?.error) detail = data.error;
-          } catch {
-            /* ignore parse errors */
-          }
-          if (res.status === 503) {
-            detail +=
-              " — set LLM_API_KEY in .env.local (Groq) and restart the dev server.";
-          }
-          finalize(assistantId, detail);
-          return;
-        }
-
-        if (!res.body) {
-          finalize(assistantId, "Empty response body.");
-          return;
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let aborted = false;
-
-        // SSE framing: events are separated by a blank line; each event has one
-        // or more `data: …` lines. Per the API contract every payload is a
-        // single JSON object, so we extract the JSON after the `data:` prefix.
-        // Termination: a chunk with {done:true} OR {error:"…"}.
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let sepIdx: number;
-          while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
-            const rawEvent = buffer.slice(0, sepIdx);
-            buffer = buffer.slice(sepIdx + 2);
-
-            for (const line of rawEvent.split("\n")) {
-              if (!line.startsWith("data:")) continue;
-              const payload = line.slice(5).trim();
-              if (!payload) continue;
-              let parsed: { delta?: string; done?: boolean; error?: string };
-              try {
-                parsed = JSON.parse(payload);
-              } catch {
-                continue;
-              }
-              if (parsed.error) {
-                finalize(assistantId, parsed.error);
-                aborted = true;
-                break;
-              }
-              if (parsed.delta) {
-                appendDelta(assistantId, parsed.delta);
-              }
-              if (parsed.done) {
-                aborted = true;
-                break;
-              }
-            }
-            if (aborted) break;
-          }
-          if (aborted) break;
-        }
-
-        if (!aborted) {
-          // Stream closed without an explicit done marker — flush anything left
-          // in the buffer that might be a trailing event without its blank line.
-          const tail = buffer.trim();
-          if (tail.startsWith("data:")) {
-            try {
-              const parsed = JSON.parse(tail.slice(5).trim()) as {
-                delta?: string;
-                error?: string;
-              };
-              if (parsed.delta) appendDelta(assistantId, parsed.delta);
-              if (parsed.error) {
-                finalize(assistantId, parsed.error);
-                return;
-              }
-            } catch {
-              /* drop malformed trailing event */
-            }
-          }
-        }
-
-        finalize(assistantId);
-      } catch (err) {
-        const detail = err instanceof Error ? err.message : String(err);
-        finalize(assistantId, detail);
-      }
+      await stream.send(
+        history,
+        { model: opts?.model ?? model, agentRole },
+        {
+          onDelta: (delta) => appendDelta(assistantId, delta),
+          onError: (msg) => {
+            errorSeen = msg;
+          },
+          onDone: () => {
+            finalize(assistantId, errorSeen ?? undefined);
+          },
+        },
+      );
     },
-    [agentRole, appendDelta, finalize, isStreaming, messages, model],
+    [agentRole, appendDelta, finalize, isStreaming, messages, model, stream],
   );
 
   const clear = useCallback(() => {

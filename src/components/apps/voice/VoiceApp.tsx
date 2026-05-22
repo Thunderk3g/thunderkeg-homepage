@@ -3,25 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 import { useTts } from "./useTts";
+import { useChatStream } from "@/lib/agent/useChatStream";
 
 type Status = "idle" | "recording" | "thinking" | "speaking" | "error";
-
-interface ChatChunk {
-  delta?: string;
-  done?: boolean;
-  error?: string;
-}
 
 /**
  * VoiceApp — press-and-hold mic, stream Groq response, speak it back sentence-by-sentence.
  *
- * The streaming logic is intentionally inlined here rather than imported from the Terminal
- * app's `useTerminalAgent` because that hook is being built in a parallel sub-agent and may
- * not exist when this file is type-checked. Consolidation happens later in `chore/polish`.
+ * Streaming is delegated to the shared `useChatStream` hook in `src/lib/agent`,
+ * which owns the SSE parser and AbortController previously inlined here.
  */
 export default function VoiceApp() {
   const sr = useSpeechRecognition("en-US");
   const tts = useTts("en-US");
+  const stream = useChatStream();
 
   const [status, setStatus] = useState<Status>("idle");
   const [reply, setReply] = useState<string>("");
@@ -30,7 +25,6 @@ export default function VoiceApp() {
   // Track how much of the streamed reply we've already routed into TTS so each
   // sentence is spoken exactly once as new tokens arrive.
   const spokenIdxRef = useRef<number>(0);
-  const abortRef = useRef<AbortController | null>(null);
 
   // Reset the streaming cursor whenever we begin a fresh exchange.
   const resetTtsCursor = useCallback(() => {
@@ -70,93 +64,49 @@ export default function VoiceApp() {
         setStatus("idle");
         return;
       }
-      abortRef.current?.abort();
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
+      // Supersede any previous in-flight request.
+      stream.abort();
 
       setStatus("thinking");
       setReply("");
       setErrorMsg(null);
       resetTtsCursor();
 
-      try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          // Single-turn for voice — do NOT carry conversation history.
-          body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
-          signal: ctrl.signal,
-        });
+      let assembled = "";
+      let errored = false;
+      let started = false;
 
-        if (res.status === 503) {
-          const msg = "AI not configured";
-          setErrorMsg(msg);
-          setReply(msg);
-          setStatus("error");
-          tts.speak(msg);
-          return;
-        }
-        if (!res.ok || !res.body) {
-          const msg = `Request failed (${res.status})`;
-          setErrorMsg(msg);
-          setStatus("error");
-          return;
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let assembled = "";
-        setStatus("speaking");
-
-        // SSE frames: each event is `data: <json>\n\n`.
-        // Pull frames out of the rolling buffer as they complete.
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          let sep = buffer.indexOf("\n\n");
-          while (sep !== -1) {
-            const frame = buffer.slice(0, sep);
-            buffer = buffer.slice(sep + 2);
-            sep = buffer.indexOf("\n\n");
-            const line = frame.split("\n").find((l) => l.startsWith("data:"));
-            if (!line) continue;
-            const payload = line.slice(5).trim();
-            if (!payload) continue;
-            let chunk: ChatChunk;
-            try {
-              chunk = JSON.parse(payload) as ChatChunk;
-            } catch {
-              continue;
+      await stream.send(
+        // Single-turn for voice — do NOT carry conversation history.
+        [{ role: "user", content: text }],
+        undefined,
+        {
+          onDelta: (delta) => {
+            if (!started) {
+              started = true;
+              setStatus("speaking");
             }
-            if (chunk.error) {
-              setErrorMsg(chunk.error);
-              setStatus("error");
-              continue;
-            }
-            if (chunk.delta) {
-              assembled += chunk.delta;
-              setReply(assembled);
-              flushSentences(assembled);
-            }
-            if (chunk.done) {
-              flushSentences(assembled, { final: true });
-            }
-          }
-        }
-        // Flush any trailing text once the stream has closed.
-        flushSentences(assembled, { final: true });
-        setStatus("idle");
-      } catch (err) {
-        if ((err as { name?: string })?.name === "AbortError") return;
-        const msg = (err as Error)?.message ?? "Unknown error";
-        setErrorMsg(msg);
-        setStatus("error");
-      }
+            assembled += delta;
+            setReply(assembled);
+            flushSentences(assembled);
+          },
+          onError: (msg) => {
+            errored = true;
+            setErrorMsg(msg);
+            setReply(msg);
+            setStatus("error");
+            tts.speak(msg);
+          },
+          onDone: () => {
+            if (errored) return;
+            // Flush any trailing text once the stream has closed.
+            flushSentences(assembled, { final: true });
+            setStatus("idle");
+          },
+        },
+      );
     },
-    [flushSentences, resetTtsCursor, tts],
+    [flushSentences, resetTtsCursor, stream, tts],
   );
 
   // Press-and-hold handlers. We capture pointer events so a drag off the
@@ -191,10 +141,10 @@ export default function VoiceApp() {
   // Safety: cancel any in-flight request on unmount.
   useEffect(() => {
     return () => {
-      abortRef.current?.abort();
+      stream.abort();
       tts.cancel();
     };
-  }, [tts]);
+  }, [stream, tts]);
 
   if (!sr.supported) {
     return (
