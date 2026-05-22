@@ -1,36 +1,25 @@
 import type { AppKind } from "@/types/window";
 
-const KINDS: AppKind[] = [
-  "terminal",
-  "voice",
-  "resume",
-  "projects",
-  "about",
-  "social",
-  "tetris",
-  "doom",
-  "mp3",
-  "vlc",
-];
-
-function Placeholder({ kind }: { kind: AppKind }) {
-  const idx = KINDS.indexOf(kind);
-  return (
-    <div className="flex h-full items-center justify-center p-6 text-center font-mono text-sm text-muted">
-      <code>{kind}</code>&nbsp;— placeholder, replaced in PR #{2 + idx}.
-    </div>
-  );
-}
+import TerminalApp from "./terminal/TerminalApp";
+import VoiceApp from "./voice/VoiceApp";
+import ResumeApp from "./resume/ResumeApp";
+import ProjectsApp from "./projects/ProjectsApp";
+import AboutApp from "./about/AboutApp";
+import SocialApp from "./social/SocialApp";
+import TetrisApp from "./games/tetris/TetrisApp";
+import DoomApp from "./games/doom/DoomApp";
+import Mp3App from "./media/mp3/Mp3App";
+import VlcApp from "./media/video/VlcApp";
 
 export const APP_REGISTRY: Record<AppKind, React.ComponentType> = {
-  terminal: () => <Placeholder kind="terminal" />,
-  voice:    () => <Placeholder kind="voice" />,
-  resume:   () => <Placeholder kind="resume" />,
-  projects: () => <Placeholder kind="projects" />,
-  about:    () => <Placeholder kind="about" />,
-  social:   () => <Placeholder kind="social" />,
-  doom:     () => <Placeholder kind="doom" />,
-  tetris:   () => <Placeholder kind="tetris" />,
-  mp3:      () => <Placeholder kind="mp3" />,
-  vlc:      () => <Placeholder kind="vlc" />,
+  terminal: TerminalApp,
+  voice:    VoiceApp,
+  resume:   ResumeApp,
+  projects: ProjectsApp,
+  about:    AboutApp,
+  social:   SocialApp,
+  tetris:   TetrisApp,
+  doom:     DoomApp,
+  mp3:      Mp3App,
+  vlc:      VlcApp,
 };
