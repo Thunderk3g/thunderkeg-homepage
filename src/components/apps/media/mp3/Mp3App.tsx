@@ -21,13 +21,14 @@ interface Track {
   src: string;
 }
 
-// Default playlist. The repo ships sample1.mp3..sample4.mp3 in public/audio/.
-// We default to sample1.mp3 and expose the rest so the list is non-trivial.
+// Default playlist — track metadata carried over from the original portfolio's
+// MP3 player (5e2b7ed / 8acffbd). The 5th track ("Binary Sunset") referenced a
+// missing sample5.mp3 file, so it's dropped here.
 const DEFAULT_PLAYLIST: Track[] = [
-  { id: "t1", title: "Sample One",   artist: "Thunderkeg Demo", src: "/audio/sample1.mp3" },
-  { id: "t2", title: "Sample Two",   artist: "Thunderkeg Demo", src: "/audio/sample2.mp3" },
-  { id: "t3", title: "Sample Three", artist: "Thunderkeg Demo", src: "/audio/sample3.mp3" },
-  { id: "t4", title: "Sample Four",  artist: "Thunderkeg Demo", src: "/audio/sample4.mp3" },
+  { id: "t1", title: "Synth Voyage",     artist: "Pixel Collective", src: "/audio/sample1.mp3" },
+  { id: "t2", title: "Neural Pathways",  artist: "Quantum Logic",    src: "/audio/sample2.mp3" },
+  { id: "t3", title: "Encrypted Beats",  artist: "Code Artisans",    src: "/audio/sample3.mp3" },
+  { id: "t4", title: "Command Sequence", artist: "Silicon Wave",     src: "/audio/sample4.mp3" },
 ];
 
 function formatTime(seconds: number): string {

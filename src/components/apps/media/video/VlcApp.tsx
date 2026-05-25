@@ -5,8 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import VideoControls from './VideoControls';
 
-// Single curated demo clip. Drops the old fake stream URL list.
+// Single curated demo clip. Metadata mirrors the original portfolio's
+// "Kali Linux Tutorial" entry (8acffbd). Poster image is the original thumb.
 const VIDEO_SRC = '/videos/sample1.mp4';
+const VIDEO_POSTER = '/images/video-thumb1.jpg';
+const VIDEO_TITLE = 'Kali Linux Tutorial';
 
 export default function VlcApp() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -131,10 +134,14 @@ export default function VlcApp() {
 
   return (
     <div className="relative flex h-full w-full flex-col bg-black">
+      <div className="absolute left-3 top-3 z-10 rounded bg-elevated/80 px-2 py-1 font-mono text-xs text-fg backdrop-blur">
+        {VIDEO_TITLE}
+      </div>
       <div className="relative flex-1 overflow-hidden">
         <video
           ref={videoRef}
           src={VIDEO_SRC}
+          poster={VIDEO_POSTER}
           className="h-full w-full bg-black object-contain"
           playsInline
           preload="metadata"

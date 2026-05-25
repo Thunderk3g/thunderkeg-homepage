@@ -60,7 +60,7 @@ export const THEMES: Theme[] = [
       danger: "#ef4444",
     },
     wallpaper:
-      "radial-gradient(1200px 600px at 20% 10%, rgba(124,92,255,0.18), transparent 60%), radial-gradient(900px 500px at 80% 90%, rgba(34,211,238,0.10), transparent 60%), #0b0d12",
+      "linear-gradient(180deg, rgba(11,13,18,0.55) 0%, rgba(11,13,18,0.85) 100%), url('/images/kali-wallpaper.jpg') center/cover no-repeat, #0b0d12",
   },
   {
     id: "tokyo-night",
@@ -79,7 +79,7 @@ export const THEMES: Theme[] = [
       danger: "#f7768e",
     },
     wallpaper:
-      "radial-gradient(1200px 600px at 20% 10%, rgba(187,154,247,0.18), transparent 60%), radial-gradient(900px 500px at 80% 90%, rgba(125,207,255,0.12), transparent 60%), #1a1b26",
+      "linear-gradient(180deg, rgba(26,27,38,0.65) 0%, rgba(26,27,38,0.90) 100%), url('/images/kali-dark.jpg') center/cover no-repeat, #1a1b26",
   },
   {
     id: "dracula",
