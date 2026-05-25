@@ -19,7 +19,7 @@ const ICONS: { kind: AppKind; icon: IconName; label: string }[] = [
 export function DesktopIcons() {
   const { open } = useWindows();
   return (
-    <div className="absolute left-4 top-4 z-10 flex flex-col gap-3">
+    <div className="pointer-events-none absolute bottom-12 left-4 top-4 z-10 grid auto-rows-max grid-cols-[repeat(2,5rem)] content-start gap-3">
       {ICONS.map((it) => (
         <button
           key={it.kind}
@@ -27,7 +27,7 @@ export function DesktopIcons() {
           onKeyDown={(e) => {
             if (e.key === "Enter") open(it.kind);
           }}
-          className="flex w-20 flex-col items-center gap-1 rounded p-2 text-xs text-fg/90 transition-colors hover:bg-white/5 focus:bg-white/5 focus:outline-none focus:ring-2 focus:ring-accent"
+          className="pointer-events-auto flex w-20 flex-col items-center gap-1 rounded p-2 text-xs text-fg/90 transition-colors hover:bg-white/5 focus:bg-white/5 focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <Icon name={it.icon} size={28} className="text-accent" />
           <span className="text-center leading-tight">{it.label}</span>

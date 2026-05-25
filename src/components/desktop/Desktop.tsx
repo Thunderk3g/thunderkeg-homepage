@@ -21,9 +21,10 @@ function DesktopBody() {
       ref={bgRef}
       className="relative h-screen w-screen overflow-hidden bg-bg text-fg"
       style={{
-        backgroundImage: "url(/wallpapers/kali-purple-dragon.jpg)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        background:
+          "radial-gradient(ellipse at 30% 30%, #1a0f3a 0%, #0b0d12 60%), " +
+          "radial-gradient(circle at 80% 70%, rgba(124,92,255,0.18) 0%, transparent 50%), " +
+          "linear-gradient(180deg, #0b0d12 0%, #07080d 100%)",
         backgroundColor: "#0b0d12",
       }}
     >
