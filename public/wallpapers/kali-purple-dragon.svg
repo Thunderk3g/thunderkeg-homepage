@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <!--
+    Kali-purple-dragon reference wallpaper.
+    Mirrors the layered gradient stack used in src/components/desktop/Desktop.tsx
+    so future iterations have a vector baseline to evolve.
+  -->
+  <defs>
+    <!-- Layer 3 (base): vertical fade #0b0d12 -> #07080d -->
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b0d12" />
+      <stop offset="100%" stop-color="#07080d" />
+    </linearGradient>
+    <!-- Layer 1 (top): radial at 30% 30%, #1a0f3a -> #0b0d12 at 60% -->
+    <radialGradient id="purpleCore" cx="30%" cy="30%" r="60%" fx="30%" fy="30%">
+      <stop offset="0%" stop-color="#1a0f3a" stop-opacity="1" />
+      <stop offset="60%" stop-color="#0b0d12" stop-opacity="0" />
+    </radialGradient>
+    <!-- Layer 2: circular violet glow at 80% 70%, rgba(124,92,255,0.18) -> transparent at 50% -->
+    <radialGradient id="violetGlow" cx="80%" cy="70%" r="50%" fx="80%" fy="70%">
+      <stop offset="0%" stop-color="rgb(124,92,255)" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="rgb(124,92,255)" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Stack: base, purple core, violet glow -->
+  <rect width="1920" height="1080" fill="url(#base)" />
+  <rect width="1920" height="1080" fill="url(#purpleCore)" />
+  <rect width="1920" height="1080" fill="url(#violetGlow)" />
+
+  <!-- Subtle dragon silhouette accent (low-opacity, off-center).
+       Simple stylized swoosh suggesting wing/tail without overpowering. -->
+  <g opacity="0.06" fill="#7c5cff" transform="translate(960 540)">
+    <path d="M -420 -40
+             C -360 -160, -180 -200, -40 -120
+             C 80 -60, 180 -160, 320 -120
+             C 220 -40, 160 60, 60 60
+             C -80 60, -200 140, -340 80
+             C -420 40, -460 0, -420 -40 Z" />
+    <path d="M -60 -20
+             C 20 -60, 100 -20, 160 -80
+             C 120 0, 60 40, -20 30
+             C -80 24, -100 0, -60 -20 Z" />
+  </g>
+</svg>
