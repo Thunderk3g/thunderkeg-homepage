@@ -33,6 +33,8 @@ export const DEFAULT_TITLES: Record<AppKind, string> = {
   tetris: "Tetris",
   mp3: "MP3 Player",
   vlc: "Media Player",
+  files: "Files",
+  "code-editor": "Code Editor",
 };
 
 const DEFAULT_BOUNDS: Bounds = { x: 80, y: 60, width: 720, height: 480 };

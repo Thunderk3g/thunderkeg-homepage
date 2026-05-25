@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type RefObject } from "react";
 import { useWindows } from "./WindowManager";
+import { ThemeMenuItems } from "@/lib/theme/ThemeMenu";
 
 export function ContextMenu({
   targetRef,
@@ -56,6 +57,22 @@ export function ContextMenu({
           Open Terminal
         </button>
       </li>
+      <li>
+        <button
+          onClick={() => {
+            open("files");
+            setPos(null);
+          }}
+          className="block w-full px-3 py-1.5 text-left hover:bg-white/5"
+        >
+          Open Files
+        </button>
+      </li>
+      <li className="my-1 border-t border-border" aria-hidden />
+      <li className="px-3 py-1 text-xs uppercase tracking-wider text-muted">
+        Themes
+      </li>
+      <ThemeMenuItems />
     </ul>
   );
 }

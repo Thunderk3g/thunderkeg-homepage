@@ -2,11 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme switcher CSS-variable overrides — rebinds bg-*, text-*, border-*
+   utilities to var(--color-*). Loaded after @tailwind utilities so
+   single-class specificity wins via source order. */
+@import "../lib/theme/themePatch.css";
+
 :root { color-scheme: dark; }
 html, body, #__next { height: 100%; }
 body {
-  background: #0b0d12;
-  color: #e6e9f2;
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;

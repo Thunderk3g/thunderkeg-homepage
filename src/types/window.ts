@@ -1,6 +1,7 @@
 export type AppKind =
   | "terminal" | "voice" | "resume" | "projects"
-  | "about"    | "social" | "doom"   | "tetris" | "mp3" | "vlc";
+  | "about"    | "social" | "doom"   | "tetris" | "mp3" | "vlc"
+  | "files"    | "code-editor";
 
 export interface Bounds { x: number; y: number; width: number; height: number; }
 

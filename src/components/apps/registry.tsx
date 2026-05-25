@@ -10,6 +10,8 @@ import TetrisApp from "./games/tetris/TetrisApp";
 import DoomApp from "./games/doom/DoomApp";
 import Mp3App from "./media/mp3/Mp3App";
 import VlcApp from "./media/video/VlcApp";
+import FileManagerApp from "./files/FileManagerApp";
+import CodeEditorApp from "./code-editor/CodeEditorApp";
 
 export const APP_REGISTRY: Record<AppKind, React.ComponentType> = {
   terminal: TerminalApp,
@@ -22,4 +24,6 @@ export const APP_REGISTRY: Record<AppKind, React.ComponentType> = {
   doom:     DoomApp,
   mp3:      Mp3App,
   vlc:      VlcApp,
+  files:    FileManagerApp,
+  "code-editor": CodeEditorApp,
 };

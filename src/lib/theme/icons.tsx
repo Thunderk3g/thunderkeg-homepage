@@ -12,6 +12,8 @@ const map = {
   tetris: L.Grid3x3,
   mp3: L.Music,
   vlc: L.Film,
+  files: L.Folder,
+  "code-editor": L.FileCode,
   close: L.X,
   min: L.Minus,
   max: L.Square,

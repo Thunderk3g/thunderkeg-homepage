@@ -4,16 +4,18 @@ import { Icon, type IconName } from "@/lib/theme/icons";
 import type { AppKind } from "@/types/window";
 
 const ITEMS: { kind: AppKind; icon: IconName; label: string }[] = [
-  { kind: "terminal", icon: "terminal", label: "Terminal" },
-  { kind: "voice",    icon: "voice",    label: "Voice Assistant" },
-  { kind: "resume",   icon: "resume",   label: "Resume" },
-  { kind: "projects", icon: "projects", label: "Projects" },
-  { kind: "about",    icon: "about",    label: "About" },
-  { kind: "social",   icon: "social",   label: "Social" },
-  { kind: "tetris",   icon: "tetris",   label: "Tetris" },
-  { kind: "doom",     icon: "doom",     label: "Doom" },
-  { kind: "mp3",      icon: "mp3",      label: "MP3 Player" },
-  { kind: "vlc",      icon: "vlc",      label: "Media Player" },
+  { kind: "terminal",    icon: "terminal",    label: "Terminal" },
+  { kind: "voice",       icon: "voice",       label: "Voice Assistant" },
+  { kind: "files",       icon: "files",       label: "Files" },
+  { kind: "code-editor", icon: "code-editor", label: "Code Editor" },
+  { kind: "resume",      icon: "resume",      label: "Resume" },
+  { kind: "projects",    icon: "projects",    label: "Projects" },
+  { kind: "about",       icon: "about",       label: "About" },
+  { kind: "social",      icon: "social",      label: "Social" },
+  { kind: "tetris",      icon: "tetris",      label: "Tetris" },
+  { kind: "doom",        icon: "doom",        label: "Doom" },
+  { kind: "mp3",         icon: "mp3",         label: "MP3 Player" },
+  { kind: "vlc",         icon: "vlc",         label: "Media Player" },
 ];
 
 export function StartMenu({

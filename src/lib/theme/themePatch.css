@@ -1,0 +1,125 @@
+/*
+ * Theme patch — remaps the Tailwind utilities generated from `tokens.cjs`
+ * to CSS variables published by <ThemeProvider>. Loaded once from
+ * `globals.css`. Fallbacks mirror the Kali Purple defaults so SSR /
+ * pre-hydration paints look identical to the baked Tailwind output.
+ *
+ * Tailwind color keys: bg, surface, elevated, border, fg, muted, accent,
+ * accent2, success, warning, danger.
+ *
+ * For each token we override .bg-<k>, .text-<k>, .border-<k>, .ring-<k>,
+ * .from-<k>, .to-<k>, .via-<k>, .fill-<k>, .stroke-<k>, .outline-<k>,
+ * .decoration-<k>, .placeholder-<k>, .caret-<k>, .divide-<k>, .shadow-<k>,
+ * .accent-<k>. Hover variants are covered via :hover selectors where useful.
+ */
+
+/* ---------- bg (page background) ---------- */
+.bg-bg { background-color: var(--color-bg, #0b0d12); }
+.text-bg { color: var(--color-bg, #0b0d12); }
+.border-bg { border-color: var(--color-bg, #0b0d12); }
+.ring-bg { --tw-ring-color: var(--color-bg, #0b0d12); }
+.fill-bg { fill: var(--color-bg, #0b0d12); }
+.stroke-bg { stroke: var(--color-bg, #0b0d12); }
+.from-bg { --tw-gradient-from: var(--color-bg, #0b0d12); }
+.to-bg { --tw-gradient-to: var(--color-bg, #0b0d12); }
+.via-bg { --tw-gradient-via: var(--color-bg, #0b0d12); }
+
+/* ---------- surface ---------- */
+.bg-surface { background-color: var(--color-surface, #13161f); }
+.text-surface { color: var(--color-surface, #13161f); }
+.border-surface { border-color: var(--color-surface, #13161f); }
+.ring-surface { --tw-ring-color: var(--color-surface, #13161f); }
+.fill-surface { fill: var(--color-surface, #13161f); }
+.stroke-surface { stroke: var(--color-surface, #13161f); }
+.from-surface { --tw-gradient-from: var(--color-surface, #13161f); }
+.to-surface { --tw-gradient-to: var(--color-surface, #13161f); }
+.via-surface { --tw-gradient-via: var(--color-surface, #13161f); }
+.hover\:bg-surface:hover { background-color: var(--color-surface, #13161f); }
+
+/* ---------- elevated ---------- */
+.bg-elevated { background-color: var(--color-elevated, #1a1e2b); }
+.text-elevated { color: var(--color-elevated, #1a1e2b); }
+.border-elevated { border-color: var(--color-elevated, #1a1e2b); }
+.ring-elevated { --tw-ring-color: var(--color-elevated, #1a1e2b); }
+.from-elevated { --tw-gradient-from: var(--color-elevated, #1a1e2b); }
+.to-elevated { --tw-gradient-to: var(--color-elevated, #1a1e2b); }
+.hover\:bg-elevated:hover { background-color: var(--color-elevated, #1a1e2b); }
+
+/* ---------- border ---------- */
+.bg-border { background-color: var(--color-border, #2a3144); }
+.text-border { color: var(--color-border, #2a3144); }
+.border-border { border-color: var(--color-border, #2a3144); }
+.ring-border { --tw-ring-color: var(--color-border, #2a3144); }
+.divide-border > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border, #2a3144); }
+.hover\:border-border:hover { border-color: var(--color-border, #2a3144); }
+
+/* ---------- fg (foreground text) ---------- */
+.bg-fg { background-color: var(--color-fg, #e6e9f2); }
+.text-fg { color: var(--color-fg, #e6e9f2); }
+.border-fg { border-color: var(--color-fg, #e6e9f2); }
+.ring-fg { --tw-ring-color: var(--color-fg, #e6e9f2); }
+.fill-fg { fill: var(--color-fg, #e6e9f2); }
+.stroke-fg { stroke: var(--color-fg, #e6e9f2); }
+
+/* ---------- muted ---------- */
+.bg-muted { background-color: var(--color-muted, #8a93a8); }
+.text-muted { color: var(--color-muted, #8a93a8); }
+.border-muted { border-color: var(--color-muted, #8a93a8); }
+.ring-muted { --tw-ring-color: var(--color-muted, #8a93a8); }
+.placeholder-muted::placeholder { color: var(--color-muted, #8a93a8); }
+.hover\:text-muted:hover { color: var(--color-muted, #8a93a8); }
+
+/* ---------- accent (primary) ---------- */
+.bg-accent { background-color: var(--color-accent, #7c5cff); }
+.text-accent { color: var(--color-accent, #7c5cff); }
+.border-accent { border-color: var(--color-accent, #7c5cff); }
+.ring-accent { --tw-ring-color: var(--color-accent, #7c5cff); }
+.fill-accent { fill: var(--color-accent, #7c5cff); }
+.stroke-accent { stroke: var(--color-accent, #7c5cff); }
+.caret-accent { caret-color: var(--color-accent, #7c5cff); }
+.accent-accent { accent-color: var(--color-accent, #7c5cff); }
+.from-accent { --tw-gradient-from: var(--color-accent, #7c5cff); }
+.to-accent { --tw-gradient-to: var(--color-accent, #7c5cff); }
+.via-accent { --tw-gradient-via: var(--color-accent, #7c5cff); }
+.hover\:bg-accent:hover { background-color: var(--color-accent, #7c5cff); }
+.hover\:text-accent:hover { color: var(--color-accent, #7c5cff); }
+.hover\:border-accent:hover { border-color: var(--color-accent, #7c5cff); }
+
+/* ---------- accent2 (secondary highlight) ---------- */
+.bg-accent2 { background-color: var(--color-accent2, #22d3ee); }
+.text-accent2 { color: var(--color-accent2, #22d3ee); }
+.border-accent2 { border-color: var(--color-accent2, #22d3ee); }
+.ring-accent2 { --tw-ring-color: var(--color-accent2, #22d3ee); }
+.fill-accent2 { fill: var(--color-accent2, #22d3ee); }
+.stroke-accent2 { stroke: var(--color-accent2, #22d3ee); }
+.from-accent2 { --tw-gradient-from: var(--color-accent2, #22d3ee); }
+.to-accent2 { --tw-gradient-to: var(--color-accent2, #22d3ee); }
+.hover\:text-accent2:hover { color: var(--color-accent2, #22d3ee); }
+
+/* ---------- success ---------- */
+.bg-success { background-color: var(--color-success, #4ade80); }
+.text-success { color: var(--color-success, #4ade80); }
+.border-success { border-color: var(--color-success, #4ade80); }
+.ring-success { --tw-ring-color: var(--color-success, #4ade80); }
+.fill-success { fill: var(--color-success, #4ade80); }
+
+/* ---------- warning ---------- */
+.bg-warning { background-color: var(--color-warning, #fbbf24); }
+.text-warning { color: var(--color-warning, #fbbf24); }
+.border-warning { border-color: var(--color-warning, #fbbf24); }
+.ring-warning { --tw-ring-color: var(--color-warning, #fbbf24); }
+.fill-warning { fill: var(--color-warning, #fbbf24); }
+
+/* ---------- danger ---------- */
+.bg-danger { background-color: var(--color-danger, #ef4444); }
+.text-danger { color: var(--color-danger, #ef4444); }
+.border-danger { border-color: var(--color-danger, #ef4444); }
+.ring-danger { --tw-ring-color: var(--color-danger, #ef4444); }
+.fill-danger { fill: var(--color-danger, #ef4444); }
+.hover\:text-danger:hover { color: var(--color-danger, #ef4444); }
+
+/* ---------- body / global ---------- */
+body {
+  background: var(--wallpaper, #0b0d12);
+  color: var(--color-fg, #e6e9f2);
+}

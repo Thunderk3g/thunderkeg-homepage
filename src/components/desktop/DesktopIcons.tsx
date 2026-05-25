@@ -4,16 +4,18 @@ import { Icon, type IconName } from "@/lib/theme/icons";
 import type { AppKind } from "@/types/window";
 
 const ICONS: { kind: AppKind; icon: IconName; label: string }[] = [
-  { kind: "terminal", icon: "terminal", label: "Terminal" },
-  { kind: "voice",    icon: "voice",    label: "Voice" },
-  { kind: "resume",   icon: "resume",   label: "Resume" },
-  { kind: "projects", icon: "projects", label: "Projects" },
-  { kind: "about",    icon: "about",    label: "About" },
-  { kind: "social",   icon: "social",   label: "Social" },
-  { kind: "doom",     icon: "doom",     label: "Doom" },
-  { kind: "tetris",   icon: "tetris",   label: "Tetris" },
-  { kind: "mp3",      icon: "mp3",      label: "MP3" },
-  { kind: "vlc",      icon: "vlc",      label: "Media" },
+  { kind: "terminal",    icon: "terminal",    label: "Terminal" },
+  { kind: "voice",       icon: "voice",       label: "Voice" },
+  { kind: "files",       icon: "files",       label: "Files" },
+  { kind: "code-editor", icon: "code-editor", label: "Code" },
+  { kind: "resume",      icon: "resume",      label: "Resume" },
+  { kind: "projects",    icon: "projects",    label: "Projects" },
+  { kind: "about",       icon: "about",       label: "About" },
+  { kind: "social",      icon: "social",      label: "Social" },
+  { kind: "doom",        icon: "doom",        label: "Doom" },
+  { kind: "tetris",      icon: "tetris",      label: "Tetris" },
+  { kind: "mp3",         icon: "mp3",         label: "MP3" },
+  { kind: "vlc",         icon: "vlc",         label: "Media" },
 ];
 
 export function DesktopIcons() {
