@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { llm, DEFAULT_MODEL, isLlmConfigured } from "@/lib/llm/client";
+import { getLlm, DEFAULT_MODEL, isLlmConfigured } from "@/lib/llm/client";
 import { systemPrompt } from "@/lib/llm/prompts";
 import type { ChatRequest } from "@/lib/llm/types";
 import { loadResumeContext } from "@/lib/resume/loader";
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const resumeContext = await loadResumeContext();
   const sys = systemPrompt({ resumeContext, agentRole: body.agentRole });
 
-  const stream = await llm.chat.completions.create({
+  const stream = await getLlm().chat.completions.create({
     model: body.model ?? DEFAULT_MODEL,
     messages: [sys, ...userMessages],
     stream: true,

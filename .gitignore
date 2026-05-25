@@ -16,6 +16,12 @@
 # next.js
 /.next/
 /out/
+# Also catch .next dirs in nested worktrees so auto-committers don't grab them.
+**/.next/
+**/node_modules/
+
+# Claude Code worktrees
+.claude/
 
 # production
 /build
