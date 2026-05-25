@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable static export since the app uses API routes
-  // output: 'export',
   images: {
-    domains: ['localhost'],
+    remotePatterns: [{ protocol: "http", hostname: "localhost" }],
+  },
+  eslint: {
+    // Lint runs via `npm run lint`. Don't gate `next build` on it — the
+    // legacy CLI wrapper in eslint-config-next currently emits a noisy
+    // "Unknown options: useEslintrc, extensions" warning on every build.
+    ignoreDuringBuilds: true,
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;
