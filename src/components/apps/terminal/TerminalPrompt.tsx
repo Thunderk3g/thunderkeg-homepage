@@ -16,6 +16,8 @@ export interface TerminalPromptHandle {
 interface Props {
   disabled?: boolean;
   placeholder?: string;
+  /** Prompt prefix, e.g. "~$" or "~/projects$". Defaults to "[ ▸ ]". */
+  prefix?: string;
   onSubmit: (text: string) => void;
 }
 
@@ -25,7 +27,7 @@ interface Props {
  */
 export const TerminalPrompt = forwardRef<TerminalPromptHandle, Props>(
   function TerminalPrompt(
-    { disabled, placeholder = "Ask me anything", onSubmit },
+    { disabled, placeholder = "Ask, or try ls / cat about.txt / neofetch", prefix, onSubmit },
     ref,
   ) {
     const [value, setValue] = useState("");
@@ -71,7 +73,7 @@ export const TerminalPrompt = forwardRef<TerminalPromptHandle, Props>(
           }`}
           aria-hidden
         >
-          [ ▸ ]
+          {prefix ?? "[ ▸ ]"}
         </span>
         <textarea
           ref={taRef}

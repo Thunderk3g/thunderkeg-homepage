@@ -8,6 +8,8 @@ import {
   useTerminalAgent,
   type AgentRole,
 } from "./useTerminalAgent";
+import { runShell, type ResumeShape } from "./shell";
+import type { AppKind } from "@/types/window";
 
 const MODEL_OPTIONS: Array<{ id: string; label: string }> = [
   { id: DEFAULT_MODEL, label: "openai/gpt-oss-120b" },
@@ -20,29 +22,24 @@ const AGENT_ROLE_OPTIONS: Array<{ id: AgentRole; label: string }> = [
   { id: "collaborator", label: "Collaborator" },
 ];
 
-const HELP_TEXT = [
-  "Available commands:",
+const SLASH_HELP_TEXT = [
+  "Slash commands:",
   "  /help       Show this list",
   "  /clear      Clear the terminal",
   "  /resume     Open the Resume app",
   "  /projects   Open the Projects app",
   "  /voice      Open the Voice app",
   "  /contact    Show contact email",
+  "",
+  "Also try Linux commands: ls, cd, cat, pwd, whoami, neofetch, help.",
 ].join("\n");
 
-interface ResumePersonal {
-  email?: string;
-}
-
-interface ResumeShape {
-  personal?: ResumePersonal;
-}
-
 /**
- * Hero app — the AI terminal. Hosts the agent hook, slash command dispatcher,
- * header controls (agent role + model), the history, and the prompt.
+ * Hero app — the AI terminal. Hosts the agent hook, shell-command dispatcher,
+ * slash-command dispatcher, header controls (agent role + model), the history,
+ * and the prompt.
  */
-export default function TerminalApp() {
+export default function TerminalApp({ windowId }: { windowId?: string }) {
   const agent = useTerminalAgent();
   const { messages, isStreaming, agentRole, model, setAgentRole, setModel } =
     agent;
@@ -50,36 +47,34 @@ export default function TerminalApp() {
   const windows = useWindows();
   const promptRef = useRef<TerminalPromptHandle | null>(null);
 
-  // Resume is fetched once on mount so `/contact` is instant. Failures degrade
-  // silently — the slash command falls back to a generic message.
-  const [contactEmail, setContactEmail] = useState<string | null>(null);
+  // Resume drives both /contact and the shell's fake filesystem.
+  const [resume, setResume] = useState<ResumeShape | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetch("/resume.json")
       .then((r) => (r.ok ? (r.json() as Promise<ResumeShape>) : null))
       .then((data) => {
         if (cancelled) return;
-        const email = data?.personal?.email;
-        if (typeof email === "string" && email.length > 0) {
-          setContactEmail(email);
-        }
+        if (data) setResume(data);
       })
       .catch(() => {
-        /* ignore — /contact will show a fallback */
+        /* silent — shell will render "Loading…" stubs */
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Focus the prompt on mount so the user can type immediately.
+  // Shell working directory persists across commands.
+  const [cwd, setCwd] = useState("~");
+
+  // Focus the prompt on mount.
   useEffect(() => {
     promptRef.current?.focus();
   }, []);
 
   const openByKind = useCallback(
-    (kind: Parameters<typeof windows.open>[0]) => {
-      // If the app is already open, just focus it; otherwise open a fresh window.
+    (kind: AppKind) => {
       const existing = Object.values(windows.windows).find(
         (w) => w.kind === kind,
       );
@@ -92,20 +87,29 @@ export default function TerminalApp() {
     [windows],
   );
 
+  const closeSelf = useCallback(() => {
+    // Best-effort: close the topmost terminal window if we know our own id,
+    // else the most-recent terminal in the manager.
+    const id =
+      windowId ??
+      Object.values(windows.windows)
+        .filter((w) => w.kind === "terminal")
+        .sort((a, b) => b.zIndex - a.zIndex)[0]?.id;
+    if (id) windows.close(id);
+  }, [windowId, windows]);
+
   const handleSubmit = useCallback(
     (raw: string) => {
       const text = raw.trim();
       if (!text) return;
 
-      // Slash commands are intercepted client-side and never round-trip the API.
+      // Slash commands — client-side intercepts, never round-trip the API.
       if (text.startsWith("/")) {
-        // Echo the command as a user message so the transcript shows what was
-        // typed, then render the result as a system message.
         const cmd = text.split(/\s+/)[0]!.toLowerCase();
-        agent.pushSystem(`> ${text}`);
+        agent.pushSystem(`${cwd}$ ${text}`);
         switch (cmd) {
           case "/help":
-            agent.pushSystem(HELP_TEXT);
+            agent.pushSystem(SLASH_HELP_TEXT);
             return;
           case "/clear":
             agent.clear();
@@ -124,8 +128,8 @@ export default function TerminalApp() {
             return;
           case "/contact":
             agent.pushSystem(
-              contactEmail
-                ? `Email: ${contactEmail}`
+              resume?.personal.email
+                ? `Email: ${resume.personal.email}`
                 : "Email not available — try the Social app for direct links.",
             );
             return;
@@ -137,14 +141,36 @@ export default function TerminalApp() {
         }
       }
 
+      // Shell command dispatcher — tries built-ins, falls through to the AI.
+      const result = runShell(text, cwd, {
+        openApp: openByKind,
+        exit: closeSelf,
+        resume,
+      });
+
+      if (result.kind === "clear") {
+        agent.clear();
+        return;
+      }
+      if (result.kind === "output") {
+        agent.pushSystem(`${cwd}$ ${text}`);
+        if (result.lines.length > 0) {
+          agent.pushSystem(result.lines.join("\n"));
+        }
+        if (result.newCwd) setCwd(result.newCwd);
+        return;
+      }
+
+      // Passthrough — forward to the AI agent.
       void agent.send(text);
     },
-    [agent, contactEmail, openByKind],
+    [agent, closeSelf, cwd, openByKind, resume],
   );
 
   return (
     <div className="flex h-full w-full flex-col bg-surface text-fg">
       <HeaderStrip
+        cwd={cwd}
         agentRole={agentRole}
         model={model}
         onAgentRoleChange={setAgentRole}
@@ -156,12 +182,14 @@ export default function TerminalApp() {
         ref={promptRef}
         disabled={isStreaming}
         onSubmit={handleSubmit}
+        prefix={`${cwd}$`}
       />
     </div>
   );
 }
 
 interface HeaderProps {
+  cwd: string;
   agentRole: AgentRole;
   model: string;
   isStreaming: boolean;
@@ -170,6 +198,7 @@ interface HeaderProps {
 }
 
 function HeaderStrip({
+  cwd,
   agentRole,
   model,
   isStreaming,
@@ -179,7 +208,7 @@ function HeaderStrip({
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-border bg-elevated px-3 py-2 font-mono text-xs text-muted">
       <span className="text-fg">diwakar@kali</span>
-      <span className="opacity-60">~/portfolio</span>
+      <span className="opacity-60">{cwd}</span>
       <div className="ml-auto flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-1.5">
           <span className="select-none">agent</span>
