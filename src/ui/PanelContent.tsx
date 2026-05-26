@@ -1,7 +1,7 @@
 "use client";
 
 import { resume } from "@/data/resume";
-import type { BuildingId } from "@/game/store";
+import { useGame, type BuildingId } from "@/game/store";
 
 const projectPosters: Record<string, string> = {
   METAPOD: "/art/project_metapod.png",
@@ -91,6 +91,12 @@ export function PanelContent({ id }: { id: BuildingId }) {
               </span>
             ))}
           </div>
+          <button
+            className="play-btn"
+            onClick={() => useGame.getState().startMinigame("cache-match")}
+          >
+            🎴 Play Cache Match (Redis)
+          </button>
         </div>
       );
 

@@ -258,6 +258,59 @@ canvas {
   object-fit: contain;
 }
 
+/* ---------- Minigames ---------- */
+.play-btn {
+  margin-top: 16px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--sage), #5e9a59);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(94, 154, 89, 0.4);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.play-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(94, 154, 89, 0.5);
+}
+.play-btn:active {
+  transform: translateY(0);
+}
+
+.minigame-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(74, 63, 53, 0.45);
+  backdrop-filter: blur(3px);
+}
+.minigame-modal {
+  background: var(--cream);
+  background-image: url("/ui/panel_paper.png");
+  background-size: 100% 100%;
+  border-radius: 18px;
+  padding: 34px 44px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(74, 63, 53, 0.35);
+}
+.minigame-modal h2 {
+  font-family: var(--display);
+  color: var(--terracotta);
+  font-size: 26px;
+  margin-bottom: 10px;
+}
+.minigame-loading {
+  font-family: var(--display);
+  color: var(--cream);
+  font-size: 20px;
+}
+
 /* ---------- Loader ---------- */
 .loader {
   position: fixed;
