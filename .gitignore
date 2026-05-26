@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+build/
+
+# brainstorming scratch (visual companion)
+.superpowers/
+
+# env & secrets
+.env*.local
+
+# misc
+*.log
+.DS_Store
+.vercel
+*.tsbuildinfo
