@@ -44,65 +44,65 @@ fonts/         # webfonts
 For ALL of these, append to the prompt: *"seamless tileable texture, top-down
 orthographic view, flat even lighting, no baked shadows, no perspective."*
 
-- [ ] `public/textures/grass.png` — **1024×1024** — Lush stylized Ghibli grass, soft green with subtle clover and tiny flowers, painterly.
-- [ ] `public/textures/path.png` — **1024×1024** — Warm dirt/cobblestone footpath, soft worn stones, sandy beige.
-- [ ] `public/textures/water.png` — **512×512** — Stylized calm water, soft turquoise with gentle painterly ripples (used with a shimmer shader).
-- [ ] `public/textures/roof_tiles.png` `[opt]` — **512×512** — Terracotta clay roof tiles, warm orange-red, hand-painted.
-- [ ] `public/textures/plaster.png` `[opt]` — **512×512** — Warm cream plaster wall, subtle hand-painted texture.
+- [x] `public/textures/grass.png` — **1024×1024** — Lush stylized Ghibli grass, soft green with subtle clover and tiny flowers, painterly.
+- [x] `public/textures/path.png` — **1024×1024** — Warm dirt/cobblestone footpath, soft worn stones, sandy beige.
+- [x] `public/textures/water.png` — **512×512** — Stylized calm water, soft turquoise with gentle painterly ripples (used with a shimmer shader).
+- [x] `public/textures/roof_tiles.png` `[opt]` — **512×512** — Terracotta clay roof tiles, warm orange-red, hand-painted.
+- [x] `public/textures/plaster.png` `[opt]` — **512×512** — Warm cream plaster wall, subtle hand-painted texture.
 
 ## 2. Sky & atmosphere
-- [ ] `public/sky/cloud_01.png` — **1024×512, TRANSPARENT PNG** — Single fluffy soft Ghibli cumulus cloud, isolated on transparent background, soft edges, no sky behind it.
-- [ ] `public/sky/cloud_02.png` — **1024×512, TRANSPARENT PNG** — A different wispier flat-bottomed cloud, transparent background.
-- [ ] `public/sky/cloud_03.png` — **1024×512, TRANSPARENT PNG** — A small puffy cloud cluster, transparent background.
+- [x] `public/sky/cloud_01.png` — **1024×512, TRANSPARENT PNG** — Single fluffy soft Ghibli cumulus cloud, isolated on transparent background, soft edges, no sky behind it.
+- [x] `public/sky/cloud_02.png` — **1024×512, TRANSPARENT PNG** — A different wispier flat-bottomed cloud, transparent background.
+- [x] `public/sky/cloud_03.png` — **1024×512, TRANSPARENT PNG** — A small puffy cloud cluster, transparent background.
   *(These become billboard sprites drifting across a code-generated gradient sky — best performance + that signature Ghibli sky.)*
 
 ## 3. The character avatar (used in the About panel + loading screen)
-- [ ] `public/art/avatar_portrait.png` — **1024×1024, TRANSPARENT PNG** — *Feed your own photo as a reference image to Nano Banana*, then: "Studio Ghibli-style character portrait of this person, friendly warm smile, soft cel-shaded, head & shoulders, transparent background." (Likeness is optional — a stylized friendly developer avatar is fine too.)
+- [x] `public/art/avatar_portrait.png` — **1024×1024, TRANSPARENT PNG** — *Feed your own photo as a reference image to Nano Banana*, then: "Studio Ghibli-style character portrait of this person, friendly warm smile, soft cel-shaded, head & shoulders, transparent background." (Likeness is optional — a stylized friendly developer avatar is fine too.)
 
 ## 4. UI (the interface that appears when you enter a building)
-- [ ] `public/ui/panel_paper.png` — **1024×768, TRANSPARENT PNG** — Aged parchment/paper panel with soft rounded torn edges, warm cream, faint border, empty center (for text overlay). Design for 9-slice stretching.
-- [ ] `public/ui/button.png` — **256×96, TRANSPARENT PNG** — Rounded wooden storybook button, warm, soft bevel, empty center.
-- [ ] `public/ui/interact_prompt.png` — **128×128, TRANSPARENT PNG** — A small floating cream key-cap badge showing the letter "E", soft glow, storybook style.
-- [ ] `public/ui/loading_screen.png` — **1920×1080** — Wide cozy Ghibli town at golden hour: small cluster of pastel cottages, winding path, big soft sky with clouds, rolling hills. Leave the lower third calmer for a loading bar. No text.
-- [ ] `public/ui/logo.png` — **1200×400, TRANSPARENT PNG** — Hand-lettered storybook wordmark reading "Diwakar Adhikari", warm earthy ink, gentle, transparent background.
-- [ ] `public/ui/favicon.png` — **512×512, TRANSPARENT PNG** — A single tiny cozy cottage icon, simple, readable at small size.
+- [x] `public/ui/panel_paper.png` — **1024×768, TRANSPARENT PNG** — Aged parchment/paper panel with soft rounded torn edges, warm cream, faint border, empty center (for text overlay). Design for 9-slice stretching.
+- [x] `public/ui/button.png` — **256×96, TRANSPARENT PNG** — Rounded wooden storybook button, warm, soft bevel, empty center.
+- [x] `public/ui/interact_prompt.png` — **128×128, TRANSPARENT PNG** — A small floating cream key-cap badge showing the letter "E", soft glow, storybook style.
+- [x] `public/ui/loading_screen.png` — **1920×1080** — Wide cozy Ghibli town at golden hour: small cluster of pastel cottages, winding path, big soft sky with clouds, rolling hills. Leave the lower third calmer for a loading bar. No text.
+- [x] `public/ui/logo.png` — **1200×400, TRANSPARENT PNG** — Hand-lettered storybook wordmark reading "Diwakar Adhikari", warm earthy ink, gentle, transparent background.
+- [x] `public/ui/favicon.png` — **512×512, TRANSPARENT PNG** — A single tiny cozy cottage icon, simple, readable at small size.
 
 ## 5. Section signpost icons (one consistent set — same frame/style for all 6)
 Append: *"matching icon set, identical round wooden signpost frame, centered
 symbol, transparent background, 256×256, consistent line weight."*
 
-- [ ] `public/icons/about.png` — a cozy little house / heart.
-- [ ] `public/icons/experience.png` — a briefcase / office building.
-- [ ] `public/icons/projects.png` — a workshop hammer & gear / lightbulb.
-- [ ] `public/icons/skills.png` — an open book / sprouting plant.
-- [ ] `public/icons/awards.png` — a star medal / trophy.
-- [ ] `public/icons/contact.png` — a mailbox / paper envelope.
+- [x] `public/icons/about.png` — a cozy little house / heart.
+- [x] `public/icons/experience.png` — a briefcase / office building.
+- [x] `public/icons/projects.png` — a workshop hammer & gear / lightbulb.
+- [x] `public/icons/skills.png` — an open book / sprouting plant.
+- [x] `public/icons/awards.png` — a star medal / trophy.
+- [x] `public/icons/contact.png` — a mailbox / paper envelope.
 
 ## 6. Project posters (shown as framed art inside the Projects building)
 Square illustrations, **768×768**, cozy tech-storybook style.
-- [ ] `public/art/project_metapod.png` — A glowing crystalline lockbox emitting unique geometric hash-runes; theme: secure cryptographic hashing/tokenization. Caption-free.
-- [ ] `public/art/project_krypto_tracker.png` — A cozy desk with floating coin charts and a friendly portfolio dashboard; theme: crypto portfolio tracker.
-- [ ] `public/art/project_pseudoserve.png` — A toy puppet-theater "fake server" handing API cards to a tiny developer; theme: on-the-fly API mocking.
+- [x] `public/art/project_metapod.png` — A glowing crystalline lockbox emitting unique geometric hash-runes; theme: secure cryptographic hashing/tokenization. Caption-free.
+- [x] `public/art/project_krypto_tracker.png` — A cozy desk with floating coin charts and a friendly portfolio dashboard; theme: crypto portfolio tracker.
+- [x] `public/art/project_pseudoserve.png` — A toy puppet-theater "fake server" handing API cards to a tiny developer; theme: on-the-fly API mocking.
 
 ## 7. Award badges (shown inside the Awards building)
 Circular medal/badge illustrations, **512×512, TRANSPARENT PNG**, ribbon, warm gold.
-- [ ] `public/art/award_deployment_star.png` — "Deployment Star" — a shooting star medal.
-- [ ] `public/art/award_financial_innovation.png` — "Financial Innovation" — a sprouting-coin medal.
-- [ ] `public/art/award_compex.png` — "COMPEX Scholarship" — a laurel-wreath scholar medal.
+- [x] `public/art/award_deployment_star.png` — "Deployment Star" — a shooting star medal.
+- [x] `public/art/award_financial_innovation.png` — "Financial Innovation" — a sprouting-coin medal.
+- [x] `public/art/award_compex.png` — "COMPEX Scholarship" — a laurel-wreath scholar medal.
 
 ## 8. Minigame art (all 3 minigames confirmed)
 **Bug Hunt (VAPT):**
-- [ ] `public/art/bug_creature.png` — **512×512, TRANSPARENT PNG** — A cute, harmless little Ghibli bug creature (round body, big friendly eyes, tiny legs), not scary. Used as a drifting billboard around town.
-- [ ] `public/art/bug_poof.png` — **256×256, TRANSPARENT PNG** — A soft puff of smoke/sparkles for when a bug is squashed.
-- [ ] `public/art/badge_security_star.png` — **512×512, TRANSPARENT PNG** — A glowing shield-with-star reward badge for catching all bugs (nods to VAPT/security).
+- [x] `public/art/bug_creature.png` — **512×512, TRANSPARENT PNG** — A cute, harmless little Ghibli bug creature (round body, big friendly eyes, tiny legs), not scary. Used as a drifting billboard around town.
+- [x] `public/art/bug_poof.png` — **256×256, TRANSPARENT PNG** — A soft puff of smoke/sparkles for when a bug is squashed.
+- [x] `public/art/badge_security_star.png` — **512×512, TRANSPARENT PNG** — A glowing shield-with-star reward badge for catching all bugs (nods to VAPT/security).
 
 **Kafka Courier:**
-- [ ] `public/art/event_packet.png` — **256×256, TRANSPARENT PNG** — A glowing little parcel/orb of light (a "stream event packet"), warm cyan-gold glow.
-- [ ] `public/art/badge_courier.png` `[opt]` — **512×512, TRANSPARENT PNG** — A winged-envelope courier reward badge.
+- [x] `public/art/event_packet.png` — **256×256, TRANSPARENT PNG** — A glowing little parcel/orb of light (a "stream event packet"), warm cyan-gold glow.
+- [x] `public/art/badge_courier.png` `[opt]` — **512×512, TRANSPARENT PNG** — A winged-envelope courier reward badge.
 
 **Cache Match (Redis):**
-- [ ] `public/art/card_back.png` — **512×640, TRANSPARENT PNG** — A storybook playing-card back, warm pattern, soft border (the face-down memory card).
-- [ ] `public/art/card_faces.png` — **single sheet, 6 symbols in a 3×2 grid, ~1536×1024** — 6 distinct cozy tech symbols to match in pairs (e.g., gear, key, database cylinder, lightning bolt, leaf, star), consistent storybook style, on cream cards.
+- [x] `public/art/card_back.png` — **512×640, TRANSPARENT PNG** — A storybook playing-card back, warm pattern, soft border (the face-down memory card).
+- [x] `public/art/card_faces.png` — **single sheet, 6 symbols in a 3×2 grid, ~1536×1024** — 6 distinct cozy tech symbols to match in pairs (e.g., gear, key, database cylinder, lightning bolt, leaf, star), consistent storybook style, on cream cards.
 
 ---
 
