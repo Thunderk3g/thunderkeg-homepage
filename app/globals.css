@@ -61,6 +61,71 @@ canvas {
 }
 
 /* ===========================================================
+   WebGL fallback — shown when the 3D context can't run at all.
+   Storybook card centered over the warm sky background.
+   =========================================================== */
+.webgl-fallback {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(180deg, var(--sky) 0%, var(--peach) 100%);
+}
+.webgl-fallback__card {
+  max-width: 460px;
+  text-align: center;
+  padding: 34px 30px;
+  border-radius: var(--radius-lg);
+  background: var(--cream);
+  border: 2px solid var(--paper-edge);
+  box-shadow: var(--shadow-lift);
+  background-image: var(--grain);
+}
+.webgl-fallback__card h2 {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.webgl-fallback__card p {
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+.webgl-fallback__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.webgl-fallback__actions button,
+.webgl-fallback__actions a {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 11px 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--terracotta-deep);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.webgl-fallback__actions button {
+  background: var(--terracotta);
+  color: var(--cream);
+}
+.webgl-fallback__actions a {
+  background: var(--cream);
+  color: var(--terracotta-deep);
+}
+.webgl-fallback__actions button:hover,
+.webgl-fallback__actions a:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ===========================================================
    Shared "paper card" treatment — warm cream, faint grain,
    soft inner glow, hand-drawn double border.
    =========================================================== */
