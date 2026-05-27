@@ -5,14 +5,15 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { CuboidCollider } from "@react-three/rapier";
 import { ActiveCollisionTypes } from "@dimforge/rapier3d-compat";
+import { Billboard, Text } from "@react-three/drei";
 
 import { Monster } from "./Monster";
-import { useQuests, QUEST_GOAL } from "./quests";
+import { useQuests, QUEST_GOAL, type QuestId, type QuestStatus } from "./quests";
 import { useGame } from "./store";
 import { useInteractPressed } from "./interaction";
 import { playerPosition } from "./refs";
 import { BUILDINGS, getBuilding } from "./buildings";
-import { MONSTER_FIELD } from "@/world/layout";
+import { MONSTER_FIELD, frontOf } from "@/world/layout";
 import type { MonsterModel } from "./assets";
 
 /**
@@ -34,7 +35,235 @@ export function QuestEntities() {
       {bugHunt === "active" && <BugHunt />}
       {kafka === "active" && <KafkaCourier />}
       {cache === "active" && <CacheShrine />}
+
+      {/* Quest-giver markers float above each cottage that offers a quest,
+          reflecting its status (! to start · ▶ in progress · ✓ done). */}
+      <QuestGiverMarkers />
+
+      {/* A soft objective beacon glows over the active quest's target so the
+          player knows where to go next. */}
+      <ObjectiveBeacons />
     </>
+  );
+}
+
+/* ============================================================
+   QUEST-GIVER MARKERS — a bobbing billboard icon above each
+   cottage that has a `quest`, gated by that quest's status.
+   ============================================================ */
+
+/** Per-status glyph + palette for the floating marker. */
+const MARKER_STYLE: Record<
+  QuestStatus,
+  { glyph: string; color: string; emissive: string; intensity: number }
+> = {
+  inactive: { glyph: "!", color: "#f0d27a", emissive: "#f0c84a", intensity: 1.3 },
+  active: { glyph: "▶", color: "#bfe3f0", emissive: "#7fc8e0", intensity: 1.0 },
+  complete: { glyph: "✓", color: "#9fcf9a", emissive: "#6fae6a", intensity: 0.8 },
+};
+
+function QuestGiverMarkers() {
+  // Buildings that offer a quest, with the marker hover-point above the roof.
+  const givers = useMemo(
+    () =>
+      BUILDINGS.filter(
+        (b): b is typeof b & { quest: QuestId } => b.quest != null,
+      ).map((b) => ({
+        questId: b.quest,
+        // hover a touch above the roof apex (center y + roof half-height).
+        position: [
+          b.position[0],
+          b.position[1] + b.size[1] + 1.6,
+          b.position[2],
+        ] as [number, number, number],
+      })),
+    [],
+  );
+
+  return (
+    <>
+      {givers.map((g) => (
+        <QuestGiverMarker
+          key={g.questId}
+          questId={g.questId}
+          position={g.position}
+        />
+      ))}
+    </>
+  );
+}
+
+function QuestGiverMarker({
+  questId,
+  position,
+}: {
+  questId: QuestId;
+  position: [number, number, number];
+}) {
+  const status = useQuests((s) => s.status[questId]);
+  const ref = useRef<THREE.Group>(null);
+  // Stable per-marker phase so the cluster doesn't bob in lockstep.
+  const phase = useMemo(() => position[0] * 0.7 + position[2] * 0.3, [position]);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const t = state.clock.elapsedTime;
+    ref.current.position.y = position[1] + Math.sin(t * 1.5 + phase) * 0.18;
+    // a gentle "alive" pulse — bigger when there's something to do.
+    const pulse = status === "inactive" ? 1 + Math.sin(t * 4) * 0.08 : 1;
+    ref.current.scale.setScalar(pulse);
+  });
+
+  const style = MARKER_STYLE[status];
+
+  return (
+    <group ref={ref} position={position}>
+      <Billboard>
+        {/* soft paper disc behind the glyph for legibility */}
+        <mesh>
+          <circleGeometry args={[0.42, 24]} />
+          <meshBasicMaterial
+            color="#f7f1e3"
+            transparent
+            opacity={0.82}
+            depthWrite={false}
+          />
+        </mesh>
+        <mesh position={[0, 0, -0.01]}>
+          <ringGeometry args={[0.42, 0.5, 24]} />
+          <meshBasicMaterial
+            color={style.emissive}
+            transparent
+            opacity={0.9}
+            depthWrite={false}
+          />
+        </mesh>
+        <Text
+          position={[0, 0.01, 0.01]}
+          fontSize={0.5}
+          color={style.color}
+          outlineWidth={0.03}
+          outlineColor="#4a3f35"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {style.glyph}
+        </Text>
+      </Billboard>
+      <pointLight
+        color={style.emissive}
+        intensity={style.intensity}
+        distance={3}
+        decay={2}
+      />
+    </group>
+  );
+}
+
+/* ============================================================
+   OBJECTIVE BEACONS — a faint emissive pillar + ground ring over
+   the active quest's destination (field / parcel / shrine).
+   ============================================================ */
+
+/** XZ destination + tint for each quest's "go here" beacon. */
+function useBeaconTargets() {
+  return useMemo(() => {
+    const projects = getBuilding("projects");
+    const [px, pz] = frontOf(projects.position, projects.size, 0.9);
+    const skills = getBuilding("skills");
+    const [sx, sz] = frontOf(skills.position, skills.size, 1.1);
+    return {
+      "bug-hunt": {
+        position: [MONSTER_FIELD.x, 0, MONSTER_FIELD.z] as [number, number, number],
+        color: "#c8745f",
+      },
+      "kafka-courier": {
+        position: [px, 0, pz] as [number, number, number],
+        color: "#f0c84a",
+      },
+      "cache-match": {
+        position: [sx, 0, sz] as [number, number, number],
+        color: "#b79ce8",
+      },
+    } satisfies Record<
+      QuestId,
+      { position: [number, number, number]; color: string }
+    >;
+  }, []);
+}
+
+function ObjectiveBeacons() {
+  const bugHunt = useQuests((s) => s.status["bug-hunt"]);
+  const kafka = useQuests((s) => s.status["kafka-courier"]);
+  const cache = useQuests((s) => s.status["cache-match"]);
+  const targets = useBeaconTargets();
+
+  return (
+    <>
+      {bugHunt === "active" && (
+        <ObjectiveBeacon {...targets["bug-hunt"]} radius={MONSTER_FIELD.radius} />
+      )}
+      {kafka === "active" && <ObjectiveBeacon {...targets["kafka-courier"]} />}
+      {cache === "active" && <ObjectiveBeacon {...targets["cache-match"]} />}
+    </>
+  );
+}
+
+function ObjectiveBeacon({
+  position,
+  color,
+  radius = 1.4,
+}: {
+  position: [number, number, number];
+  color: string;
+  radius?: number;
+}) {
+  const ringRef = useRef<THREE.Mesh>(null);
+  const pillarRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    // slow breathing pulse on the pillar; ring slowly spins for a beacon feel.
+    if (pillarRef.current) {
+      const m = pillarRef.current.material as THREE.MeshBasicMaterial;
+      m.opacity = 0.1 + (Math.sin(t * 1.4) * 0.5 + 0.5) * 0.14;
+    }
+    if (ringRef.current) {
+      ringRef.current.rotation.z = t * 0.4;
+      const s = 1 + Math.sin(t * 1.6) * 0.06;
+      ringRef.current.scale.set(s, s, 1);
+    }
+  });
+
+  return (
+    <group position={position}>
+      {/* faint light column rising from the destination */}
+      <mesh ref={pillarRef} position={[0, 4, 0]} renderOrder={-1}>
+        <cylinderGeometry args={[radius * 0.5, radius * 0.62, 8, 16, 1, true]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.18}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* glowing ground ring marking the spot */}
+      <mesh
+        ref={ringRef}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.06, 0]}
+      >
+        <ringGeometry args={[radius * 0.78, radius, 48]} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.5}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
   );
 }
 

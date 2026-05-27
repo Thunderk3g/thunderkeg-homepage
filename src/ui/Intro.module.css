@@ -1,0 +1,82 @@
+/* Storybook title overlay — warm palette, never traps input. */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Critical: the overlay must never swallow clicks/keys meant for the world. */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  /* Soft cream vignette so the title reads over any scene. */
+  background: radial-gradient(
+    120% 90% at 50% 42%,
+    rgba(247, 241, 227, 0.55) 0%,
+    rgba(247, 241, 227, 0.28) 38%,
+    rgba(247, 241, 227, 0) 72%
+  );
+}
+
+.entered {
+  opacity: 1;
+}
+
+.leaving {
+  opacity: 0;
+}
+
+.card {
+  text-align: center;
+  padding: 1.4rem 2.2rem;
+  transform: translateY(0);
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.leaving .card {
+  transform: translateY(-10px);
+}
+
+.name {
+  margin: 0;
+  font-family: "Baloo 2", "Nunito", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(2.2rem, 7vw, 4.4rem);
+  line-height: 1.02;
+  color: #4a3f35; /* ink */
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 0 rgba(247, 241, 227, 0.9), 0 6px 18px rgba(74, 63, 53, 0.18);
+}
+
+.role {
+  margin: 0.35rem 0 0;
+  font-family: "Nunito", "Baloo 2", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
+  color: #c8745f; /* terracotta */
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hint {
+  margin: 1.1rem 0 0;
+  font-family: "Nunito", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: clamp(0.8rem, 1.8vw, 1rem);
+  color: #4a3f35;
+  opacity: 0.72;
+}
+
+.dot {
+  color: #c8745f;
+  margin: 0 0.45em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro,
+  .card {
+    transition-duration: 1ms;
+  }
+}

@@ -32,6 +32,9 @@ export const GATE: [number, number] = [0, 12.5];
 /** Open field (north, behind Home) where Bug Hunt skeletons spawn & roam. */
 export const MONSTER_FIELD = { x: 0, z: -15.5, radius: 5.5 } as const;
 
+/** The pond (matches Terrain/Scatter). For ambient water shimmer & fireflies. */
+export const POND = { x: -9, z: -1, radius: 3.1 } as const;
+
 /** Half-width clearance kept free of scatter around each building footprint. */
 export const BUILDING_CLEAR_PAD = 1.4;
 

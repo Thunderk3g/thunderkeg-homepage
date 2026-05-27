@@ -1020,3 +1020,216 @@ canvas {
     inset 0 0 0 2px rgba(111, 174, 106, 0.4),
     0 4px 10px rgba(74, 63, 53, 0.12);
 }
+
+/* ===========================================================
+   QUEST FEEL — added by the quest-feel layer. Two parts:
+     1. Quest-log additions to the tracker (completion score +
+        the compact all-quests list with status pips).
+     2. Quest-complete toast/celebration (top-center, stacked).
+   Reuses the shared .paper card, palette vars, and fonts.
+   =========================================================== */
+
+/* ---------- Quest tracker: completion score badge ---------- */
+.quest-tracker__score {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--terracotta-deep);
+  background: rgba(240, 210, 122, 0.45);
+  border: 1.5px solid rgba(207, 155, 72, 0.55);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  vertical-align: middle;
+}
+
+/* ---------- Quest tracker: compact all-quests log ---------- */
+.quest-tracker__log {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 11px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* a faint dashed "tear" divider above the log */
+  border-top: 1.5px dashed rgba(200, 116, 95, 0.3);
+}
+.quest-tracker__log-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.quest-tracker__log-pip {
+  flex: 0 0 auto;
+  width: 16px;
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink-faint);
+}
+.quest-tracker__log-item--active {
+  color: var(--ink);
+}
+.quest-tracker__log-item--active .quest-tracker__log-pip {
+  color: var(--sky);
+}
+.quest-tracker__log-item--complete .quest-tracker__log-label {
+  color: var(--sage);
+}
+.quest-tracker__log-item--complete .quest-tracker__log-pip {
+  color: var(--sage);
+}
+/* the quest currently shown above gets a subtle highlight */
+.quest-tracker__log-item.is-active {
+  color: var(--ink);
+}
+.quest-tracker__log-item.is-active .quest-tracker__log-label {
+  text-decoration: underline;
+  text-decoration-color: rgba(200, 116, 95, 0.4);
+  text-underline-offset: 3px;
+}
+
+/* ---------- Quest-complete toast stack (top-center) ---------- */
+.quest-toasts {
+  position: fixed;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+}
+.quest-toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 14px;
+  width: min(86vw, 340px);
+  pointer-events: auto;
+  overflow: hidden;
+  animation:
+    quest-toast-in 0.4s cubic-bezier(0.18, 1.3, 0.5, 1) both,
+    quest-toast-out 0.4s ease-in 3.1s both;
+}
+@keyframes quest-toast-in {
+  from {
+    transform: translateY(-16px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes quest-toast-out {
+  to {
+    transform: translateY(-12px) scale(0.96);
+    opacity: 0;
+  }
+}
+.quest-toast__spark {
+  flex: 0 0 auto;
+  font-size: 26px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(240, 210, 122, 0.5));
+  animation: quest-toast-sparkle 1.4s ease-in-out infinite;
+}
+@keyframes quest-toast-sparkle {
+  0%, 100% { transform: scale(1) rotate(-6deg); }
+  50% { transform: scale(1.18) rotate(8deg); }
+}
+.quest-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.quest-toast__eyebrow {
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+.quest-toast__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.1;
+  color: var(--terracotta-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quest-toast__close {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid rgba(74, 63, 53, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--ink-soft);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.quest-toast__close:hover {
+  background: var(--terracotta);
+  color: #fff;
+  transform: scale(1.08);
+}
+/* a thin terracotta timer bar that drains as the toast lives */
+.quest-toast__timer {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 6px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sage), var(--terracotta));
+  transform-origin: left center;
+  animation: quest-toast-drain 3.5s linear both;
+}
+@keyframes quest-toast-drain {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (max-width: 560px) {
+  .quest-toasts {
+    top: 14px;
+  }
+  .quest-toast__title {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quest-toast {
+    animation: quest-toast-in 0.001ms both, quest-toast-out 0.001ms 3.4s both;
+  }
+  .quest-toast__spark {
+    animation: none;
+  }
+  .quest-toast__timer {
+    animation: quest-toast-drain 3.5s linear both;
+  }
+}
