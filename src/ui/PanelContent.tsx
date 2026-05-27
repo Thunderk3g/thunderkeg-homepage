@@ -33,15 +33,19 @@ export function PanelContent({ id }: { id: BuildingId }) {
           </div>
           <p>{r.summary}</p>
           <h4>Education</h4>
-          <p>
-            <strong>{edu.degree}</strong>, {edu.major}
-            <br />
-            {edu.university} · CGPA {edu.cgpa} · {edu.start_date}–{edu.end_date}
-          </p>
+          <div className="note">
+            <p>
+              <strong>{edu.degree}</strong>, {edu.major}
+              <br />
+              {edu.university} · CGPA {edu.cgpa} · {edu.start_date}–{edu.end_date}
+            </p>
+          </div>
           <h4>Certification</h4>
-          <p>
-            {cert.title} — {cert.issuer} ({cert.duration})
-          </p>
+          <div className="note">
+            <p>
+              {cert.title} — {cert.issuer} ({cert.duration})
+            </p>
+          </div>
         </div>
       );
     }
@@ -84,6 +88,7 @@ export function PanelContent({ id }: { id: BuildingId }) {
       return (
         <div className="content">
           <h3>The tech garden</h3>
+          <p className="muted">A handful of tools I tend to and grow with.</p>
           <div className="chips">
             {r.skills.map((s) => (
               <span className="chip" key={s}>
@@ -129,25 +134,43 @@ export function PanelContent({ id }: { id: BuildingId }) {
       return (
         <div className="content">
           <h3>Send a letter</h3>
-          <p>
-            <a href={`mailto:${p.email}`}>{p.email}</a>
-          </p>
-          <p>{p.phone}</p>
-          <p>{p.location}</p>
-          {p.linkedin && (
-            <p>
-              <a href={p.linkedin} target="_blank" rel="noreferrer">
-                LinkedIn
-              </a>
-            </p>
-          )}
-          {p.github && (
-            <p>
-              <a href={p.github} target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-            </p>
-          )}
+          <p className="muted">Always happy to hear from a fellow traveller.</p>
+          <div className="contact-list">
+            <div className="contact-row">
+              <span className="dot" aria-hidden="true" />
+              <p>
+                <a href={`mailto:${p.email}`}>{p.email}</a>
+              </p>
+            </div>
+            <div className="contact-row">
+              <span className="dot" aria-hidden="true" />
+              <p>{p.phone}</p>
+            </div>
+            <div className="contact-row">
+              <span className="dot" aria-hidden="true" />
+              <p>{p.location}</p>
+            </div>
+            {p.linkedin && (
+              <div className="contact-row">
+                <span className="dot" aria-hidden="true" />
+                <p>
+                  <a href={p.linkedin} target="_blank" rel="noreferrer">
+                    LinkedIn
+                  </a>
+                </p>
+              </div>
+            )}
+            {p.github && (
+              <div className="contact-row">
+                <span className="dot" aria-hidden="true" />
+                <p>
+                  <a href={p.github} target="_blank" rel="noreferrer">
+                    GitHub
+                  </a>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       );
     }

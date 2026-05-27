@@ -13,7 +13,7 @@ export function MinigameHost() {
 
   return (
     <div className="minigame-overlay">
-      <Suspense fallback={<div className="minigame-loading">Loading…</div>}>
+      <Suspense fallback={<div className="minigame-loading">Shuffling the cards…</div>}>
         <Game />
       </Suspense>
     </div>

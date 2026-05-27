@@ -32,8 +32,8 @@ export function Hud() {
   return (
     <div className="hud">
       {near && !activePanel && (
-        <div className="prompt">
-          <img src="/ui/interact_prompt.png" alt="E" className="prompt-key" />
+        <div className="prompt" role="status">
+          <kbd className="prompt-key" aria-label="Press E">E</kbd>
           <span>
             Enter <strong>{getBuilding(near).label}</strong>
           </span>

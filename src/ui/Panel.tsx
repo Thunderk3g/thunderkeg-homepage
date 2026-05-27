@@ -8,7 +8,7 @@ export function Panel({ id, onClose }: { id: BuildingId; onClose: () => void }) 
   const b = getBuilding(id);
   return (
     <div className="panel-overlay" onClick={onClose}>
-      <div className="panel" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={b.label}>
+      <div className="panel paper" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={b.label}>
         <div className="panel-header">
           <img src={b.icon} alt="" className="panel-icon" />
           <h2>{b.label}</h2>

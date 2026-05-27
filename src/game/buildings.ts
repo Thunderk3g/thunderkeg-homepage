@@ -77,7 +77,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: "contact",
     label: "Contact",
     blurb: "Send a letter",
-    position: [0, 0, 14],
+    position: [0, 0, 19],
     size: [1.8, 1.4, 1.8],
     color: "#bcd9e8",
     roof: "#7fa8c0",
