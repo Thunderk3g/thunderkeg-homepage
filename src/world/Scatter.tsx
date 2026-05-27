@@ -2,18 +2,32 @@
 
 import { useMemo } from "react";
 import { Instances, Instance } from "@react-three/drei";
-import * as THREE from "three";
+
+import { BUILDINGS } from "@/game/buildings";
+import {
+  SPAWN,
+  PLAZA,
+  GATE,
+  MONSTER_FIELD,
+  BUILDING_CLEAR_PAD,
+} from "./layout";
 
 /**
- * Decorative scatter: instanced trees, rocks, flowers, grass tufts, lanterns
- * and fences. SEAM owned by the natural-environment agent.
+ * Decorative scatter: instanced stylized trees, rocks, bushes, flower/grass
+ * tufts and a ring of lily pads by the pond. SEAM owned by the
+ * natural-environment agent.
  *
  * Determinism: NO Math.random() during render. A seeded mulberry32 PRNG drives
  * every position/scale/rotation, all computed ONCE in useMemo so the layout is
- * stable across re-renders. Repeated props use instancing (drei <Instances>).
+ * stable across re-renders. Everything repeated is instanced (drei <Instances>)
+ * and — since none of this scatter ever moves — every static group carries
+ * `frames={1}` to upload its matrices once and stop per-frame GPU traffic
+ * (the iGPU loses its context on OOM, so this is load-bearing, not a nicety).
  *
- * Placement rules: props never land on the winding path, on a building
- * footprint (+~2u margin), on the spawn point, or in the pond.
+ * Placement rules: props never land on the main path (plaza→building doorsteps,
+ * plaza→gate), on a building footprint (+BUILDING_CLEAR_PAD), in the plaza, on
+ * the spawn point, in the pond, or in the MONSTER_FIELD — that field stays OPEN
+ * for the Bug Hunt skeletons.
  */
 
 // ---------------------------------------------------------------------------
@@ -31,47 +45,36 @@ function mulberry32(seed: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Layout constants — mirror the world so placement avoids structures.
+// Layout — derived from the SHARED contracts so scatter tracks the real world.
+// (src/world/layout.ts + src/game/buildings.ts are the single source of truth.)
 // ---------------------------------------------------------------------------
 type V2 = [number, number];
 
-const BUILDINGS: Array<{ pos: V2; half: V2 }> = [
-  { pos: [0, 0], half: [2, 2] }, // about
-  { pos: [-12, -8], half: [2.2, 2.2] }, // experience
-  { pos: [12, -8], half: [2.4, 2.4] }, // projects
-  { pos: [-13, 6], half: [2.2, 2.2] }, // skills
-  { pos: [13, 6], half: [2, 2] }, // awards
-  { pos: [0, 19], half: [1.8, 1.8] }, // contact
-];
-const BUILDING_MARGIN = 2;
+/** Building footprints projected to XZ: centre + half-extents. */
+const FOOTPRINTS: Array<{ pos: V2; half: V2 }> = BUILDINGS.map((b) => ({
+  pos: [b.position[0], b.position[2]],
+  half: [b.size[0], b.size[2]],
+}));
 
-const SPAWN: V2 = [0, 6];
-const SPAWN_CLEAR = 3.5;
+const SPAWN_XZ: V2 = [SPAWN[0], SPAWN[2]];
+const SPAWN_CLEAR = 3.0;
 
+// Pond off to the west, between About and Experience. Centre + radius MUST
+// match the Terrain water disc at (-9, 0, -1) (r≈3.1, rim≈3.6) so the lily
+// pads land on the water and props avoid the shoreline.
 const POND_CENTER: V2 = [-9, -1];
-const POND_CLEAR = 4.2;
+const POND_RADIUS = 3.1;
+const POND_CLEAR = 3.6 + 0.6; // rim radius + a little bank breathing room
 
-// Path skeleton (same control points as Terrain): hub + branch endpoints.
-const HUB: V2 = [0, 4];
-const PATH_TARGETS: V2[] = [
-  [0, 6], // spawn
-  [0, 0.2], // about
-  [-9.5, -6.5], // experience
-  [9.5, -6.5], // projects
-  [-10.5, 5.2], // skills
-  [10.5, 5.2], // awards
-  [0, 16.5], // contact
-];
+// Main path skeleton: every route radiates from the plaza centre — out to each
+// building's doorstep and down to the south gate. We approximate the painted
+// path as a fixed clearance corridor along each segment.
+const PLAZA_C: V2 = [PLAZA.x, PLAZA.z];
 const PATH_SEGMENTS: Array<[V2, V2]> = [
-  [PATH_TARGETS[0], HUB],
-  [HUB, PATH_TARGETS[1]],
-  [HUB, PATH_TARGETS[2]],
-  [HUB, PATH_TARGETS[3]],
-  [HUB, PATH_TARGETS[4]],
-  [HUB, PATH_TARGETS[5]],
-  [HUB, PATH_TARGETS[6]],
+  ...BUILDINGS.map((b): [V2, V2] => [PLAZA_C, [b.position[0], b.position[2]]]),
+  [PLAZA_C, GATE],
 ];
-const PATH_CLEAR = 2.0; // keep props this far from the path centre-line
+const PATH_CLEAR = 1.8; // keep props this far from the path centre-line
 
 // ---------------------------------------------------------------------------
 // Geometry helpers
@@ -91,17 +94,30 @@ function distToSegment(px: number, pz: number, a: V2, b: V2): number {
 
 /** True if (x,z) is a legal spot for a scatter prop. */
 function isClear(x: number, z: number, extra = 0): boolean {
-  for (const b of BUILDINGS) {
+  // Building footprints + clearance pad.
+  for (const b of FOOTPRINTS) {
     if (
-      Math.abs(x - b.pos[0]) < b.half[0] + BUILDING_MARGIN + extra &&
-      Math.abs(z - b.pos[1]) < b.half[1] + BUILDING_MARGIN + extra
+      Math.abs(x - b.pos[0]) < b.half[0] + BUILDING_CLEAR_PAD + extra &&
+      Math.abs(z - b.pos[1]) < b.half[1] + BUILDING_CLEAR_PAD + extra
     ) {
       return false;
     }
   }
-  if (Math.hypot(x - SPAWN[0], z - SPAWN[1]) < SPAWN_CLEAR + extra) return false;
+  // Village green / plaza.
+  if (Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.radius + extra) return false;
+  // Spawn breathing room.
+  if (Math.hypot(x - SPAWN_XZ[0], z - SPAWN_XZ[1]) < SPAWN_CLEAR + extra)
+    return false;
+  // Pond.
   if (Math.hypot(x - POND_CENTER[0], z - POND_CENTER[1]) < POND_CLEAR + extra)
     return false;
+  // Bug Hunt field — keep it open for the skeletons.
+  if (
+    Math.hypot(x - MONSTER_FIELD.x, z - MONSTER_FIELD.z) <
+    MONSTER_FIELD.radius + extra
+  )
+    return false;
+  // Main paths.
   for (const [a, b] of PATH_SEGMENTS) {
     if (distToSegment(x, z, a, b) < PATH_CLEAR + extra) return false;
   }
@@ -115,12 +131,7 @@ interface Placed {
   rot: number; // y rotation
 }
 
-/** A tree-crown blob: a Placed with an explicit crown height. */
-interface FoliageBlob extends Placed {
-  y: number;
-}
-
-/** Rejection-sample N clear placements within a square region. */
+/** Rejection-sample N clear placements within an annulus around the origin. */
 function sample(
   rand: () => number,
   n: number,
@@ -131,7 +142,7 @@ function sample(
     sMax: number;
     extra?: number;
     centerBias?: boolean;
-  }
+  },
 ): Placed[] {
   const out: Placed[] = [];
   const { sMin, sMax, extra = 0 } = opts;
@@ -158,57 +169,83 @@ function sample(
   return out;
 }
 
-// Foliage palette (sage -> deep forest)
-const FOLIAGE = ["#a8cf8f", "#6fae6a", "#4e8a52"];
+// ---------------------------------------------------------------------------
+// Palettes — few materials, warm Ghibli sage→forest greens + wildflowers.
+// ---------------------------------------------------------------------------
+const FOLIAGE = ["#a8cf8f", "#6fae6a", "#4e8a52"]; // light, mid, deep green
+const FOLIAGE_INK = "#3a4a2f"; // dark back-foliage = cheap storybook ink edge
+const BUSH = ["#7fb872", "#5f9a59"];
 const FLOWER = ["#c8745f", "#cdbce8", "#f7f1e3", "#f0d27a"];
+
+/** One foliage tier of a tree: a rounded blob sitting at height y. */
+interface Tier {
+  x: number;
+  z: number;
+  y: number;
+  s: number; // radius scale
+  rot: number;
+  color: string;
+}
 
 export function Scatter() {
   const layout = useMemo(() => {
     const rand = mulberry32(0xc0ffee);
 
     // --- Trees: pushed to the rim + groves between buildings ----------------
-    const treeSlots = sample(rand, 110, {
-      minR: 8,
+    // Each tree = tapered trunk + 2-3 stacked, shrinking foliage tiers. Tiers
+    // are flattened into per-color instance lists (few draw calls). A single
+    // dark "back tier" per tree, scaled up slightly, fakes an ink outline.
+    const treeSlots = sample(rand, 96, {
+      minR: 7,
       maxR: 58,
-      sMin: 0.8,
-      sMax: 1.9,
+      sMin: 0.85,
+      sMax: 1.8,
       extra: 0.6,
     });
-    const trees = treeSlots.map((p) => {
-      const blobCount = 1 + Math.floor(rand() * 3); // 1..3 foliage blobs
-      const blobs = Array.from({ length: blobCount }, () => ({
-        color: FOLIAGE[Math.floor(rand() * FOLIAGE.length)],
-        ox: (rand() - 0.5) * 0.5,
-        oz: (rand() - 0.5) * 0.5,
-        oy: rand() * 0.5,
-        r: 0.7 + rand() * 0.5,
-      }));
-      return { ...p, blobs };
-    });
-    // Flatten foliage blobs into instanced lists per palette color.
-    const trunkInstances = trees.map((t) => ({
-      x: t.x,
-      z: t.z,
-      s: t.s,
-      rot: t.rot,
-    }));
-    const foliageByColor: Record<string, FoliageBlob[]> = {};
-    FOLIAGE.forEach((c) => (foliageByColor[c] = []));
-    for (const t of trees) {
-      const trunkH = 1.4 * t.s;
-      for (const b of t.blobs) {
-        foliageByColor[b.color].push({
-          x: t.x + b.ox * t.s,
-          z: t.z + b.oz * t.s,
-          s: b.r * t.s,
-          rot: t.rot,
-          y: trunkH + (0.8 + b.oy) * t.s,
+
+    const trunks: Placed[] = [];
+    const tiersByColor: Record<string, Tier[]> = {};
+    FOLIAGE.forEach((c) => (tiersByColor[c] = []));
+    const inkTiers: Tier[] = [];
+
+    for (const t of treeSlots) {
+      const trunkH = 1.5 * t.s;
+      trunks.push({ x: t.x, z: t.z, s: t.s, rot: t.rot });
+
+      const tierCount = 2 + Math.floor(rand() * 2); // 2..3 tiers
+      // Crown base sits a touch above the trunk top.
+      let cy = trunkH * 0.78;
+      let tierR = (0.95 + rand() * 0.35) * t.s; // bottom tier radius
+      for (let i = 0; i < tierCount; i++) {
+        const jx = (rand() - 0.5) * 0.18 * t.s;
+        const jz = (rand() - 0.5) * 0.18 * t.s;
+        const color = FOLIAGE[Math.min(FOLIAGE.length - 1, i)];
+        const tier: Tier = {
+          x: t.x + jx,
+          z: t.z + jz,
+          y: cy + tierR * 0.55,
+          s: tierR,
+          rot: t.rot + i * 1.1,
+          color,
+        };
+        tiersByColor[color].push(tier);
+        // Dark back-foliage twin (slightly larger) → cheap storybook ink edge.
+        inkTiers.push({
+          x: tier.x,
+          z: tier.z,
+          y: tier.y,
+          s: tier.s * 1.08,
+          rot: tier.rot,
+          color: FOLIAGE_INK,
         });
+        // Next tier sits higher and is smaller.
+        cy += tierR * 0.72;
+        tierR *= 0.7;
       }
     }
 
     // --- Rocks --------------------------------------------------------------
-    const rocks = sample(rand, 55, {
+    const rocks = sample(rand, 48, {
       minR: 5,
       maxR: 56,
       sMin: 0.25,
@@ -216,9 +253,24 @@ export function Scatter() {
       extra: 0.2,
     });
 
+    // --- Bushes: small rounded shrubs, clustered toward the rim ------------
+    const bushSlots = sample(rand, 54, {
+      minR: 6,
+      maxR: 54,
+      sMin: 0.5,
+      sMax: 1.05,
+      extra: 0.2,
+    });
+    const bushesByColor: Record<string, Placed[]> = {};
+    BUSH.forEach((c) => (bushesByColor[c] = []));
+    for (const b of bushSlots) {
+      const col = BUSH[Math.floor(rand() * BUSH.length)];
+      bushesByColor[col].push(b);
+    }
+
     // --- Flower / grass tuft clusters --------------------------------------
     // Pick cluster centers, then dot a few tufts around each.
-    const clusterCenters = sample(rand, 60, {
+    const clusterCenters = sample(rand, 56, {
       minR: 4,
       maxR: 50,
       sMin: 1,
@@ -252,111 +304,83 @@ export function Scatter() {
       }
     }
 
-    // --- Lanterns: spaced along every path segment -------------------------
-    const lanterns: V2[] = [];
-    const lanternSide = 1.35; // offset from path centre-line
-    for (const [a, b] of PATH_SEGMENTS) {
-      const dx = b[0] - a[0];
-      const dz = b[1] - a[1];
-      const len = Math.hypot(dx, dz);
-      const nx = dx / len;
-      const nz = dz / len;
-      const px = -nz; // perpendicular
-      const pz = nx;
-      const step = 5.5;
-      let along = step * 0.6;
-      let flip = 1;
-      while (along < len - 1.2) {
-        const cx = a[0] + nx * along + px * lanternSide * flip;
-        const cz = a[1] + nz * along + pz * lanternSide * flip;
-        // avoid dropping a lantern inside a building margin
-        if (isClear(cx, cz, -1.4)) lanterns.push([cx, cz]);
-        along += step;
-        flip *= -1;
-      }
+    // --- Lily pads: a little raft of discs floating on the pond -------------
+    // Placed directly on the water surface (no isClear — they belong IN the
+    // pond). Kept within the pond radius so none drift onto the bank.
+    const lilies: Placed[] = [];
+    const lilyCount = 7;
+    for (let i = 0; i < lilyCount; i++) {
+      const a = rand() * Math.PI * 2;
+      const rr = rand() * (POND_RADIUS - 0.7);
+      lilies.push({
+        x: POND_CENTER[0] + Math.cos(a) * rr,
+        z: POND_CENTER[1] + Math.sin(a) * rr,
+        s: 0.45 + rand() * 0.5,
+        rot: rand() * Math.PI * 2,
+      });
     }
 
-    // --- Fences: short runs lining a couple of building approaches ---------
-    // Build picket lines along the edges of two segments (skills & projects).
-    const fencePosts: Array<{ x: number; z: number; rot: number }> = [];
-    const fenceRails: Array<{ x: number; z: number; rot: number; len: number }> =
-      [];
-    const makeFenceRun = (a: V2, b: V2, side: number) => {
-      const dx = b[0] - a[0];
-      const dz = b[1] - a[1];
-      const len = Math.hypot(dx, dz);
-      const nx = dx / len;
-      const nz = dz / len;
-      const px = -nz * 1.9 * side;
-      const pz = nx * 1.9 * side;
-      const rot = Math.atan2(nx, nz);
-      const spacing = 1.1;
-      const count = Math.floor((len - 2) / spacing);
-      for (let i = 0; i <= count; i++) {
-        const t = 1 + i * spacing;
-        const x = a[0] + nx * t + px;
-        const z = a[1] + nz * t + pz;
-        fencePosts.push({ x, z, rot });
-        if (i < count) {
-          fenceRails.push({
-            x: a[0] + nx * (t + spacing / 2) + px,
-            z: a[1] + nz * (t + spacing / 2) + pz,
-            rot,
-            len: spacing,
-          });
-        }
-      }
-    };
-    // skills branch and projects branch get a fence on their outer side
-    makeFenceRun(HUB, PATH_TARGETS[4], 1); // skills
-    makeFenceRun(HUB, PATH_TARGETS[3], -1); // projects
-
     return {
-      trunkInstances,
-      foliageByColor,
+      trunks,
+      tiersByColor,
+      inkTiers,
       rocks,
+      bushesByColor,
       flowersByColor,
       grass,
-      lanterns,
-      fencePosts,
-      fenceRails,
+      lilies,
     };
   }, []);
 
   return (
     <group>
-      {/* ---- Tree trunks (one instanced mesh) ---- */}
-      <Instances limit={400} castShadow receiveShadow>
-        <cylinderGeometry args={[0.16, 0.26, 1.4, 6]} />
+      {/* ---- Tree trunks (one instanced mesh, tapered + flat-shaded) ---- */}
+      <Instances frames={1} limit={200} castShadow receiveShadow>
+        <cylinderGeometry args={[0.14, 0.26, 1.5, 6]} />
         <meshStandardMaterial color="#8a6a4a" roughness={1} flatShading />
-        {layout.trunkInstances.map((t, i) => (
+        {layout.trunks.map((t, i) => (
           <Instance
             key={i}
-            position={[t.x, (1.4 * t.s) / 2, t.z]}
+            position={[t.x, (1.5 * t.s) / 2, t.z]}
             scale={[t.s, t.s, t.s]}
             rotation={[0, t.rot, 0]}
           />
         ))}
       </Instances>
 
-      {/* ---- Tree foliage blobs, one instanced mesh per palette color ---- */}
+      {/* ---- Ink back-foliage: dark tier twins, rendered first so the
+              colored crowns sit just in front → cheap storybook edge ---- */}
+      <Instances frames={1} limit={400}>
+        <icosahedronGeometry args={[1, 1]} />
+        <meshStandardMaterial color={FOLIAGE_INK} roughness={1} flatShading />
+        {layout.inkTiers.map((t, i) => (
+          <Instance
+            key={i}
+            position={[t.x, t.y, t.z]}
+            scale={[t.s, t.s * 0.92, t.s]}
+            rotation={[0, t.rot, 0]}
+          />
+        ))}
+      </Instances>
+
+      {/* ---- Tree foliage tiers, one instanced mesh per green tone ---- */}
       {FOLIAGE.map((color) => (
-        <Instances key={color} limit={400} castShadow>
+        <Instances key={color} frames={1} limit={400} castShadow>
           <icosahedronGeometry args={[1, 1]} />
           <meshStandardMaterial color={color} roughness={1} flatShading />
-          {layout.foliageByColor[color].map((b, i) => (
+          {layout.tiersByColor[color].map((t, i) => (
             <Instance
               key={i}
-              position={[b.x, b.y, b.z]}
-              scale={[b.s, b.s * 0.92, b.s]}
-              rotation={[0, b.rot, 0]}
+              position={[t.x, t.y, t.z]}
+              scale={[t.s, t.s * 0.92, t.s]}
+              rotation={[0, t.rot, 0]}
             />
           ))}
         </Instances>
       ))}
 
       {/* ---- Rocks ---- */}
-      <Instances limit={120} castShadow receiveShadow>
+      <Instances frames={1} limit={120} castShadow receiveShadow>
         <icosahedronGeometry args={[1, 0]} />
         <meshStandardMaterial color="#9aa0a6" roughness={1} flatShading />
         {layout.rocks.map((r, i) => (
@@ -369,8 +393,24 @@ export function Scatter() {
         ))}
       </Instances>
 
+      {/* ---- Bushes: rounded low-poly shrubs, one mesh per tone ---- */}
+      {BUSH.map((color) => (
+        <Instances key={color} frames={1} limit={120} castShadow receiveShadow>
+          <icosahedronGeometry args={[1, 1]} />
+          <meshStandardMaterial color={color} roughness={1} flatShading />
+          {layout.bushesByColor[color].map((b, i) => (
+            <Instance
+              key={i}
+              position={[b.x, b.s * 0.5, b.z]}
+              scale={[b.s, b.s * 0.8, b.s]}
+              rotation={[0, b.rot, 0]}
+            />
+          ))}
+        </Instances>
+      ))}
+
       {/* ---- Grass tufts ---- */}
-      <Instances limit={600}>
+      <Instances frames={1} limit={600}>
         <coneGeometry args={[0.14, 0.5, 5]} />
         <meshStandardMaterial color="#6fae6a" roughness={1} flatShading />
         {layout.grass.map((g, i) => (
@@ -383,9 +423,9 @@ export function Scatter() {
         ))}
       </Instances>
 
-      {/* ---- Flowers, one instanced mesh per color ---- */}
+      {/* ---- Flowers, one instanced mesh per warm wildflower color ---- */}
       {FLOWER.map((color) => (
-        <Instances key={color} limit={400}>
+        <Instances key={color} frames={1} limit={400}>
           <coneGeometry args={[0.12, 0.42, 6]} />
           <meshStandardMaterial
             color={color}
@@ -405,48 +445,16 @@ export function Scatter() {
         </Instances>
       ))}
 
-      {/* ---- Lanterns: instanced posts + instanced emissive tops ---- */}
-      <Instances limit={120} castShadow>
-        <cylinderGeometry args={[0.07, 0.09, 1.5, 6]} />
-        <meshStandardMaterial color="#5a4632" roughness={1} flatShading />
-        {layout.lanterns.map((l, i) => (
-          <Instance key={i} position={[l[0], 0.75, l[1]]} />
-        ))}
-      </Instances>
-      <Instances limit={120}>
-        <icosahedronGeometry args={[0.22, 0]} />
-        <meshStandardMaterial
-          color="#ffcaa0"
-          emissive="#ffcaa0"
-          emissiveIntensity={2.4}
-          toneMapped={false}
-        />
-        {layout.lanterns.map((l, i) => (
-          <Instance key={i} position={[l[0], 1.6, l[1]]} />
-        ))}
-      </Instances>
-
-      {/* ---- Fences: instanced posts + instanced rails ---- */}
-      <Instances limit={200} castShadow receiveShadow>
-        <boxGeometry args={[0.12, 0.9, 0.12]} />
-        <meshStandardMaterial color="#8a6a4a" roughness={1} flatShading />
-        {layout.fencePosts.map((p, i) => (
+      {/* ---- Lily pads: flat discs floating just over the pond surface ---- */}
+      <Instances frames={1} limit={40} receiveShadow>
+        <cylinderGeometry args={[0.5, 0.5, 0.04, 7]} />
+        <meshStandardMaterial color="#5f9a59" roughness={1} flatShading />
+        {layout.lilies.map((l, i) => (
           <Instance
             key={i}
-            position={[p.x, 0.45, p.z]}
-            rotation={[0, p.rot, 0]}
-          />
-        ))}
-      </Instances>
-      <Instances limit={200} castShadow>
-        <boxGeometry args={[0.06, 0.08, 1]} />
-        <meshStandardMaterial color="#a07d57" roughness={1} flatShading />
-        {layout.fenceRails.map((r, i) => (
-          <Instance
-            key={i}
-            position={[r.x, 0.6, r.z]}
-            rotation={[0, r.rot, 0]}
-            scale={[1, 1, r.len]}
+            position={[l.x, 0.06, l.z]}
+            scale={[l.s, 1, l.s]}
+            rotation={[0, l.rot, 0]}
           />
         ))}
       </Instances>

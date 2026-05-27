@@ -891,3 +891,132 @@ canvas {
     animation: none !important;
   }
 }
+
+/* ===========================================================
+   QUEST TRACKER — top-left storybook "torn page" pinned note that
+   shows the active quest's label, objective, and progress. Added by
+   the quest layer; reuses the shared .paper card treatment + palette.
+   =========================================================== */
+.quest-tracker {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 11;
+  width: min(72vw, 280px);
+  padding: 14px 18px 16px;
+  pointer-events: none;
+  animation: quest-tracker-pop 0.34s cubic-bezier(0.18, 1.3, 0.5, 1) both;
+}
+.quest-tracker__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 5px;
+}
+/* a little terracotta "wax seal" pin dot */
+.quest-tracker__pin {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--terracotta), var(--terracotta-deep));
+  box-shadow:
+    inset 0 0 0 2px rgba(247, 241, 227, 0.55),
+    0 2px 4px rgba(177, 95, 75, 0.4);
+}
+.quest-tracker__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--ink);
+  margin: 0;
+}
+.quest-tracker__objective {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+.quest-tracker__progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quest-tracker__count {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--terracotta-deep);
+  white-space: nowrap;
+}
+.quest-tracker__bar {
+  position: relative;
+  flex: 1 1 auto;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--ink-faint);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(74, 63, 53, 0.18);
+}
+.quest-tracker__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--sage-soft), var(--sage) 60%, #5e9a59);
+  transition: width 0.35s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+.quest-tracker__done {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--sage);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.quest-tracker__done::before {
+  content: "✓";
+  font-weight: 800;
+}
+
+@keyframes quest-tracker-pop {
+  from {
+    transform: translateY(-10px) scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .quest-tracker {
+    top: 12px;
+    left: 12px;
+    width: min(64vw, 240px);
+    padding: 11px 14px 13px;
+  }
+  .quest-tracker__title {
+    font-size: 16px;
+  }
+}
+
+/* "Quest complete" state for the panel quest button (reuses .play-btn). */
+.play-btn--done {
+  background: var(--cream-deep);
+  color: var(--sage);
+  cursor: default;
+  box-shadow:
+    inset 0 0 0 2px rgba(111, 174, 106, 0.4),
+    0 4px 10px rgba(74, 63, 53, 0.12);
+}
+.play-btn--done:hover {
+  transform: none;
+  box-shadow:
+    inset 0 0 0 2px rgba(111, 174, 106, 0.4),
+    0 4px 10px rgba(74, 63, 53, 0.12);
+}

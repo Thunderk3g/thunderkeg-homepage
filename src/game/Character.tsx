@@ -16,6 +16,7 @@ import { useGLTF, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
 import { HERO_MODEL, CLIPS } from "@/game/assets";
 import { playerSpeed } from "@/game/refs";
+import { heroAttack } from "@/game/interaction";
 
 // ──────────────────────────────────────────────────────────────────────────
 // VISUAL TUNING CONSTANTS — adjust after a visual check in the running world.
@@ -70,6 +71,11 @@ export function Character() {
   // never restart the active clip every frame.
   const current = useRef<string | null>(null);
 
+  // One-shot melee swing: when `heroAttack.token` bumps (a monster was struck),
+  // play the chop clip once and suppress locomotion until it finishes.
+  const lastAttackToken = useRef(heroAttack.token);
+  const attackUntil = useRef(0);
+
   // Start in idle once the actions are available.
   useEffect(() => {
     const idle = actions[CLIPS.idle];
@@ -85,6 +91,24 @@ export function Character() {
   }, [actions]);
 
   useFrame(() => {
+    const now = performance.now() / 1000;
+
+    // --- one-shot melee swing (overrides locomotion while playing) ---
+    if (heroAttack.token !== lastAttackToken.current) {
+      lastAttackToken.current = heroAttack.token;
+      const swing = actions[CLIPS.attack];
+      if (swing) {
+        const prev = current.current ? actions[current.current] : null;
+        if (prev && prev !== swing) prev.fadeOut(0.08);
+        swing.reset().setLoop(THREE.LoopOnce, 1);
+        swing.clampWhenFinished = true;
+        swing.setEffectiveWeight(1).fadeIn(0.06).play();
+        current.current = CLIPS.attack;
+        attackUntil.current = now + swing.getClip().duration * 0.9;
+      }
+    }
+    if (now < attackUntil.current) return; // let the swing finish
+
     const speed = playerSpeed.value;
     const next =
       speed < WALK_THRESHOLD

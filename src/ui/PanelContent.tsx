@@ -2,6 +2,38 @@
 
 import { resume } from "@/data/resume";
 import { useGame, type BuildingId } from "@/game/store";
+import { getBuilding } from "@/game/buildings";
+import { useQuests, QUEST_LABEL, type QuestId } from "@/game/quests";
+
+/**
+ * "Begin {quest}" button shown in a cottage panel that offers a quest. Starts
+ * the quest in the in-world quest store and closes the panel so the player can
+ * play it in the 3D village. Shows a completed state once the quest is done.
+ */
+function QuestButton({ quest }: { quest: QuestId }) {
+  const status = useQuests((s) => s.status[quest]);
+  const isComplete = status === "complete";
+
+  if (isComplete) {
+    return (
+      <button className="play-btn play-btn--done" disabled>
+        {QUEST_LABEL[quest]} complete ✓
+      </button>
+    );
+  }
+
+  return (
+    <button
+      className="play-btn"
+      onClick={() => {
+        useQuests.getState().start(quest);
+        useGame.getState().closePanel();
+      }}
+    >
+      ⚔️ Begin {QUEST_LABEL[quest]}
+    </button>
+  );
+}
 
 const projectPosters: Record<string, string> = {
   METAPOD: "/art/project_metapod.png",
@@ -63,6 +95,9 @@ export function PanelContent({ id }: { id: BuildingId }) {
               <li key={i}>{line}</li>
             ))}
           </ul>
+          {getBuilding("experience").quest && (
+            <QuestButton quest={getBuilding("experience").quest!} />
+          )}
         </div>
       );
     }
@@ -81,6 +116,9 @@ export function PanelContent({ id }: { id: BuildingId }) {
               </div>
             </div>
           ))}
+          {getBuilding("projects").quest && (
+            <QuestButton quest={getBuilding("projects").quest!} />
+          )}
         </div>
       );
 
@@ -96,12 +134,9 @@ export function PanelContent({ id }: { id: BuildingId }) {
               </span>
             ))}
           </div>
-          <button
-            className="play-btn"
-            onClick={() => useGame.getState().startMinigame("cache-match")}
-          >
-            🎴 Play Cache Match (Redis)
-          </button>
+          {getBuilding("skills").quest && (
+            <QuestButton quest={getBuilding("skills").quest!} />
+          )}
         </div>
       );
 

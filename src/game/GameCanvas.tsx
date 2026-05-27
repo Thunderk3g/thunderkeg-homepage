@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import * as THREE from "three";
 import { KeyboardControls, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
 import { Physics } from "@react-three/rapier";
 import { Suspense } from "react";
@@ -52,6 +53,11 @@ export default function GameCanvas() {
         }}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
+          // Filmic warm grade on the renderer itself — the cheap substitute for
+          // a tone-mapping post pass (no EffectComposer / HDR buffers needed).
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.05;
+
           // On context loss, prevent the default and step the quality tier down.
           // (On drivers with `exit_on_context_lost` the GPU process exits, so the
           // remount happens on the *next* load via the persisted tier; either way

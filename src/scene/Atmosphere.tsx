@@ -15,22 +15,24 @@ import * as THREE from "three";
 export function Atmosphere({ clouds = true }: { clouds?: boolean }) {
   return (
     <>
-      {/* Soft warm sky-blue clear color so the horizon glows rather than going
-          flat white. */}
-      <color attach="background" args={["#bfe3f0"]} />
+      {/* Soft warm sky-blue clear color, nudged a touch warmer/creamier so the
+          horizon glows golden rather than going cool or flat white. */}
+      <color attach="background" args={["#cce6ec"]} />
 
-      {/* Warm, slightly green-cream haze. Near 42 / far 118 keeps the playable
-          area crisp while distant world edges dissolve into a painterly fog. */}
-      <fog attach="fog" args={["#e3ead8", 42, 118]} />
+      {/* Warm, slightly peachy-cream haze. Pulled the far plane in (near 38 /
+          far 105) and warmed the tint so distant hills melt away into a dreamy
+          golden veil while the playable area stays crisp. */}
+      <fog attach="fog" args={["#ece6d0", 38, 105]} />
 
       {/* Late-afternoon sun sitting low and warm. Higher rayleigh + mild
-          turbidity gives the soft peachy gradient instead of a harsh blue. */}
+          turbidity gives the soft peachy gradient instead of a harsh blue;
+          a slightly higher mie scatters more warm light around the low sun. */}
       <Sky
-        sunPosition={[40, 9, 22]}
-        turbidity={6}
-        rayleigh={2.8}
-        mieCoefficient={0.018}
-        mieDirectionalG={0.86}
+        sunPosition={[40, 8, 22]}
+        turbidity={7}
+        rayleigh={3.1}
+        mieCoefficient={0.021}
+        mieDirectionalG={0.88}
       />
 
       {clouds && (

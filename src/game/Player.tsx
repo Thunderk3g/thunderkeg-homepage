@@ -15,10 +15,10 @@ import { Controls } from "./controls";
 import { useGame } from "./store";
 import { playerPosition, playerForward, playerSpeed } from "./refs";
 import { Character } from "./Character";
+import { SPAWN } from "@/world/layout";
 
 const SPEED = 5; // world units / second
 const GRAVITY = 22;
-const SPAWN: [number, number, number] = [0, 1.2, 6];
 
 export function Player() {
   const body = useRef<RapierRigidBody>(null);

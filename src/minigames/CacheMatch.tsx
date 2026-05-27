@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useGame } from "@/game/store";
+import { useQuests } from "@/game/quests";
 
 /**
  * Cache Match — a Redis-themed memory match game.
@@ -152,6 +153,8 @@ export default function CacheMatch() {
     if (won && !scoredRef.current) {
       scoredRef.current = true;
       setScore("cache-match", finalScore);
+      // Mark the in-world Cache Match quest complete (removes the shrine).
+      useQuests.getState().complete("cache-match");
     }
   }, [won, finalScore, setScore]);
 
