@@ -17,16 +17,34 @@ import { create } from "zustand";
  */
 export type QualityTier = "high" | "lite";
 
+const STORAGE_KEY = "pf-quality";
+
 /**
- * Seed the starting tier. Honors a `?q=lite` URL escape hatch so anyone on a
- * weak machine can force the light path without waiting for an auto-downgrade.
+ * Seed the starting tier. Order of precedence:
+ *   1. `?q=lite` / `?q=high` URL override (high also clears a remembered downgrade)
+ *   2. a downgrade remembered from a previous crash (localStorage) — so a weak
+ *      machine starts light instead of crashing on every single load
+ *   3. default `high`
  */
 function initialTier(): QualityTier {
-  if (typeof window !== "undefined") {
-    if (new URLSearchParams(window.location.search).get("q") === "lite") {
-      return "lite";
-    }
+  if (typeof window === "undefined") return "high";
+  const q = new URLSearchParams(window.location.search).get("q");
+  if (q === "lite") {
+    // Persist so plain reloads stay light too, no param needed.
+    try {
+      window.localStorage.setItem(STORAGE_KEY, "lite");
+    } catch {}
+    return "lite";
   }
+  if (q === "high") {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    return "high";
+  }
+  try {
+    if (window.localStorage.getItem(STORAGE_KEY) === "lite") return "lite";
+  } catch {}
   return "high";
 }
 
@@ -43,7 +61,16 @@ export const useQuality = create<QualityState>((set, get) => ({
   failed: false,
   onContextLost: () => {
     const { tier } = get();
-    if (tier === "high") set({ tier: "lite" });
-    else set({ failed: true });
+    if (tier === "high") {
+      console.warn("[quality] WebGL context lost on high tier → dropping to lite");
+      // Remember it so future loads on this machine start light, no re-crash.
+      try {
+        window.localStorage.setItem(STORAGE_KEY, "lite");
+      } catch {}
+      set({ tier: "lite" });
+    } else {
+      console.warn("[quality] WebGL context lost on lite tier → showing fallback");
+      set({ failed: true });
+    }
   },
 }));
