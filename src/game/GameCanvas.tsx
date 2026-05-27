@@ -11,14 +11,14 @@ import { FollowCamera } from "./FollowCamera";
 import { Lighting } from "@/scene/Lighting";
 import { Atmosphere } from "@/scene/Atmosphere";
 import { PostFX } from "@/scene/PostFX";
-import { useQuality } from "./quality";
+import { useQuality, settingsFor } from "./quality";
 
 export default function GameCanvas() {
   const tier = useQuality((s) => s.tier);
   const failed = useQuality((s) => s.failed);
-  const lite = tier === "lite";
+  const q = settingsFor(tier);
 
-  // Even the lite tier couldn't hold a context — give a usable DOM fallback.
+  // Even the lowest tier couldn't hold a context — give a usable DOM fallback.
   if (failed) {
     return (
       <div className="webgl-fallback">
@@ -42,18 +42,20 @@ export default function GameCanvas() {
       <Canvas
         // Remount with a fresh GL context when the tier changes (after a loss).
         key={tier}
-        shadows={!lite}
-        dpr={lite ? 1 : [1, 1.5]}
+        shadows={q.shadows}
+        dpr={q.dpr}
         camera={{ position: [0, 6, 14], fov: 50 }}
         gl={{
-          antialias: false, // SMAA in PostFX handles edges; canvas MSAA is wasted on the offscreen pipeline
+          antialias: false, // MSAA is slow + capped on Intel; SMAA (high tier) covers edges
           powerPreference: "high-performance",
           failIfMajorPerformanceCaveat: false,
         }}
         performance={{ min: 0.5 }}
         onCreated={({ gl }) => {
-          // On context loss, prevent the default (which would kill it permanently)
-          // and step the quality tier down, remounting a lighter scene.
+          // On context loss, prevent the default and step the quality tier down.
+          // (On drivers with `exit_on_context_lost` the GPU process exits, so the
+          // remount happens on the *next* load via the persisted tier; either way
+          // we never sit on a permanently blank canvas.)
           gl.domElement.addEventListener(
             "webglcontextlost",
             (e) => {
@@ -65,9 +67,9 @@ export default function GameCanvas() {
         }}
       >
         {/* sky / fog / background — render-atmosphere seam */}
-        <Atmosphere lite={lite} />
+        <Atmosphere clouds={q.clouds} />
         {/* lights + shadow config — render-atmosphere seam */}
-        <Lighting lite={lite} />
+        <Lighting shadows={q.shadows} ibl={q.ibl} />
 
         <Suspense fallback={null}>
           <Physics timeStep={1 / 60}>
@@ -79,8 +81,9 @@ export default function GameCanvas() {
         <FollowCamera />
 
         {/* post-processing MUST be the last child — render-atmosphere seam.
-            Skipped on the lite tier (full-res post stack is a heavy GPU cost). */}
-        {!lite && <PostFX />}
+            Only on the high tier; the full-res HDR stack is the prime suspect
+            for OOM context loss on integrated GPUs. */}
+        {q.postfx && <PostFX />}
 
         {/* Throttle resolution under sustained load instead of losing the context. */}
         <AdaptiveDpr />

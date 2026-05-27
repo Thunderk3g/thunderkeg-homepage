@@ -11,19 +11,27 @@ import { Environment, Lightformer } from "@react-three/drei";
  *  - One strong warm key directional light = the sun, casting soft shadows.
  *  - A warm/earthy hemisphere ambient plus a low cool fill for dimensional shape.
  *
- * `lite` (set after a WebGL context loss) drops the IBL cubemap + shadows and
- * leans harder on cheap ambient/directional lights so a weak GPU can sustain it.
+ * Feature flags come from the quality tier:
+ *  - `ibl`     — render the <Environment> cubemap (image-based lighting). When
+ *                off we lean harder on cheap ambient/directional fill.
+ *  - `shadows` — let the sun cast a shadow map.
  *
  * NOTE: PCSS <SoftShadows> was removed — it was the single heaviest GPU cost
  * (per-pixel multi-tap + a global shadow-shader patch that also emitted compiler
  * warnings). The default PCF soft shadow map looks nearly identical for far less.
  */
-export function Lighting({ lite = false }: { lite?: boolean }) {
+export function Lighting({
+  shadows = true,
+  ibl = true,
+}: {
+  shadows?: boolean;
+  ibl?: boolean;
+}) {
   return (
     <>
       {/* Soft IBL with zero network dependency. Static (frames={1}) and modest
-          resolution keeps it cheap. Skipped entirely on the lite tier. */}
-      {!lite && (
+          resolution keeps it cheap. Skipped when the tier disables IBL. */}
+      {ibl && (
         <Environment resolution={128} frames={1} background={false}>
           {/* Warm sky dome — large soft fill from above. */}
           <Lightformer
@@ -65,15 +73,15 @@ export function Lighting({ lite = false }: { lite?: boolean }) {
       )}
 
       {/* Warm sky / earthy ground ambient — lifts shadows without flattening.
-          Lite leans on this more since there's no IBL. */}
-      <hemisphereLight args={["#ffe3b0", "#6b5840", lite ? 0.95 : 0.55]} />
+          Leans on this more when there's no IBL to provide fill. */}
+      <hemisphereLight args={["#ffe3b0", "#6b5840", ibl ? 0.55 : 0.95]} />
 
-      {/* THE SUN — strong warm key. Soft (PCF) shadows over the play area on the
-          high tier; no shadow casting on lite. */}
+      {/* THE SUN — strong warm key. Soft (PCF) shadows over the play area when
+          the tier enables them. */}
       <directionalLight
-        castShadow={!lite}
+        castShadow={shadows}
         position={[14, 18, 8]}
-        intensity={lite ? 1.7 : 2.3}
+        intensity={ibl ? 2.3 : 1.7}
         color="#ffd9a0"
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0003}

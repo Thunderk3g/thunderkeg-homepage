@@ -9,10 +9,10 @@ import * as THREE from "three";
  * Studio Ghibli mood — distant edges melt into a dreamy haze, slow cumulus
  * drift overhead, and a few warm pollen motes float in the sun.
  *
- * `lite` (after a WebGL context loss) keeps the cheap sky/fog but drops the
- * volumetric <Clouds> and <Sparkles>, which are comparatively GPU-hungry.
+ * `clouds=false` (lite tier) keeps the cheap sky/fog but drops the volumetric
+ * <Clouds> and <Sparkles>, which are comparatively GPU-hungry.
  */
-export function Atmosphere({ lite = false }: { lite?: boolean }) {
+export function Atmosphere({ clouds = true }: { clouds?: boolean }) {
   return (
     <>
       {/* Soft warm sky-blue clear color so the horizon glows rather than going
@@ -33,7 +33,7 @@ export function Atmosphere({ lite = false }: { lite?: boolean }) {
         mieDirectionalG={0.86}
       />
 
-      {!lite && (
+      {clouds && (
         <>
           {/* Drifting Ghibli cumulus — soft, high up, slow. Low segment counts
               and a shared instanced material (via <Clouds>) keep this cheap. */}
