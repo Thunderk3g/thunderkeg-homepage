@@ -7,6 +7,8 @@
  */
 
 export const MODELS = {
+  /** Higher-detail CC0 hero (three.js examples, Tomás Laulhé / Don McCurdy). */
+  robot: "/models/RobotExpressive.glb",
   knight: "/models/Knight.glb",
   rogue: "/models/Rogue.glb",
   rogueHooded: "/models/Rogue_Hooded.glb",
@@ -15,17 +17,22 @@ export const MODELS = {
 } as const;
 
 /** The character the player walks around as. */
-export const HERO_MODEL = MODELS.knight;
+export const HERO_MODEL = MODELS.robot;
 
-/** Exact animation clip names present in the KayKit adventurer glbs. */
+/**
+ * Hero animation clip names. These map to the RobotExpressive rig (14 clips:
+ * Idle, Walking, Running, Jump, Punch, Death, Dance, Wave, ThumbsUp, Sitting,
+ * Standing, Yes, No, WalkJump). Idle/Walking/Running loop; Punch is the one-shot
+ * melee swing used for the heroAttack signal.
+ */
 export const CLIPS = {
   idle: "Idle",
-  walk: "Walking_A",
-  run: "Running_A",
-  cheer: "Cheer",
-  interact: "Interact",
-  jump: "Jump_Full_Short",
-  attack: "1H_Melee_Attack_Chop",
+  walk: "Walking",
+  run: "Running",
+  cheer: "Wave",
+  interact: "ThumbsUp",
+  jump: "Jump",
+  attack: "Punch",
 } as const;
 
 /**
