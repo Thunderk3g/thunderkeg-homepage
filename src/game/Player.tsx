@@ -14,6 +14,7 @@ import * as THREE from "three";
 import { Controls } from "./controls";
 import { useGame } from "./store";
 import { playerPosition, playerForward, playerSpeed } from "./refs";
+import { Character } from "./Character";
 
 const SPEED = 5; // world units / second
 const GRAVITY = 22;
@@ -110,20 +111,10 @@ export function Player() {
     >
       {/* ALL active collision types so kinematic↔fixed sensor intersections fire. */}
       <CapsuleCollider args={[0.6, 0.4]} activeCollisionTypes={ActiveCollisionTypes.ALL} />
-      {/* Placeholder hero — swapped for the sourced glTF in the art pass. */}
+      {/* Hero visual — the controller rotates this group to face travel
+          direction; the Character component renders + animates the model. */}
       <group ref={visual}>
-        <mesh castShadow>
-          <capsuleGeometry args={[0.4, 1.2, 8, 16]} />
-          <meshStandardMaterial color="#5566aa" />
-        </mesh>
-        <mesh castShadow position={[0, 0.95, 0]}>
-          <sphereGeometry args={[0.32, 16, 16]} />
-          <meshStandardMaterial color="#f0c9a0" />
-        </mesh>
-        <mesh position={[0, 0.95, 0.3]}>
-          <boxGeometry args={[0.12, 0.12, 0.14]} />
-          <meshStandardMaterial color="#c8745f" />
-        </mesh>
+        <Character />
       </group>
     </RigidBody>
   );
