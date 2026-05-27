@@ -32,6 +32,7 @@ import { playerPosition } from "./refs";
 import { useInteractPressed, requestHeroAttack } from "./interaction";
 import { useQuests, type QuestId } from "./quests";
 import { useGame } from "./store";
+import { useHealth } from "./health";
 
 export interface MonsterProps {
   /** Which KayKit skeleton model to use. */
@@ -69,6 +70,16 @@ const MOVE_THRESHOLD = 0.05;
 const DEATH_HIDE_DELAY = 1.4;
 /** Fade-out duration after death (seconds). */
 const DESPAWN_FADE = 0.5;
+
+// --- melee attack tuning ---
+/** Distance (XZ) within which the monster may swing at the player. */
+const ATTACK_RANGE = 1.7;
+/** Minimum seconds between the START of one attack and the next. */
+const ATTACK_COOLDOWN = 1.3;
+/** Wind-up before the swing actually connects (fair telegraph), in seconds. */
+const ATTACK_WINDUP = 0.45;
+/** Damage dealt to the player on a connecting swing. */
+const ATTACK_DAMAGE = 12;
 
 // ──────────────────────────────────────────────────────────────────────────
 // MODULE-LEVEL TEMPORARIES — reused every frame so the loop never allocates.
@@ -115,6 +126,12 @@ export function Monster({ model, position, questId, scale = 1 }: MonsterProps) {
   const advanced = useRef(false); // guard: advance the quest exactly once
   const dyingSince = useRef(0); // perf.now()/1000 when death started
 
+  // --- attack state (all in refs; the swing runs in the frame loop) ---
+  const attacking = useRef(false); // a swing is in progress
+  const attackStartedAt = useRef(0); // perf.now()/1000 when the wind-up began
+  const lastAttackAt = useRef(0); // perf.now()/1000 of the most recent swing start
+  const swingLanded = useRef(false); // damage applied for the current swing?
+
   // Currently-playing locomotion clip (for crossfade bookkeeping).
   const current = useRef<string | null>(null);
   // Wander target offset (relative to spawn anchor), refreshed periodically.
@@ -135,6 +152,20 @@ export function Monster({ model, position, questId, scale = 1 }: MonsterProps) {
     next.reset().setEffectiveWeight(1).fadeIn(FADE).play();
     if (prev && prev !== next) prev.fadeOut(FADE);
     current.current = clip;
+  };
+
+  // Helper: fire the attack clip once (clamped). Fades out the current
+  // locomotion clip and clears `current` so the next playLocomotion() after the
+  // swing crossfades cleanly back to idle/walk.
+  const playAttack = () => {
+    const atk = actions[MONSTER_CLIPS.attack];
+    if (!atk) return;
+    const prev = current.current ? actions[current.current] : null;
+    if (prev && prev !== atk) prev.fadeOut(0.1);
+    current.current = null;
+    atk.reset().setLoop(THREE.LoopOnce, 1);
+    atk.clampWhenFinished = true;
+    atk.setEffectiveWeight(1).fadeIn(0.08).play();
   };
 
   // Start idling once actions exist; stop everything on unmount.
@@ -173,6 +204,10 @@ export function Monster({ model, position, questId, scale = 1 }: MonsterProps) {
     setShowHint(false);
     setPhase("dying");
     dyingSince.current = performance.now() / 1000;
+
+    // Abort any in-progress monster swing so it can't land damage post-mortem.
+    attacking.current = false;
+    swingLanded.current = false;
 
     const hit = actions[MONSTER_CLIPS.hit];
     const death = actions[MONSTER_CLIPS.death];
@@ -246,6 +281,54 @@ export function Monster({ model, position, questId, scale = 1 }: MonsterProps) {
     const inRange = live && distToPlayer <= STRIKE_RADIUS;
     inStrikeRange.current = inRange;
     if (inRange !== showHint) setShowHint(inRange);
+
+    const nowS = performance.now() / 1000;
+
+    // --- MELEE ATTACK ---------------------------------------------------------
+    // While alive + quest active + within melee range, swing at the player on a
+    // cooldown. A wind-up telegraphs the hit (fair), and damage lands once per
+    // swing. The defeat-on-E flow clears `attacking`, so a struck monster never
+    // lands a swing. (Modal-open already returned above, so we never attack
+    // through a panel/minigame.)
+    if (attacking.current) {
+      // Stand ground + face the player through the whole swing.
+      if (distToPlayer > 1e-3) {
+        const yaw = Math.atan2(_toPlayer.x, _toPlayer.z);
+        let diff = yaw - grp.rotation.y;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        grp.rotation.y += diff * Math.min(TURN_RATE * dt, 1);
+      }
+      const elapsed = nowS - attackStartedAt.current;
+      // Land the hit at the end of the wind-up, once, and only if the player is
+      // still within (a slightly forgiving) reach.
+      if (!swingLanded.current && elapsed >= ATTACK_WINDUP) {
+        swingLanded.current = true;
+        if (distToPlayer <= ATTACK_RANGE + 0.4) {
+          useHealth.getState().damage(ATTACK_DAMAGE);
+        }
+      }
+      // End the swing on cooldown; fade the attack clip out so the next frame's
+      // playLocomotion() crossfades cleanly back to idle/walk.
+      if (nowS - lastAttackAt.current >= ATTACK_COOLDOWN) {
+        attacking.current = false;
+        actions[MONSTER_CLIPS.attack]?.fadeOut(FADE);
+      }
+      return;
+    }
+
+    // Begin a new swing when in range and off cooldown.
+    if (
+      live &&
+      distToPlayer <= ATTACK_RANGE &&
+      nowS - lastAttackAt.current >= ATTACK_COOLDOWN
+    ) {
+      attacking.current = true;
+      swingLanded.current = false;
+      attackStartedAt.current = nowS;
+      lastAttackAt.current = nowS;
+      playAttack();
+      return;
+    }
 
     // --- decide a destination ---
     let speed: number;

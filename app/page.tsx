@@ -9,6 +9,8 @@ import { CanvasErrorBoundary } from "@/ui/CanvasErrorBoundary";
 import { QuestTracker } from "@/ui/QuestTracker";
 import { Toast } from "@/ui/Toast";
 import { Intro } from "@/ui/Intro";
+import { HealthBar } from "@/ui/HealthBar";
+import { Minimap } from "@/ui/Minimap";
 
 // The 3D world is client-only (WebGL); never server-render it.
 const GameCanvas = dynamic(() => import("@/game/GameCanvas"), { ssr: false });
@@ -22,6 +24,8 @@ export default function Home() {
       <Hud />
       <QuestTracker />
       <Toast />
+      <HealthBar />
+      <Minimap />
       <MobileControls />
       <MinigameHost />
       <Loader />

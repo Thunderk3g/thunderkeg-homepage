@@ -13,12 +13,15 @@ import { QueryFilterFlags, ActiveCollisionTypes } from "@dimforge/rapier3d-compa
 import * as THREE from "three";
 import { Controls } from "./controls";
 import { useGame } from "./store";
+import { useHealth } from "./health";
 import { playerPosition, playerForward, playerSpeed } from "./refs";
 import { Character } from "./Character";
 import { SPAWN } from "@/world/layout";
 
 const SPEED = 5; // world units / second
 const GRAVITY = 22;
+/** Upward velocity injected on a grounded jump (gravity integrates the arc). */
+const JUMP_VELOCITY = 8.5;
 
 export function Player() {
   const body = useRef<RapierRigidBody>(null);
@@ -44,6 +47,11 @@ export function Player() {
   }, [world]);
 
   const velocityY = useRef(0);
+  // Last frame's grounded result (computedGrounded() is only valid AFTER
+  // computeColliderMovement); used to gate jumps so there are no air-jumps.
+  const grounded = useRef(false);
+  // Rising-edge latch for the jump key so holding Space doesn't auto-bounce.
+  const jumpWasDown = useRef(false);
   const move = useMemo(() => new THREE.Vector3(), []);
   const disp = useMemo(() => new THREE.Vector3(), []);
   const targetQuat = useMemo(() => new THREE.Quaternion(), []);
@@ -56,6 +64,22 @@ export function Player() {
     // Cap only to avoid a catastrophic step after a stall; keep movement
     // wall-clock-accurate down to ~10fps (a 1/30 cap causes slow-motion <30fps).
     const dt = Math.min(dtRaw, 0.1);
+
+    // DEATH → RESPAWN: when hp hits zero, teleport the body back to SPAWN,
+    // kill vertical momentum, and revive (reset() grants brief i-frames). The
+    // kinematic controller is moved with setNextKinematicTranslation so the
+    // physics step picks up the teleport without a fight.
+    const health = useHealth.getState();
+    if (health.hp <= 0) {
+      velocityY.current = 0;
+      grounded.current = false;
+      jumpWasDown.current = false;
+      b.setNextKinematicTranslation({ x: SPAWN[0], y: SPAWN[1], z: SPAWN[2] });
+      playerPosition.set(SPAWN[0], SPAWN[1], SPAWN[2]);
+      playerSpeed.value = 0;
+      health.reset();
+      return;
+    }
 
     const blocked = useGame.getState().isModalOpen();
     const k = getKeys();
@@ -73,6 +97,16 @@ export function Player() {
     const horizSpeed = move.length() * SPEED;
     playerSpeed.value = horizSpeed;
 
+    // JUMP: rising edge of the jump key while standing on the ground (no double
+    // jumps — `grounded` is last frame's ground contact). Inject upward
+    // velocity; the gravity integration below carries the arc.
+    const jumpDown = !blocked && k.jump === true;
+    if (jumpDown && !jumpWasDown.current && grounded.current) {
+      velocityY.current = JUMP_VELOCITY;
+      grounded.current = false;
+    }
+    jumpWasDown.current = jumpDown;
+
     disp.set(move.x * SPEED * dt, 0, move.z * SPEED * dt);
     velocityY.current -= GRAVITY * dt;
     disp.y = velocityY.current * dt;
@@ -81,7 +115,12 @@ export function Player() {
     // EXCLUDE_SENSORS so the character controller passes through trigger zones
     // instead of being blocked by them.
     controller.computeColliderMovement(collider, disp, QueryFilterFlags.EXCLUDE_SENSORS);
-    if (controller.computedGrounded()) velocityY.current = 0;
+    const isGrounded = controller.computedGrounded();
+    grounded.current = isGrounded;
+    // Only cancel vertical velocity when settled on the ground (falling/at rest).
+    // Guarding on velocityY <= 0 keeps a just-applied jump impulse from being
+    // zeroed in the same frame (the body hasn't physically lifted off yet).
+    if (isGrounded && velocityY.current <= 0) velocityY.current = 0;
     const corrected = controller.computedMovement();
 
     const t = b.translation();

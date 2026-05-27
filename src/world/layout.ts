@@ -35,6 +35,37 @@ export const MONSTER_FIELD = { x: 0, z: -15.5, radius: 5.5 } as const;
 /** The pond (matches Terrain/Scatter). For ambient water shimmer & fireflies. */
 export const POND = { x: -9, z: -1, radius: 3.1 } as const;
 
+/**
+ * Half-extent of the explorable world (the physics floor is ±70). Used as the
+ * minimap range and the bound for outer-world content. The village sits in the
+ * flat centre; mountains + forest ring the outskirts to explore.
+ */
+export const WORLD_EXTENT = 56;
+
+/**
+ * Climbable mountains ringing the village. Each is a sloped cone-ish mesh with
+ * a matching collider; slopes are ~33-36° (under the controller's 45° climb
+ * limit) so the player can actually walk UP them. Gaps between them form passes.
+ */
+export interface MountainSpec {
+  x: number;
+  z: number;
+  radius: number;
+  height: number;
+}
+export const MOUNTAINS: MountainSpec[] = [
+  { x: 0, z: -46, radius: 17, height: 11.5 },
+  { x: -40, z: -28, radius: 15, height: 10 },
+  { x: 40, z: -28, radius: 15, height: 10 },
+  { x: -48, z: 8, radius: 16, height: 10.5 },
+  { x: 48, z: 10, radius: 16, height: 10.5 },
+  { x: -28, z: 44, radius: 14, height: 9 },
+  { x: 32, z: 46, radius: 15, height: 9.5 },
+];
+
+/** A forest grove to explore (denser trees + a landmark), away from the village. */
+export const FOREST = { x: 30, z: -34, radius: 12 } as const;
+
 /** Half-width clearance kept free of scatter around each building footprint. */
 export const BUILDING_CLEAR_PAD = 1.4;
 
