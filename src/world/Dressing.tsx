@@ -5,6 +5,7 @@ import { Instances, Instance, Text } from "@react-three/drei";
 
 import { BUILDINGS } from "@/game/buildings";
 import { SPAWN, PLAZA, GATE, frontOf } from "./layout";
+import { useQuality } from "@/game/quality";
 
 /**
  * In-Canvas plaza/village dressing: market stalls, benches, a notice board,
@@ -71,6 +72,8 @@ function faceCenter(x: number, z: number): number {
 }
 
 export function Dressing() {
+  // Skipped on the lite tier so the iGPU-safe fallback stays genuinely minimal.
+  const lite = useQuality((s) => s.tier === "lite");
   const layout = useMemo(() => {
     const rand = mulberry32(0x5ad0c0);
 
@@ -166,6 +169,8 @@ export function Dressing() {
     const half = 3.0;
     return { z, half };
   }, []);
+
+  if (lite) return null;
 
   return (
     <group>

@@ -11,6 +11,7 @@ import {
   MONSTER_FIELD,
   BUILDING_CLEAR_PAD,
 } from "./layout";
+import { useQuality } from "@/game/quality";
 
 /**
  * Decorative scatter: instanced stylized trees, rocks, bushes, flower/grass
@@ -188,6 +189,9 @@ interface Tier {
 }
 
 export function Scatter() {
+  // Skipped on the lite tier so the iGPU-safe fallback stays genuinely minimal
+  // (driver exits the GPU process on context loss — prevention is the only fix).
+  const lite = useQuality((s) => s.tier === "lite");
   const layout = useMemo(() => {
     const rand = mulberry32(0xc0ffee);
 
@@ -331,6 +335,8 @@ export function Scatter() {
       lilies,
     };
   }, []);
+
+  if (lite) return null;
 
   return (
     <group>

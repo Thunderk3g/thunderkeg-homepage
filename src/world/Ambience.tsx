@@ -6,6 +6,7 @@ import * as THREE from "three";
 
 import { BUILDINGS } from "@/game/buildings";
 import { PLAZA, POND } from "./layout";
+import { useQuality } from "@/game/quality";
 
 /**
  * In-Canvas ambient motion that makes the village feel alive — implemented by
@@ -48,6 +49,9 @@ function mulberry32(seed: number) {
 }
 
 export function Ambience() {
+  // Skipped on the lite tier so the iGPU-safe fallback stays genuinely minimal.
+  const lite = useQuality((s) => s.tier === "lite");
+  if (lite) return null;
   return (
     <group>
       <ChimneySmoke />

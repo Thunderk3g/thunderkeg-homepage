@@ -15,6 +15,7 @@ import {
   WORLD_EXTENT,
   type MountainSpec,
 } from "@/world/layout";
+import { useQuality } from "@/game/quality";
 
 /**
  * Ground + village green + well + paths + gate + pond + CLIMBABLE mountains +
@@ -505,6 +506,12 @@ function TrailSign({
 }
 
 export function Terrain() {
+  // On the lite tier (the iGPU-safe fallback) we drop the outer-ring ground,
+  // climbable mountains, forest grove, and outskirt landmarks. Lite must stay
+  // genuinely minimal — the user's driver exits its GPU process on context
+  // loss, so the persisted-lite next-load is our only real safety net.
+  const enriched = useQuality((s) => s.tier !== "lite");
+
   const [grass, path, water] = useTexture([
     "/textures/grass.png",
     "/textures/path.png",
@@ -567,15 +574,17 @@ export function Terrain() {
       {/* Outer world ground ring (wilder meadow), reaching out past the
           mountains to ≈±WORLD_EXTENT so the explorable outskirts read as solid
           ground all the way to the ridge. Sits a hair below the inner plane to
-          avoid z-fighting where they overlap. */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.01, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[WORLD_EXTENT * 2 + 24, WORLD_EXTENT * 2 + 24]} />
-        <meshStandardMaterial map={outerGrass} color="#8fbf7e" roughness={1} />
-      </mesh>
+          avoid z-fighting where they overlap. Skipped on lite. */}
+      {enriched && (
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -0.01, 0]}
+          receiveShadow
+        >
+          <planeGeometry args={[WORLD_EXTENT * 2 + 24, WORLD_EXTENT * 2 + 24]} />
+          <meshStandardMaterial map={outerGrass} color="#8fbf7e" roughness={1} />
+        </mesh>
+      )}
 
       {/* Flat grass ground for the whole walkable village area, exactly at y=0. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -639,24 +648,20 @@ export function Terrain() {
         </mesh>
       </group>
 
-      {/* CLIMBABLE MOUNTAINS ringing the outskirts — each a low-poly cone with a
-          matching trimesh collider so the player can walk UP the ~33-36° slopes
-          (under the 45° controller climb limit). Gaps between them are the
-          passes. Sourced from the shared MOUNTAINS layout. */}
-      {MOUNTAINS.map((m, i) => (
-        <Mountain key={i} spec={m} />
-      ))}
-
-      {/* A denser forest grove with a hero tree, out toward the NE pass. */}
-      <ForestGrove />
-
-      {/* Outskirt landmarks to reward exploration, each sitting in a PASS clear
-          of the mountain footprints and well outside the village: standing
-          stones to the SW, a footbridge in the western pass, and a signpost on
-          the way out to the eastern forest. */}
-      <StandingStones at={[-22, 28]} />
-      <WoodenBridge at={[-30, -6]} rot={Math.PI / 6} />
-      <TrailSign at={[24, -14]} rot={-Math.PI / 5} />
+      {/* CLIMBABLE MOUNTAINS, forest grove, and outskirt landmarks — all the
+          "explore beyond the village" content. Skipped on the lite tier so the
+          guaranteed-safe fallback stays genuinely minimal. */}
+      {enriched && (
+        <>
+          {MOUNTAINS.map((m, i) => (
+            <Mountain key={i} spec={m} />
+          ))}
+          <ForestGrove />
+          <StandingStones at={[-22, 28]} />
+          <WoodenBridge at={[-30, -6]} rot={Math.PI / 6} />
+          <TrailSign at={[24, -14]} rot={-Math.PI / 5} />
+        </>
+      )}
     </>
   );
 }

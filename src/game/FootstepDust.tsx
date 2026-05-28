@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import { playerPosition, playerSpeed } from "./refs";
+import { useQuality } from "./quality";
 
 /**
  * In-Canvas footstep dust: small warm puffs spawned at the player's feet while
@@ -40,6 +41,8 @@ let cursor = 0;
 let initialized = false;
 
 export function FootstepDust() {
+  // Skipped on the lite tier so the iGPU-safe fallback stays genuinely minimal.
+  const lite = useQuality((s) => s.tier === "lite");
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   useFrame((_, dt) => {
@@ -110,6 +113,8 @@ export function FootstepDust() {
     }
     mesh.instanceMatrix.needsUpdate = true;
   });
+
+  if (lite) return null;
 
   return (
     <instancedMesh
