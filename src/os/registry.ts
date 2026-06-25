@@ -8,6 +8,12 @@ import { calculatorApp } from './apps/calculator/Calculator';
 import { gamesApp } from './apps/games/GamesApp';
 import { chatApp } from './apps/chat/Chat';
 import { whiteboardApp } from './apps/whiteboard/Whiteboard';
+import { assistantApp } from './apps/assistant/Assistant';
+import { codeEditorApp } from './apps/codeeditor/CodeEditor';
+import { voiceApp } from './apps/voice/Voice';
+import { mp3App } from './apps/media/Mp3';
+import { vlcApp } from './apps/media/Vlc';
+import { doomApp } from './apps/games/Doom';
 import { toolApps } from './apps/tools';
 
 /** Every registered application. */
@@ -21,6 +27,12 @@ export const apps: AppDefinition[] = [
   gamesApp,
   chatApp,
   whiteboardApp,
+  assistantApp,
+  codeEditorApp,
+  voiceApp,
+  mp3App,
+  vlcApp,
+  doomApp,
   ...toolApps,
 ];
 

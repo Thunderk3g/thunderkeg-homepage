@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import type { WindowState } from './types';
 import { FileSystem, createDefaultFileSystem } from './fs/filesystem';
 import { getApp } from './registry';
+import { getTheme } from './themes';
 
 export type Phase = 'boot' | 'login' | 'desktop' | 'locked';
 
@@ -12,6 +13,7 @@ export interface OSSettings {
   accent: string;
   reducedMotion: boolean;
   terminalOpacity: number;
+  theme: string;
 }
 
 interface OSStore {
@@ -38,6 +40,7 @@ interface OSStore {
   setAccent: (a: string) => void;
   setReducedMotion: (v: boolean) => void;
   setTerminalOpacity: (v: number) => void;
+  setTheme: (id: string) => void;
 
   /* window manager */
   launch: (appId: string, args?: Record<string, unknown>) => string | null;
@@ -56,6 +59,7 @@ const DEFAULT_SETTINGS: OSSettings = {
   accent: '#33aaff',
   reducedMotion: false,
   terminalOpacity: 0.92,
+  theme: 'kali-dark',
 };
 
 export const useOS = create<OSStore>((set, get) => ({
@@ -81,6 +85,10 @@ export const useOS = create<OSStore>((set, get) => ({
   setReducedMotion: (reducedMotion) => set((s) => ({ settings: { ...s.settings, reducedMotion } })),
   setTerminalOpacity: (terminalOpacity) =>
     set((s) => ({ settings: { ...s.settings, terminalOpacity } })),
+  setTheme: (theme) =>
+    set((s) => ({
+      settings: { ...s.settings, theme, accent: getTheme(theme).vars['--kos-accent'] },
+    })),
 
   launch: (appId, args) => {
     const app = getApp(appId);

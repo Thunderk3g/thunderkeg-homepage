@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
 import { useOS } from '../../store';
 import { getDisplayName, setDisplayName } from '../../net/supabase';
+import { THEMES } from '../../themes';
 
 const WALLPAPERS = [
   { id: 'kali-dragon', label: 'Kali Dragon' },
@@ -18,6 +19,7 @@ const ACCENTS = ['#33aaff', '#16a085', '#e74c3c', '#9b59b6', '#f39c12', '#2ecc71
 function SettingsApp() {
   const settings = useOS((s) => s.settings);
   const setWallpaper = useOS((s) => s.setWallpaper);
+  const setTheme = useOS((s) => s.setTheme);
   const setAccent = useOS((s) => s.setAccent);
   const setReducedMotion = useOS((s) => s.setReducedMotion);
   const setTerminalOpacity = useOS((s) => s.setTerminalOpacity);
@@ -25,6 +27,32 @@ function SettingsApp() {
 
   return (
     <div className="kos-settings">
+      <div className="kos-settings-group">
+        <h3>Theme</h3>
+        <div className="kos-settings-accents" style={{ flexWrap: 'wrap', gap: 8 }}>
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              className={'kos-game-btn' + (settings.theme === t.id ? ' primary' : '')}
+              onClick={() => setTheme(t.id)}
+              style={{ borderColor: t.vars['--kos-accent'] }}
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: t.vars['--kos-accent'],
+                  marginRight: 6,
+                }}
+              />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="kos-settings-group">
         <h3>Wallpaper</h3>
         <div className="kos-settings-walls">

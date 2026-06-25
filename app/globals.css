@@ -996,3 +996,39 @@ canvas.minimap {
 .kos-ttt-cell:disabled { cursor: default; }
 .kos-ttt-cell:not(:disabled):hover { border-color: var(--kos-accent); }
 
+/* ---------- Command palette (Cmd+K) ---------- */
+.kos-cmdk-overlay { position: absolute; inset: 0; z-index: 9000; background: rgba(0,0,0,0.45); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; backdrop-filter: blur(2px); }
+.kos-cmdk { width: min(620px, 92%); background: rgba(22,25,32,0.99); border: 1px solid var(--kos-border); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+.kos-cmdk [cmdk-root] { display: flex; flex-direction: column; max-height: 60vh; }
+.kos-cmdk-input { width: 100%; padding: 14px 16px; border: none; border-bottom: 1px solid var(--kos-border); background: transparent; color: var(--kos-text); font-size: 1rem; outline: none; }
+.kos-cmdk-list { overflow-y: auto; padding: 6px; }
+.kos-cmdk-empty { padding: 18px; text-align: center; color: var(--kos-dim); font-size: 0.85rem; }
+.kos-cmdk-group [cmdk-group-heading] { padding: 8px 10px 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--kos-dim); }
+.kos-cmdk-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 8px; color: var(--kos-text); font-size: 0.88rem; cursor: pointer; }
+.kos-cmdk-item[data-selected='true'] { background: var(--kos-accent); color: #04121f; }
+.kos-cmdk-item[data-selected='true'] .kos-cmdk-meta { color: rgba(4,18,31,0.7); }
+.kos-cmdk-icon { width: 22px; text-align: center; }
+.kos-cmdk-meta { margin-left: auto; font-size: 0.72rem; color: var(--kos-dim); }
+
+/* ---------- AI Assistant ---------- */
+.kos-assistant { display: flex; flex-direction: column; height: 100%; background: #14171d; }
+.kos-assistant-log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.kos-assistant-welcome { margin: auto; text-align: center; color: var(--kos-dim); max-width: 360px; }
+.kos-assistant-welcome h3 { color: var(--kos-text); margin: 6px 0; }
+.kos-assistant-avatar { font-size: 36px; }
+.kos-assistant-suggest { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+.kos-assistant-suggest button { padding: 8px 10px; border: 1px solid var(--kos-border); border-radius: 8px; background: rgba(255,255,255,0.04); color: var(--kos-text); font-size: 0.82rem; text-align: left; }
+.kos-assistant-suggest button:hover { border-color: var(--kos-accent); }
+.kos-assistant-hint { font-size: 0.74rem; }
+.kos-assistant-hint code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; }
+.kos-assistant-msg { display: flex; gap: 8px; align-items: flex-start; }
+.kos-assistant-msg.user { flex-direction: row-reverse; }
+.kos-assistant-role { font-size: 18px; }
+.kos-assistant-bubble { max-width: 80%; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); color: #e9eef2; font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; user-select: text; }
+.kos-assistant-msg.user .kos-assistant-bubble { background: var(--kos-accent); color: #04121f; }
+.kos-assistant-caret { animation: kos-blink 1s step-end infinite; color: var(--kos-accent); }
+.kos[data-reduced='true'] .kos-assistant-caret { animation: none; }
+.kos-assistant-input { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--kos-border); background: #11141a; }
+.kos-assistant-input input { flex: 1; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--kos-border); background: rgba(255,255,255,0.05); color: var(--kos-text); outline: none; font-size: 0.88rem; }
+.kos-assistant-input input:focus { border-color: var(--kos-accent); }
+
