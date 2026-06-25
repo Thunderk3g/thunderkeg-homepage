@@ -1,147 +1,215 @@
-"use client";
+'use client';
 
-/**
- * The hero's visual. SEAM owned by the character agent. Rendered INSIDE the
- * Player's `visual` group, which the controller rotates to face travel
- * direction — so this component only renders the model and drives its
- * animation from `playerSpeed.value` (idle / walk / run crossfade).
- *
- * Loads the KayKit Adventurer "Knight" glTF (CC0, single skin, 76 clips) and
- * blends Idle → Walking_A → Running_A based on the player's horizontal speed.
- */
+import { forwardRef, useImperativeHandle, useRef } from 'react';
+import * as THREE from 'three';
 
-import { useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { useGLTF, useAnimations } from "@react-three/drei";
-import * as THREE from "three";
-import { HERO_MODEL, CLIPS } from "@/game/assets";
-import { playerSpeed } from "@/game/refs";
-import { heroAttack } from "@/game/interaction";
+// CJ-inspired low-poly street character: white tank top, baggy jeans,
+// sneakers, short fade. Two-segment limbs animated by a hand-rolled
+// walk/run cycle (PS2-era proportions on purpose).
 
-// ──────────────────────────────────────────────────────────────────────────
-// VISUAL TUNING CONSTANTS — adjust after a visual check in the running world.
-// ──────────────────────────────────────────────────────────────────────────
+const SKIN = '#7a5236';
+const SKIN_DARK = '#6b4730';
+const TANK = '#e9e7e1';
+const JEANS = '#41608f';
+const JEANS_DARK = '#38537c';
+const SHOE = '#dcdcd4';
+const SOLE = '#2a2a2a';
+const HAIR = '#16120e';
 
-/**
- * Uniform model scale. KayKit Adventurers stand ~1.8 units tall at scale 1,
- * which reads well against the ~2.0-tall capsule and the ~3-5 unit buildings.
- * Bump up/down only if the hero looks oversized/tiny next to the world.
- */
-const SCALE = 1;
+export interface CharacterHandle {
+  /** drive the body: phase = stride cycle, speed01 = 0 idle … 1 sprint */
+  animate(phase: number, speed01: number, time: number): void;
+}
 
-/**
- * Vertical placement inside the Player's `visual` group. The group's origin is
- * the capsule CENTER and the capsule spans y ∈ [-1.0, +1.0], so feet belong at
- * y ≈ -1.0. KayKit models have their origin at the feet, so dropping the model
- * by 1.0 plants the feet on the capsule bottom (the ground).
- */
-const Y_OFFSET = -1.0;
+export const Character = forwardRef<CharacterHandle, { scale?: number }>(function Character(
+  { scale = 1 },
+  ref,
+) {
+  const root = useRef<THREE.Group>(null!);
+  const torso = useRef<THREE.Group>(null!);
+  const lThigh = useRef<THREE.Group>(null!);
+  const rThigh = useRef<THREE.Group>(null!);
+  const lShin = useRef<THREE.Group>(null!);
+  const rShin = useRef<THREE.Group>(null!);
+  const lArm = useRef<THREE.Group>(null!);
+  const rArm = useRef<THREE.Group>(null!);
+  const lFore = useRef<THREE.Group>(null!);
+  const rFore = useRef<THREE.Group>(null!);
+  const head = useRef<THREE.Group>(null!);
 
-/**
- * Yaw applied to the model so its forward axis matches the travel direction.
- * The controller already rotates the parent group to face movement, and KayKit
- * characters face +Z by default, so 0 should be correct. If the hero appears to
- * moonwalk / face backwards in-world, flip this to Math.PI.
- */
-const BASE_ROTATION_Y = 0;
+  useImperativeHandle(ref, () => ({
+    animate(phase, speed01, time) {
+      const s = Math.sin(phase);
+      const c = Math.cos(phase);
+      const amp = 0.25 + speed01 * 0.65; // stride amplitude grows with speed
 
-// Speed thresholds (world units/sec; Player max speed is 5).
-const WALK_THRESHOLD = 0.1; // below this → Idle
-const RUN_THRESHOLD = 3.6; // at/above this → Running_A
-const FADE = 0.2; // crossfade duration in seconds
-
-useGLTF.preload(HERO_MODEL);
-
-export function Character() {
-  const group = useRef<THREE.Group>(null);
-  const { scene, animations } = useGLTF(HERO_MODEL);
-  const { actions } = useAnimations(animations, group);
-
-  // Enable shadow casting/receiving on every mesh once after load.
-  useEffect(() => {
-    scene.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        obj.castShadow = true;
-        obj.receiveShadow = true;
+      if (speed01 < 0.02) {
+        // idle: breathe, subtle sway
+        const b = Math.sin(time * 1.8) * 0.02;
+        torso.current.position.y = 0;
+        torso.current.rotation.x = b * 0.4;
+        root.current.position.y = 0;
+        lThigh.current.rotation.x = THREE.MathUtils.lerp(lThigh.current.rotation.x, 0, 0.12);
+        rThigh.current.rotation.x = THREE.MathUtils.lerp(rThigh.current.rotation.x, 0, 0.12);
+        lShin.current.rotation.x = THREE.MathUtils.lerp(lShin.current.rotation.x, 0, 0.12);
+        rShin.current.rotation.x = THREE.MathUtils.lerp(rShin.current.rotation.x, 0, 0.12);
+        lArm.current.rotation.x = THREE.MathUtils.lerp(lArm.current.rotation.x, 0.06, 0.12);
+        rArm.current.rotation.x = THREE.MathUtils.lerp(rArm.current.rotation.x, 0.06, 0.12);
+        lArm.current.rotation.z = 0.1 + b;
+        rArm.current.rotation.z = -0.1 - b;
+        lFore.current.rotation.x = -0.15;
+        rFore.current.rotation.x = -0.15;
+        head.current.rotation.y = Math.sin(time * 0.5) * 0.15;
+        return;
       }
-    });
-  }, [scene]);
 
-  // Track which clip is currently playing so we only crossfade on a change,
-  // never restart the active clip every frame.
-  const current = useRef<string | null>(null);
-
-  // One-shot melee swing: when `heroAttack.token` bumps (a monster was struck),
-  // play the chop clip once and suppress locomotion until it finishes.
-  const lastAttackToken = useRef(heroAttack.token);
-  const attackUntil = useRef(0);
-
-  // Start in idle once the actions are available.
-  useEffect(() => {
-    const idle = actions[CLIPS.idle];
-    if (idle) {
-      idle.reset().fadeIn(FADE).play();
-      current.current = CLIPS.idle;
-    }
-    return () => {
-      // Stop everything on unmount so a remount doesn't double-play.
-      Object.values(actions).forEach((a) => a?.stop());
-      current.current = null;
-    };
-  }, [actions]);
-
-  useFrame(() => {
-    const now = performance.now() / 1000;
-
-    // --- one-shot melee swing (overrides locomotion while playing) ---
-    if (heroAttack.token !== lastAttackToken.current) {
-      lastAttackToken.current = heroAttack.token;
-      const swing = actions[CLIPS.attack];
-      if (swing) {
-        const prev = current.current ? actions[current.current] : null;
-        if (prev && prev !== swing) prev.fadeOut(0.08);
-        swing.reset().setLoop(THREE.LoopOnce, 1);
-        swing.clampWhenFinished = true;
-        swing.setEffectiveWeight(1).fadeIn(0.06).play();
-        current.current = CLIPS.attack;
-        attackUntil.current = now + swing.getClip().duration * 0.9;
-      }
-    }
-    if (now < attackUntil.current) return; // let the swing finish
-
-    const speed = playerSpeed.value;
-    const next =
-      speed < WALK_THRESHOLD
-        ? CLIPS.idle
-        : speed < RUN_THRESHOLD
-          ? CLIPS.walk
-          : CLIPS.run;
-
-    if (next === current.current) return; // no change → keep playing
-
-    const prevAction = current.current ? actions[current.current] : null;
-    const nextAction = actions[next];
-    if (!nextAction) return; // clip missing — leave current playing
-
-    nextAction.reset().setEffectiveWeight(1).fadeIn(FADE).play();
-    if (prevAction && prevAction !== nextAction) prevAction.fadeOut(FADE);
-    current.current = next;
-  });
-
-  // Memoize so the JSX object identity is stable across re-renders.
-  const position = useMemo<[number, number, number]>(
-    () => [0, Y_OFFSET, 0],
-    [],
-  );
+      // stride
+      lThigh.current.rotation.x = s * amp;
+      rThigh.current.rotation.x = -s * amp;
+      // knees bend on the back-to-front swing
+      lShin.current.rotation.x = -Math.max(0, -c) * amp * 1.5;
+      rShin.current.rotation.x = -Math.max(0, c) * amp * 1.5;
+      // arms counter-swing, bent at the elbow when running
+      lArm.current.rotation.x = -s * amp * 0.8;
+      rArm.current.rotation.x = s * amp * 0.8;
+      lArm.current.rotation.z = 0.12;
+      rArm.current.rotation.z = -0.12;
+      lFore.current.rotation.x = -0.3 - speed01 * 0.75;
+      rFore.current.rotation.x = -0.3 - speed01 * 0.75;
+      // body bob + forward lean at speed
+      root.current.position.y = Math.abs(c) * 0.05 * (0.5 + speed01);
+      torso.current.rotation.x = 0.05 + speed01 * 0.22;
+      torso.current.rotation.y = s * 0.08;
+      head.current.rotation.y = 0;
+    },
+  }));
 
   return (
-    <group
-      ref={group}
-      position={position}
-      scale={SCALE}
-      rotation={[0, BASE_ROTATION_Y, 0]}
-    >
-      <primitive object={scene} />
+    <group ref={root} scale={scale}>
+      {/* legs hang from the hips */}
+      <group ref={lThigh} position={[-0.13, 0.92, 0]}>
+        <mesh position={[0, -0.23, 0]} castShadow>
+          <boxGeometry args={[0.19, 0.46, 0.21]} />
+          <meshLambertMaterial color={JEANS} />
+        </mesh>
+        <group ref={lShin} position={[0, -0.46, 0]}>
+          <mesh position={[0, -0.2, 0]} castShadow>
+            <boxGeometry args={[0.17, 0.4, 0.19]} />
+            <meshLambertMaterial color={JEANS_DARK} />
+          </mesh>
+          <mesh position={[0, -0.42, 0.05]}>
+            <boxGeometry args={[0.17, 0.1, 0.32]} />
+            <meshLambertMaterial color={SHOE} />
+          </mesh>
+          <mesh position={[0, -0.475, 0.05]}>
+            <boxGeometry args={[0.18, 0.05, 0.34]} />
+            <meshLambertMaterial color={SOLE} />
+          </mesh>
+        </group>
+      </group>
+      <group ref={rThigh} position={[0.13, 0.92, 0]}>
+        <mesh position={[0, -0.23, 0]} castShadow>
+          <boxGeometry args={[0.19, 0.46, 0.21]} />
+          <meshLambertMaterial color={JEANS} />
+        </mesh>
+        <group ref={rShin} position={[0, -0.46, 0]}>
+          <mesh position={[0, -0.2, 0]} castShadow>
+            <boxGeometry args={[0.17, 0.4, 0.19]} />
+            <meshLambertMaterial color={JEANS_DARK} />
+          </mesh>
+          <mesh position={[0, -0.42, 0.05]}>
+            <boxGeometry args={[0.17, 0.1, 0.32]} />
+            <meshLambertMaterial color={SHOE} />
+          </mesh>
+          <mesh position={[0, -0.475, 0.05]}>
+            <boxGeometry args={[0.18, 0.05, 0.34]} />
+            <meshLambertMaterial color={SOLE} />
+          </mesh>
+        </group>
+      </group>
+
+      <group ref={torso} position={[0, 0.95, 0]}>
+        {/* hips / belt */}
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <boxGeometry args={[0.42, 0.16, 0.26]} />
+          <meshLambertMaterial color={JEANS_DARK} />
+        </mesh>
+        {/* tank top */}
+        <mesh position={[0, 0.34, 0]} castShadow>
+          <boxGeometry args={[0.46, 0.5, 0.27]} />
+          <meshLambertMaterial color={TANK} />
+        </mesh>
+        {/* shoulders (skin showing past the tank straps) */}
+        <mesh position={[0, 0.56, 0]}>
+          <boxGeometry args={[0.52, 0.1, 0.24]} />
+          <meshLambertMaterial color={SKIN} />
+        </mesh>
+        {/* gold chain */}
+        <mesh position={[0, 0.52, 0.14]}>
+          <boxGeometry args={[0.16, 0.03, 0.02]} />
+          <meshBasicMaterial color="#d8a838" />
+        </mesh>
+
+        {/* arms hang from the shoulders */}
+        <group ref={lArm} position={[-0.3, 0.52, 0]}>
+          <mesh position={[0, -0.17, 0]} castShadow>
+            <boxGeometry args={[0.14, 0.34, 0.15]} />
+            <meshLambertMaterial color={SKIN} />
+          </mesh>
+          <group ref={lFore} position={[0, -0.34, 0]}>
+            <mesh position={[0, -0.15, 0]} castShadow>
+              <boxGeometry args={[0.12, 0.3, 0.13]} />
+              <meshLambertMaterial color={SKIN_DARK} />
+            </mesh>
+            <mesh position={[0, -0.34, 0]}>
+              <boxGeometry args={[0.11, 0.1, 0.12]} />
+              <meshLambertMaterial color={SKIN} />
+            </mesh>
+          </group>
+        </group>
+        <group ref={rArm} position={[0.3, 0.52, 0]}>
+          <mesh position={[0, -0.17, 0]} castShadow>
+            <boxGeometry args={[0.14, 0.34, 0.15]} />
+            <meshLambertMaterial color={SKIN} />
+          </mesh>
+          <group ref={rFore} position={[0, -0.34, 0]}>
+            <mesh position={[0, -0.15, 0]} castShadow>
+              <boxGeometry args={[0.12, 0.3, 0.13]} />
+              <meshLambertMaterial color={SKIN_DARK} />
+            </mesh>
+            <mesh position={[0, -0.34, 0]}>
+              <boxGeometry args={[0.11, 0.1, 0.12]} />
+              <meshLambertMaterial color={SKIN} />
+            </mesh>
+          </group>
+        </group>
+
+        {/* head */}
+        <group ref={head} position={[0, 0.72, 0]}>
+          <mesh position={[0, 0.04, 0]}>
+            <boxGeometry args={[0.1, 0.1, 0.1]} />
+            <meshLambertMaterial color={SKIN} />
+          </mesh>
+          <mesh position={[0, 0.21, 0.01]} castShadow>
+            <boxGeometry args={[0.26, 0.28, 0.26]} />
+            <meshLambertMaterial color={SKIN} />
+          </mesh>
+          {/* fade haircut */}
+          <mesh position={[0, 0.35, -0.01]}>
+            <boxGeometry args={[0.27, 0.08, 0.27]} />
+            <meshLambertMaterial color={HAIR} />
+          </mesh>
+          <mesh position={[0, 0.26, -0.12]}>
+            <boxGeometry args={[0.27, 0.14, 0.05]} />
+            <meshLambertMaterial color={HAIR} />
+          </mesh>
+          {/* nose hint */}
+          <mesh position={[0, 0.18, 0.14]}>
+            <boxGeometry args={[0.05, 0.07, 0.04]} />
+            <meshLambertMaterial color={SKIN_DARK} />
+          </mesh>
+        </group>
+      </group>
     </group>
   );
-}
+});

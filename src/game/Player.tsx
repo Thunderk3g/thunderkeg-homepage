@@ -1,160 +1,133 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { useKeyboardControls } from "@react-three/drei";
-import {
-  RigidBody,
-  CapsuleCollider,
-  useRapier,
-  type RapierRigidBody,
-} from "@react-three/rapier";
-import { QueryFilterFlags, ActiveCollisionTypes } from "@dimforge/rapier3d-compat";
-import * as THREE from "three";
-import { Controls } from "./controls";
-import { useGame } from "./store";
-import { useHealth } from "./health";
-import { playerPosition, playerForward, playerSpeed } from "./refs";
-import { Character } from "./Character";
-import { SPAWN } from "@/world/layout";
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useAnimations, useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
+import { useGame, live } from './store';
+import { isDown } from './controls';
+import { collide, spawn } from './city';
 
-const SPEED = 5; // world units / second
-const GRAVITY = 22;
-/** Upward velocity injected on a grounded jump (gravity integrates the arc). */
-const JUMP_VELOCITY = 8.5;
+const MODEL = '/models/Man1.glb';
+const WALK = 4.4;
+const RUN = 9.0;
+const ACCEL = 26;
+const HEIGHT = 1.78; // normalize model to a GTA-protagonist height
 
-export function Player() {
-  const body = useRef<RapierRigidBody>(null);
-  const visual = useRef<THREE.Group>(null);
-  const { world } = useRapier();
-  const [, getKeys] = useKeyboardControls<Controls>();
+export default function Player() {
+  const group = useRef<THREE.Group>(null!);
+  const speed = useRef(0);
+  const current = useRef('idle');
+  const tier = useGame((s) => s.tier);
+  const dir = useMemo(() => new THREE.Vector3(), []);
 
-  // Rapier kinematic character controller (autostep, snap-to-ground, slopes).
-  const controllerRef = useRef<ReturnType<
-    typeof world.createCharacterController
-  > | null>(null);
-  useEffect(() => {
-    const c = world.createCharacterController(0.01);
-    c.enableAutostep(0.5, 0.2, true);
-    c.enableSnapToGround(0.5);
-    c.setMaxSlopeClimbAngle((45 * Math.PI) / 180);
-    c.setApplyImpulsesToDynamicBodies(true);
-    controllerRef.current = c;
-    return () => {
-      world.removeCharacterController(c);
-      controllerRef.current = null;
+  const { scene, animations } = useGLTF(MODEL);
+  const { actions, mixer } = useAnimations(animations, scene);
+
+  // normalize whatever scale the asset shipped with
+  const fit = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const s = HEIGHT / Math.max(0.01, box.max.y - box.min.y);
+    return { s, y: -box.min.y * s };
+  }, [scene]);
+
+  const clips = useMemo(() => {
+    const find = (re: RegExp) => {
+      const key = Object.keys(actions).find((n) => re.test(n));
+      return key ? actions[key] : undefined;
     };
-  }, [world]);
+    return { idle: find(/Idle/i), walk: find(/Walk$/i), run: find(/Run$/i) };
+  }, [actions]);
 
-  const velocityY = useRef(0);
-  // Last frame's grounded result (computedGrounded() is only valid AFTER
-  // computeColliderMovement); used to gate jumps so there are no air-jumps.
-  const grounded = useRef(false);
-  // Rising-edge latch for the jump key so holding Space doesn't auto-bounce.
-  const jumpWasDown = useRef(false);
-  const move = useMemo(() => new THREE.Vector3(), []);
-  const disp = useMemo(() => new THREE.Vector3(), []);
-  const targetQuat = useMemo(() => new THREE.Quaternion(), []);
-  const up = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  useEffect(() => {
+    scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) {
+        m.castShadow = tier === 'high';
+        m.frustumCulled = false; // skinned meshes pop with default culling
+      }
+    });
+    clips.idle?.reset().play();
+  }, [scene, clips, tier]);
 
-  useFrame((_, dtRaw) => {
-    const controller = controllerRef.current;
-    const b = body.current;
-    if (!b || !controller) return;
-    // Cap only to avoid a catastrophic step after a stall; keep movement
-    // wall-clock-accurate down to ~10fps (a 1/30 cap causes slow-motion <30fps).
-    const dt = Math.min(dtRaw, 0.1);
-
-    // DEATH → RESPAWN: when hp hits zero, teleport the body back to SPAWN,
-    // kill vertical momentum, and revive (reset() grants brief i-frames). The
-    // kinematic controller is moved with setNextKinematicTranslation so the
-    // physics step picks up the teleport without a fight.
-    const health = useHealth.getState();
-    if (health.hp <= 0) {
-      velocityY.current = 0;
-      grounded.current = false;
-      jumpWasDown.current = false;
-      b.setNextKinematicTranslation({ x: SPAWN[0], y: SPAWN[1], z: SPAWN[2] });
-      playerPosition.set(SPAWN[0], SPAWN[1], SPAWN[2]);
-      playerSpeed.value = 0;
-      health.reset();
+  useFrame((_, dt) => {
+    const { activeMission, inCar, started } = useGame.getState();
+    const g = group.current;
+    if (!g) return;
+    g.visible = !inCar;
+    if (inCar) {
+      live.px = live.carX;
+      live.pz = live.carZ;
+      speed.current = 0;
       return;
     }
 
-    const blocked = useGame.getState().isModalOpen();
-    const k = getKeys();
-    const j = useGame.getState().joystick;
-
     let ix = 0;
     let iz = 0;
-    if (!blocked) {
-      ix = (k.right ? 1 : 0) - (k.left ? 1 : 0) + j.x;
-      iz = (k.back ? 1 : 0) - (k.forward ? 1 : 0) + j.z;
+    if (started && !activeMission) {
+      if (isDown('w', 'arrowup')) iz += 1;
+      if (isDown('s', 'arrowdown')) iz -= 1;
+      if (isDown('a', 'arrowleft')) ix -= 1;
+      if (isDown('d', 'arrowright')) ix += 1;
     }
-    move.set(ix, 0, iz);
-    if (move.lengthSq() > 1) move.normalize();
+    const moving = ix !== 0 || iz !== 0;
+    const sprint = isDown('shift');
+    const targetSpeed = moving ? (sprint ? RUN : WALK) : 0;
+    speed.current = THREE.MathUtils.damp(speed.current, targetSpeed, ACCEL / 4, dt);
+    if (speed.current < 0.05) speed.current = 0;
 
-    const horizSpeed = move.length() * SPEED;
-    playerSpeed.value = horizSpeed;
-
-    // JUMP: rising edge of the jump key while standing on the ground (no double
-    // jumps — `grounded` is last frame's ground contact). Inject upward
-    // velocity; the gravity integration below carries the arc.
-    const jumpDown = !blocked && k.jump === true;
-    if (jumpDown && !jumpWasDown.current && grounded.current) {
-      velocityY.current = JUMP_VELOCITY;
-      grounded.current = false;
+    if (moving) {
+      // camera-relative: W away from camera, A screen-left, D screen-right
+      const inputYaw = Math.atan2(-ix, iz);
+      const yaw = live.camYaw + inputYaw;
+      let d = yaw - live.pHeading;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      live.pHeading += d * Math.min(1, dt * 10);
     }
-    jumpWasDown.current = jumpDown;
-
-    disp.set(move.x * SPEED * dt, 0, move.z * SPEED * dt);
-    velocityY.current -= GRAVITY * dt;
-    disp.y = velocityY.current * dt;
-
-    const collider = b.collider(0);
-    // EXCLUDE_SENSORS so the character controller passes through trigger zones
-    // instead of being blocked by them.
-    controller.computeColliderMovement(collider, disp, QueryFilterFlags.EXCLUDE_SENSORS);
-    const isGrounded = controller.computedGrounded();
-    grounded.current = isGrounded;
-    // Only cancel vertical velocity when settled on the ground (falling/at rest).
-    // Guarding on velocityY <= 0 keeps a just-applied jump impulse from being
-    // zeroed in the same frame (the body hasn't physically lifted off yet).
-    if (isGrounded && velocityY.current <= 0) velocityY.current = 0;
-    const corrected = controller.computedMovement();
-
-    const t = b.translation();
-    const nx = t.x + corrected.x;
-    const ny = t.y + corrected.y;
-    const nz = t.z + corrected.z;
-    b.setNextKinematicTranslation({ x: nx, y: ny, z: nz });
-    playerPosition.set(nx, ny, nz);
-
-    // turn the character to face travel direction
-    if (horizSpeed > 0.05 && visual.current) {
-      const angle = Math.atan2(move.x, move.z);
-      targetQuat.setFromAxisAngle(up, angle);
-      visual.current.quaternion.slerp(targetQuat, 1 - Math.pow(0.001, dt));
-      playerForward.set(Math.sin(angle), 0, Math.cos(angle));
+    if (speed.current > 0) {
+      dir.set(Math.sin(live.pHeading), 0, Math.cos(live.pHeading));
+      const next = collide(
+        g.position.x + dir.x * speed.current * dt,
+        g.position.z + dir.z * speed.current * dt,
+        0.5,
+      );
+      g.position.x = next.x;
+      g.position.z = next.z;
     }
+    g.rotation.y = live.pHeading;
+    live.px = g.position.x;
+    live.pz = g.position.z;
+
+    // animation state machine with crossfades
+    const want = speed.current < 0.3 ? 'idle' : sprint && moving ? 'run' : 'walk';
+    if (want !== current.current) {
+      const prev = clips[current.current as keyof typeof clips];
+      const next = clips[want as keyof typeof clips];
+      if (next) {
+        next.reset().fadeIn(0.22).play();
+        prev?.fadeOut(0.22);
+        current.current = want;
+      }
+    }
+    // sync stride to actual ground speed so feet don't slide
+    if (current.current === 'walk' && clips.walk) clips.walk.timeScale = speed.current / WALK;
+    if (current.current === 'run' && clips.run) clips.run.timeScale = Math.max(0.7, speed.current / RUN);
+    mixer.timeScale = 1;
   });
 
   return (
-    <RigidBody
-      ref={body}
-      name="player"
-      type="kinematicPosition"
-      colliders={false}
-      position={SPAWN}
-      enabledRotations={[false, false, false]}
-    >
-      {/* ALL active collision types so kinematic↔fixed sensor intersections fire. */}
-      <CapsuleCollider args={[0.6, 0.4]} activeCollisionTypes={ActiveCollisionTypes.ALL} />
-      {/* Hero visual — the controller rotates this group to face travel
-          direction; the Character component renders + animates the model. */}
-      <group ref={visual}>
-        <Character />
+    <group ref={group} position={[spawn.x, 0.3, spawn.z]}>
+      <group scale={fit.s} position-y={fit.y}>
+        <primitive object={scene} />
       </group>
-    </RigidBody>
+      {/* soft blob shadow keeps him grounded on lite tier */}
+      <mesh rotation-x={-Math.PI / 2} position-y={0.02}>
+        <circleGeometry args={[0.42, 16]} />
+        <meshBasicMaterial color="#000" transparent opacity={0.28} depthWrite={false} />
+      </mesh>
+    </group>
   );
 }
+
+useGLTF.preload(MODEL);

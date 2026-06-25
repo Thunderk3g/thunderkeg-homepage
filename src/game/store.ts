@@ -1,70 +1,74 @@
-import { create } from "zustand";
+import { create } from 'zustand';
+import { missions, totalRespect } from '@/data/resume';
 
-export type BuildingId =
-  | "about"
-  | "experience"
-  | "projects"
-  | "skills"
-  | "awards"
-  | "contact";
+export type Tier = 'high' | 'lite';
 
-export type MinigameId = "bug-hunt" | "kafka-courier" | "cache-match";
-
-/** Analog movement vector contributed by the mobile joystick (range -1..1). */
-export interface JoystickVector {
-  x: number;
-  z: number;
+interface GameStore {
+  started: boolean;
+  tier: Tier;
+  activeMission: string | null;
+  completed: string[];
+  respect: number;
+  inCar: boolean;
+  splash: string | null; // mission title for "MISSION PASSED" splash
+  allDone: boolean;
+  start: (tier: Tier) => void;
+  openMission: (id: string) => void;
+  closeMission: () => void;
+  setInCar: (v: boolean) => void;
+  clearSplash: () => void;
 }
 
-export interface GameState {
-  // --- loading ---
-  ready: boolean;
-  setReady: (ready: boolean) => void;
-
-  // --- input (analog, written by mobile joystick; keyboard is read separately) ---
-  joystick: JoystickVector;
-  setJoystick: (x: number, z: number) => void;
-
-  // --- proximity / interaction ---
-  nearBuilding: BuildingId | null;
-  setNearBuilding: (id: BuildingId | null) => void;
-
-  // --- content panels ---
-  activePanel: BuildingId | null;
-  openPanel: (id: BuildingId) => void;
-  closePanel: () => void;
-
-  // --- minigames ---
-  activeMinigame: MinigameId | null;
-  startMinigame: (id: MinigameId) => void;
-  endMinigame: () => void;
-  scores: Record<MinigameId, number | null>;
-  setScore: (id: MinigameId, score: number) => void;
-
-  // true while any modal UI (panel or minigame) is open — pauses player control
-  isModalOpen: () => boolean;
-}
-
-export const useGame = create<GameState>((set, get) => ({
-  ready: false,
-  setReady: (ready) => set({ ready }),
-
-  joystick: { x: 0, z: 0 },
-  setJoystick: (x, z) => set({ joystick: { x, z } }),
-
-  nearBuilding: null,
-  setNearBuilding: (id) => set({ nearBuilding: id }),
-
-  activePanel: null,
-  openPanel: (id) => set({ activePanel: id }),
-  closePanel: () => set({ activePanel: null }),
-
-  activeMinigame: null,
-  startMinigame: (id) => set({ activeMinigame: id, activePanel: null }),
-  endMinigame: () => set({ activeMinigame: null }),
-  scores: { "bug-hunt": null, "kafka-courier": null, "cache-match": null },
-  setScore: (id, score) =>
-    set((s) => ({ scores: { ...s.scores, [id]: score } })),
-
-  isModalOpen: () => get().activePanel !== null || get().activeMinigame !== null,
+export const useGame = create<GameStore>((set, get) => ({
+  started: false,
+  tier: 'high',
+  activeMission: null,
+  completed: [],
+  respect: 0,
+  inCar: false,
+  splash: null,
+  allDone: false,
+  start: (tier) => set({ started: true, tier }),
+  openMission: (id) => {
+    if (get().activeMission) return;
+    set({ activeMission: id });
+  },
+  closeMission: () => {
+    const { activeMission, completed, respect } = get();
+    if (!activeMission) return;
+    const m = missions.find((x) => x.id === activeMission)!;
+    if (!completed.includes(activeMission)) {
+      const newCompleted = [...completed, activeMission];
+      set({
+        activeMission: null,
+        completed: newCompleted,
+        respect: respect + m.respect,
+        splash: m.title,
+        allDone: newCompleted.length === missions.length,
+      });
+    } else {
+      set({ activeMission: null });
+    }
+  },
+  setInCar: (v) => set({ inCar: v }),
+  clearSplash: () => set({ splash: null }),
 }));
+
+export { totalRespect };
+
+// debug/testing handle
+if (typeof window !== 'undefined') {
+  (window as unknown as { __game: typeof useGame }).__game = useGame;
+}
+
+// Mutable, render-loop-shared world state (kept out of React to avoid re-renders).
+export const live = {
+  px: 0,
+  pz: 0,
+  pHeading: 0,
+  carX: 0,
+  carZ: 0,
+  carHeading: 0,
+  carSpeed: 0,
+  camYaw: 0,
+};

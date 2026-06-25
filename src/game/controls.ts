@@ -1,20 +1,35 @@
-import type { KeyboardControlsEntry } from "@react-three/drei";
+// Global keyboard state, polled in useFrame loops.
+const keys = new Set<string>();
+const pressed = new Set<string>(); // edge-triggered, consumed on read
 
-/** Named movement actions bound to keys via drei's <KeyboardControls>. */
-export enum Controls {
-  forward = "forward",
-  back = "back",
-  left = "left",
-  right = "right",
-  jump = "jump",
-  interact = "interact",
+let attached = false;
+
+export function attachControls() {
+  if (attached || typeof window === 'undefined') return;
+  attached = true;
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
+    if (!keys.has(k)) pressed.add(k);
+    keys.add(k);
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+  window.addEventListener('blur', () => keys.clear());
 }
 
-export const keyboardMap: KeyboardControlsEntry<Controls>[] = [
-  { name: Controls.forward, keys: ["ArrowUp", "KeyW"] },
-  { name: Controls.back, keys: ["ArrowDown", "KeyS"] },
-  { name: Controls.left, keys: ["ArrowLeft", "KeyA"] },
-  { name: Controls.right, keys: ["ArrowRight", "KeyD"] },
-  { name: Controls.jump, keys: ["Space"] },
-  { name: Controls.interact, keys: ["KeyE", "Enter"] },
-];
+export function isDown(...names: string[]) {
+  return names.some((n) => keys.has(n));
+}
+
+/** true once per physical key press */
+export function wasPressed(name: string) {
+  if (pressed.has(name)) {
+    pressed.delete(name);
+    return true;
+  }
+  return false;
+}
+
+export function clearPressed() {
+  pressed.clear();
+}
