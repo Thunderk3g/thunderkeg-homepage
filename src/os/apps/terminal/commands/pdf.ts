@@ -1,7 +1,7 @@
 'use client';
 
 import type { Command } from '../../../types';
-import { profile, missions } from '@/data/resume';
+import { awards, education, profile, projects, research, roles, skills } from '@/data/resume';
 import { jsPDF } from 'jspdf';
 
 /* ───────────────────────── layout constants ───────────────────────── */
@@ -98,26 +98,78 @@ function buildResume(): jsPDF {
     advance(1.5);
   }
 
-  /* ── experience / missions ── */
-  for (const mission of missions) {
-    sectionHeading(mission.title);
-
-    writeWrapped(mission.brief, 10, 'italic', 5);
-    advance(2);
-
-    for (const line of mission.lines) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      if (y > BOTTOM) {
-        doc.addPage();
-        y = MARGIN;
-      }
-      doc.text('•', MARGIN, y);
-      writeWrapped(line, 10, 'normal', 5, 5);
-      advance(1);
+  /** One bulleted line, hanging-indented under its marker. */
+  const bullet = (text: string): void => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    if (y > BOTTOM) {
+      doc.addPage();
+      y = MARGIN;
     }
+    doc.text('•', MARGIN, y);
+    writeWrapped(text, 10, 'normal', 5, 5);
+    advance(1);
+  };
+
+  const subHeading = (label: string): void => {
+    advance(1.5);
+    writeWrapped(label, 10, 'bold', 5);
+  };
+
+  /* ── experience ── */
+  sectionHeading('Experience');
+  for (const role of roles) {
+    writeWrapped(`${role.title} · ${role.org}`, 11, 'bold', 5.5);
+    writeWrapped(role.period, 9, 'italic', 4.5);
+    advance(1);
+    writeWrapped(role.blurb, 10, 'normal', 5);
+    advance(1.5);
+    for (const group of role.groups) {
+      if (group.heading) subHeading(group.heading);
+      for (const point of group.points) bullet(point);
+    }
+    advance(3);
+  }
+
+  /* ── projects ── */
+  sectionHeading('Selected independent projects');
+  for (const project of projects) {
+    writeWrapped(`${project.name} — ${project.kind}`, 10, 'bold', 5);
+    writeWrapped(project.blurb, 10, 'normal', 5);
+    if (project.caveat) writeWrapped(project.caveat, 9, 'italic', 4.5);
+    advance(2.5);
+  }
+
+  /* ── research ── */
+  sectionHeading('Research');
+  for (const item of [...research.inPreparation, ...research.published]) {
+    writeWrapped(item.title, 10, 'bold', 5);
+    writeWrapped(item.venue, 9, 'italic', 4.5);
+    writeWrapped(item.summary, 10, 'normal', 5);
+    advance(2.5);
+  }
+  subHeading('Research directions');
+  for (const direction of research.directions) bullet(direction);
+  advance(1.5);
+  writeWrapped(research.track, 10, 'normal', 5);
+  advance(2);
+
+  /* ── skills ── */
+  sectionHeading('Technical skills');
+  for (const skill of skills) {
+    writeWrapped(skill.group, 10, 'bold', 5);
+    writeWrapped(skill.items, 9.5, 'normal', 4.8);
     advance(2);
   }
+
+  /* ── education & awards ── */
+  sectionHeading('Education');
+  for (const e of education) bullet(`${e.degree} — ${e.org} · ${e.period} · ${e.detail}`);
+  advance(2);
+
+  sectionHeading('Awards');
+  for (const a of awards) bullet(a);
+  advance(2);
 
   /* ── footer on every page ── */
   const pageCount = doc.getNumberOfPages();

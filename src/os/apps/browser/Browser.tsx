@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
-import { profile, missions } from '@/data/resume';
+import { useOS } from '../../store';
+import { awards, education, profile, projects, research, roles, skills } from '@/data/resume';
 
 interface PageDef {
   id: string;
@@ -11,8 +12,6 @@ interface PageDef {
   render: () => React.ReactNode;
 }
 
-const m = (id: string) => missions.find((x) => x.id === id)!;
-
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="kos-web-section">
     <h2>{title}</h2>
@@ -20,19 +19,27 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </section>
 );
 
-const MissionBlock = ({ id }: { id: string }) => {
-  const mi = m(id);
+const RoleBlock = ({ id }: { id: string }) => {
+  const r = roles.find((x) => x.id === id)!;
   return (
     <div className="kos-web-card">
       <div className="kos-web-card-head">
-        <strong>{mi.place}</strong>
-        <span>{mi.brief}</span>
+        <strong>
+          {r.title} · {r.org}
+        </strong>
+        <span>{r.period}</span>
       </div>
-      <ul>
-        {mi.lines.map((l, i) => (
-          <li key={i}>{l}</li>
-        ))}
-      </ul>
+      <p className="kos-web-blurb">{r.blurb}</p>
+      {r.groups.map((g, gi) => (
+        <div key={gi}>
+          {g.heading && <h3 className="kos-web-sub">{g.heading}</h3>}
+          <ul>
+            {g.points.map((p, pi) => (
+              <li key={pi}>{p}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 };
@@ -58,7 +65,9 @@ const PAGES: PageDef[] = [
         <div className="kos-web-links">
           <a href={`mailto:${profile.email}`}>{profile.email}</a>
           <span>·</span>
-          <span>{profile.phone}</span>
+          <a href={profile.githubUrl} target="_blank" rel="noreferrer">
+            github.com/{profile.github}
+          </a>
         </div>
       </div>
     ),
@@ -69,8 +78,9 @@ const PAGES: PageDef[] = [
     title: 'Experience',
     render: () => (
       <Section title="Work Experience">
-        <MissionBlock id="bajaj-life" />
-        <MissionBlock id="finserv" />
+        {roles.map((r) => (
+          <RoleBlock key={r.id} id={r.id} />
+        ))}
       </Section>
     ),
   },
@@ -79,12 +89,49 @@ const PAGES: PageDef[] = [
     url: 'about:projects',
     title: 'Projects',
     render: () => (
-      <Section title="Projects & Open Source">
+      <Section title="Selected Independent Projects">
+        {projects.map((p) => (
+          <div className="kos-web-card" key={p.name}>
+            <div className="kos-web-card-head">
+              <strong>{p.name}</strong>
+              <span>{p.kind}</span>
+            </div>
+            <p className="kos-web-blurb">{p.blurb}</p>
+            {p.caveat && <p className="kos-web-caveat">{p.caveat}</p>}
+          </div>
+        ))}
+      </Section>
+    ),
+  },
+  {
+    id: 'research',
+    url: 'about:research',
+    title: 'Research',
+    render: () => (
+      <Section title="Research">
+        {[...research.inPreparation, ...research.published].map((r) => (
+          <div className="kos-web-card" key={r.title}>
+            <div className="kos-web-card-head">
+              <strong>{r.title}</strong>
+              <span>{r.venue}</span>
+            </div>
+            <p className="kos-web-blurb">{r.summary}</p>
+          </div>
+        ))}
+        <h3 className="kos-web-sub">Directions</h3>
         <ul className="kos-web-list">
-          {m('projects').lines.map((l, i) => (
-            <li key={i}>{l}</li>
+          {research.directions.map((d, i) => (
+            <li key={i}>{d}</li>
           ))}
         </ul>
+        <p className="kos-web-blurb">{research.track}</p>
+        <p className="kos-web-blurb">
+          Longer notes and the reading shelf live in the Writing app — or at{' '}
+          <a href="/writing" target="_blank" rel="noreferrer">
+            /writing
+          </a>
+          .
+        </p>
       </Section>
     ),
   },
@@ -95,8 +142,10 @@ const PAGES: PageDef[] = [
     render: () => (
       <Section title="Technical Skills">
         <ul className="kos-web-list">
-          {m('skills').lines.map((l, i) => (
-            <li key={i}>{l}</li>
+          {skills.map((s) => (
+            <li key={s.group}>
+              <strong>{s.group}</strong> — {s.items}
+            </li>
           ))}
         </ul>
       </Section>
@@ -107,24 +156,15 @@ const PAGES: PageDef[] = [
     url: 'about:education',
     title: 'Education',
     render: () => (
-      <Section title="Education">
+      <Section title="Education & Awards">
         <ul className="kos-web-list">
-          {m('education').lines.map((l, i) => (
-            <li key={i}>{l}</li>
+          {education.map((e) => (
+            <li key={e.degree}>
+              <strong>{e.degree}</strong> — {e.org} · {e.period} · {e.detail}
+            </li>
           ))}
-        </ul>
-      </Section>
-    ),
-  },
-  {
-    id: 'awards',
-    url: 'about:awards',
-    title: 'Awards',
-    render: () => (
-      <Section title="Awards & Research">
-        <ul className="kos-web-list">
-          {m('awards').lines.map((l, i) => (
-            <li key={i}>{l}</li>
+          {awards.map((a) => (
+            <li key={a}>{a}</li>
           ))}
         </ul>
       </Section>
@@ -142,29 +182,93 @@ const PAGES: PageDef[] = [
           </li>
           <li>Phone — {profile.phone}</li>
           <li>Location — {profile.location}</li>
-          <li>Plain résumé — <a href="/resume" target="_blank" rel="noreferrer">/resume</a></li>
+          <li>
+            GitHub —{' '}
+            <a href={profile.githubUrl} target="_blank" rel="noreferrer">
+              github.com/{profile.github}
+            </a>
+          </li>
+          <li>
+            Plain pages —{' '}
+            <a href="/resume" target="_blank" rel="noreferrer">
+              /resume
+            </a>{' '}
+            ·{' '}
+            <a href="/writing" target="_blank" rel="noreferrer">
+              /writing
+            </a>
+          </li>
         </ul>
       </Section>
     ),
   },
 ];
 
+const indexOf = (id: string) => Math.max(0, PAGES.findIndex((p) => p.id === id));
+
 function BrowserApp({ args }: AppProps) {
   const initial = typeof args?.page === 'string' ? (args.page as string) : 'home';
-  const [active, setActive] = useState(PAGES.find((p) => p.id === initial) ?? PAGES[0]);
+  /** Real session history: a stack of page indexes plus a cursor, like a browser. */
+  const [history, setHistory] = useState<number[]>(() => [indexOf(initial)]);
+  const [cursor, setCursor] = useState(0);
+  /** Bumped by reload so the active page remounts. */
+  const [epoch, setEpoch] = useState(0);
+  const launch = useOS((s) => s.launch);
+
+  const active = PAGES[history[cursor]];
+  const canBack = cursor > 0;
+  const canForward = cursor < history.length - 1;
+
+  const visit = useCallback(
+    (id: string) => {
+      const next = indexOf(id);
+      if (next === history[cursor]) return;
+      setHistory((h) => [...h.slice(0, cursor + 1), next]);
+      setCursor((c) => c + 1);
+    },
+    [cursor, history],
+  );
+
+  const body = useMemo(() => active.render(), [active, epoch]);
 
   return (
     <div className="kos-web">
       <div className="kos-web-toolbar">
         <div className="kos-web-nav">
-          <button className="kos-web-btn" title="back">‹</button>
-          <button className="kos-web-btn" title="forward">›</button>
-          <button className="kos-web-btn" title="reload">⟳</button>
+          <button
+            className="kos-web-btn"
+            title="back"
+            aria-label="back"
+            disabled={!canBack}
+            onClick={() => canBack && setCursor((c) => c - 1)}
+          >
+            ‹
+          </button>
+          <button
+            className="kos-web-btn"
+            title="forward"
+            aria-label="forward"
+            disabled={!canForward}
+            onClick={() => canForward && setCursor((c) => c + 1)}
+          >
+            ›
+          </button>
+          <button
+            className="kos-web-btn"
+            title="reload"
+            aria-label="reload"
+            onClick={() => setEpoch((e) => e + 1)}
+          >
+            ⟳
+          </button>
         </div>
         <div className="kos-web-urlbar">
           <span className="kos-web-lock">🔒</span>
           {active.url}
         </div>
+        <button className="kos-web-btn" title="open Writing" onClick={() => launch('writing')}>
+          ✎
+        </button>
       </div>
       <div className="kos-web-body">
         <nav className="kos-web-side">
@@ -172,13 +276,18 @@ function BrowserApp({ args }: AppProps) {
             <button
               key={p.id}
               className={'kos-web-tab' + (p.id === active.id ? ' active' : '')}
-              onClick={() => setActive(p)}
+              onClick={() => visit(p.id)}
             >
               {p.title}
             </button>
           ))}
+          <button className="kos-web-tab" onClick={() => launch('writing')}>
+            Writing ↗
+          </button>
         </nav>
-        <main className="kos-web-content">{active.render()}</main>
+        <main className="kos-web-content" key={`${active.id}-${epoch}`}>
+          {body}
+        </main>
       </div>
     </div>
   );
@@ -191,7 +300,7 @@ export const browserApp: AppDefinition = {
   category: 'Internet',
   component: BrowserApp,
   description: "Diwakar's portfolio in a browser",
-  defaultSize: { width: 860, height: 580 },
+  defaultSize: { width: 900, height: 600 },
   minSize: { width: 420, height: 320 },
   desktop: true,
   launchCommands: ['firefox', 'about'],

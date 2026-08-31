@@ -1,91 +1,118 @@
 import type { FsNode } from '../types';
+import {
+  awards,
+  education,
+  profile,
+  projects,
+  research,
+  resumeText,
+  roles,
+  skills,
+} from '@/data/resume';
 
 const file = (content: string): FsNode => ({ type: 'file', content, mode: 'rw-r--r--' });
 const dir = (children: Record<string, FsNode>): FsNode => ({ type: 'dir', children, mode: 'rwxr-xr-x' });
 
-const ABOUT = `Diwakar Adhikari
-Technical Lead — AI Engineering @ Bajaj Life Insurance
-Pune, India
+/* Everything below is derived from src/data/resume.ts — one source, many surfaces. */
 
-AI/ML Lead Engineer specialising in AI/ML innovations for the insurance
-sector. I deploy large language models and agent-based systems to enhance
-risk assessment, claims automation, underwriting intelligence and customer
-personalization.
+const ABOUT = `${profile.name}
+${profile.title} @ ${profile.company}
+${profile.location}
 
-Skilled in Python, deep-learning frameworks (PyTorch via Hugging Face) and
-AWS, with strong experience leading cross-functional teams to architect
-scalable, production-grade AI platforms. Actively researching quantized LLMs
-and edge-efficient inference.
+${profile.summary.join('\n\n')}
 
-Type 'help' to see available commands, or run 'neofetch'.
-Launch apps from here too:  firefox · thunar · games · msfconsole · nmap
+${profile.email} · ${profile.phone} · github.com/${profile.github}
+
+Type 'help' for commands, 'neofetch' for the obligatory ASCII dragon.
+Try:  resume · blog · papers · news · ai <question> · firefox · games
 `;
 
-const EXPERIENCE = `# Work Experience
+const section = (title: string, body: string) => `# ${title}\n\n${body}\n`;
 
-## Technical Lead — AI Engineering · Bajaj Life Insurance
-Dec 2025 – Present
-- Leads production-grade AI agent development to automate enterprise
-  workflows, accelerating adoption of industry-scale agentic AI.
-- Architects and deploys LLM-powered systems (Python, PyTorch, Hugging
-  Face, AWS) with a focus on scalability, security and reliability.
-- Partners with product, platform and business teams to turn slow
-  enterprise processes into intelligent, autonomous AI pipelines.
+const EXPERIENCE = section(
+  'Work Experience',
+  roles
+    .map((r) => {
+      const head = `## ${r.title} · ${r.org}\n${r.period}\n\n${r.blurb}\n`;
+      const groups = r.groups
+        .map((g) => (g.heading ? `\n### ${g.heading}\n` : '\n') + g.points.map((p) => `- ${p}`).join('\n'))
+        .join('\n');
+      return head + groups;
+    })
+    .join('\n\n'),
+);
 
-## Dev Lead · Bajaj Finserv Direct Ltd, Pune
-Jun 2022 – Nov 2025
-- Led a 10-member crew delivering high-impact term-insurance journeys;
-  owned APIs, deployments and cross-team integration with Bajaj Allianz
-  (25% efficiency gain).
-- Angular optimization + SSR: up to 30% performance and 20% engagement uplift.
-- Enhanced scalability and security; fixed critical auth issues (VAPT).
-- Contributed to the Bajaj Finserv AMC NFO launch, driving 50% adoption.
+const PROJECTS = section(
+  'Selected Projects',
+  projects.map((p) => `## ${p.name} — ${p.kind}\n${p.blurb}${p.caveat ? `\n(${p.caveat})` : ''}`).join('\n\n'),
+);
+
+const RESEARCH = section(
+  'Research',
+  [
+    ...[...research.inPreparation, ...research.published].map(
+      (r) => `## ${r.title}\n${r.venue}\n\n${r.summary}`,
+    ),
+    '## Directions\n' + research.directions.map((d) => `- ${d}`).join('\n'),
+    research.track,
+    'Full notes and a reading shelf: open the Writing app, or visit /writing.',
+  ].join('\n\n'),
+);
+
+const SKILLS = section('Skills', skills.map((s) => `${s.group}\n  ${s.items}`).join('\n\n'));
+
+const EDUCATION = section(
+  'Education',
+  education.map((e) => `${e.degree}\n${e.org} · ${e.period} · ${e.detail}`).join('\n\n'),
+);
+
+const AWARDS = section('Awards', awards.map((a) => `- ${a}`).join('\n'));
+
+const CONTACT = section(
+  'Contact',
+  [
+    `Email   ${profile.email}`,
+    `Phone   ${profile.phone}`,
+    `Where   ${profile.location}`,
+    `GitHub  github.com/${profile.github}`,
+    `Now     ${profile.title} @ ${profile.company}`,
+  ].join('\n'),
+);
+
+const DISCLOSURE = `Publication policy for this repository
+=====================================
+
+This portfolio is public and I work inside a regulated insurer.
+
+Employer-internal production metrics — submission counts, latency
+percentiles, corpus sizes, programme spend, reviewer-decision totals —
+are NOT published here. They require written clearance and they live
+only in a private master résumé.
+
+What IS published: architecture, method, named negative results, and
+numbers sourced from public corpora or from my own repositories.
+
+If you need a figure that isn't here, ask. Some of it can be shared
+under NDA; some of it can't be shared at all, and I'd rather say so.
+
+  ${profile.email}
 `;
 
-const PROJECTS = `# Projects
+const README = `Welcome — my portfolio, rendered as a Kali Linux desktop.
 
-- full-duplex-moshi-agent — Python build on the Moshi full-duplex spoken
-  dialogue model (forked from kyutai-labs/moshi). Real-time voice-enabled
-  LLM interaction for agentic, local-first conversational AI.
+Everything here is interactive:
+  • Terminal          try: help · resume · blog · papers · news · ai <question>
+  • Whisker menu      top-left: Kali tools, the Games arcade, everything else
+  • Writing           posts + the papers I'm reading (also at /writing)
+  • AI Radar          live AI headlines from public feeds, with a catch-up brief
+  • Learning OS       my skill-state model — evidence, dependencies, AI-free checks
+                      (run 'learn'; state stays in your browser, never on a server)
+  • Multiplayer       arcade games sync live — open two tabs and play
+  • Documents         ~/Documents holds the real résumé content
 
-- compliance-agent-poc — TypeScript PoC for a compliance-centric AI agent
-  enforcing rule-based checks in workflows. Governance and safety layers
-  for autonomous systems.
+Plain pages for humans in a hurry:  /resume  ·  /writing
 
-- Teeny — research on LLM quantization and efficient inference: smaller
-  footprint, edge-ready AI.
-`;
-
-const SKILLS = `# Skills
-
-AI/ML     Python · LangChain · Hugging Face Transformers · PyTorch
-Backend   Java · API design & integration · Redis · Apache Kafka
-Frontend  Angular · Next.js · Vite
-Infra     Docker · AWS
-`;
-
-const EDUCATION = `# Education
-
-B.Tech, Computer Science Engineering — SRM University (Apr 2018 – May 2022)
-- Graduated with an 8.8 CGPA.
-- COMPEX Indian Embassy Scholarship Scheme Awardee.
-`;
-
-const AWARDS = `# Awards & Research
-
-- Esteemed Contributor — Financial Innovation Award.
-- COMPEX Indian Embassy Scholarship Scheme Awardee.
-- "SustainAI: Enhancing Sustainable Energy Forecasting" — paper presented
-  at the 1st International Conference on Computing for Science, Engineering
-  & AI (CSEAI 2023), with California State University and the IAA.
-`;
-
-const CONTACT = `# Contact
-
-Email   diwakar.adhikari0@gmail.com
-Phone   9378067880
-Where   Pune, India
-Now     Technical Lead, AI Engineering @ Bajaj Life Insurance
+— Diwakar
 `;
 
 const ZSHRC = `# ~/.zshrc — kali default-ish
@@ -94,17 +121,6 @@ alias ll='ls -lah'
 alias la='ls -A'
 alias ..='cd ..'
 neofetch
-`;
-
-const README = `Welcome to my portfolio — rendered as a Kali Linux desktop.
-
-Everything here is interactive:
-  • Open the Terminal and poke around (try: help, neofetch, ls, cat about.txt)
-  • The whisker menu (top-left) holds the Kali tools menu + the Games arcade
-  • Multiplayer games sync live over Supabase — open two tabs and play
-  • Real résumé content lives in ~/Documents
-
-— Diwakar
 `;
 
 /** /home/kali */
@@ -116,15 +132,15 @@ export function buildHomeTree(): FsNode {
     Desktop: dir({}),
     Downloads: dir({}),
     Documents: dir({
-      'resume.md': file(
-        [README, '', ABOUT, '', EXPERIENCE, PROJECTS, SKILLS, EDUCATION, AWARDS, CONTACT].join('\n'),
-      ),
+      'resume.md': file(resumeText()),
       'experience.md': file(EXPERIENCE),
       'projects.md': file(PROJECTS),
+      'research.md': file(RESEARCH),
       'skills.md': file(SKILLS),
       'education.md': file(EDUCATION),
       'awards.md': file(AWARDS),
       'contact.txt': file(CONTACT),
+      'PUBLICATION-POLICY.txt': file(DISCLOSURE),
     }),
     Pictures: dir({}),
   });

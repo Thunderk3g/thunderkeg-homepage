@@ -1,33 +1,60 @@
 'use client';
 
+import { offlineAnswer } from './offline';
+
 export interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
 }
 
-/** Streams /api/chat (SSE). Calls onDelta per token; resolves with full text or an error. */
+export interface ChatOptions {
+  /** which system prompt the server should use */
+  mode?: 'resume' | 'news' | 'coach';
+  /** what to answer with when no model is configured; defaults to the résumé retriever */
+  offline?: (question: string) => string;
+}
+
+/** Emit a canned answer through onDelta so the UI still renders progressively. */
+async function fallback(
+  messages: ChatMsg[],
+  onDelta: (t: string) => void,
+  opts: ChatOptions,
+): Promise<{ text: string }> {
+  const question = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+  const text = (opts.offline ?? offlineAnswer)(question);
+  for (let i = 0; i < text.length; i += 24) {
+    onDelta(text.slice(i, i + 24));
+    await new Promise((r) => setTimeout(r, 12));
+  }
+  return { text };
+}
+
+/**
+ * Streams /api/chat (SSE). Calls onDelta per token; resolves with full text.
+ * With no LLM key configured (503) or no network, falls back to the local
+ * résumé retriever rather than surfacing a dead feature.
+ */
 export async function streamChat(
   messages: ChatMsg[],
   onDelta: (t: string) => void,
+  opts: ChatOptions = {},
 ): Promise<{ text: string; error?: string }> {
   let res: Response;
   try {
     res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, mode: opts.mode ?? 'resume' }),
     });
   } catch {
-    return { text: '', error: 'Network error reaching the assistant.' };
+    return fallback(messages, onDelta, opts);
   }
 
-  if (res.status === 503) {
-    return {
-      text: '',
-      error: 'Assistant offline — set LLM_API_KEY in .env.local (Groq or OpenAI compatible).',
-    };
+  // JSON instead of an SSE stream means the server has no model configured.
+  if (res.headers.get('content-type')?.includes('application/json')) {
+    return fallback(messages, onDelta, opts);
   }
-  if (!res.ok || !res.body) return { text: '', error: `Request failed (${res.status}).` };
+  if (!res.ok || !res.body) return fallback(messages, onDelta, opts);
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();

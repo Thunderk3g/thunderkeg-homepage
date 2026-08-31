@@ -6,9 +6,10 @@ import { streamChat, type ChatMsg } from '../../ai/stream';
 
 const SUGGESTIONS = [
   'What does Diwakar do at Bajaj Life?',
-  'Summarize his AI/ML experience',
-  'What are his strongest skills?',
-  'Tell me about his projects',
+  'What is his compliance retrieval work?',
+  'What research is he doing on speech?',
+  'What is he applying to study?',
+  'How do I contact him?',
 ];
 
 function AssistantApp() {
@@ -54,7 +55,8 @@ function AssistantApp() {
               ))}
             </div>
             <p className="kos-assistant-hint">
-              Needs <code>LLM_API_KEY</code> in <code>.env.local</code> (Groq/OpenAI). Otherwise it stays offline.
+              With <code>LLM_API_KEY</code> set (Groq/OpenAI-compatible) this talks to a model.
+              Without one it still answers — by keyword search over the résumé, quoting it verbatim.
             </p>
           </div>
         )}

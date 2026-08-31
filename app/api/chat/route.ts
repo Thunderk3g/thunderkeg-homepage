@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { getLlm, DEFAULT_MODEL, isLlmConfigured } from '@/os/ai/llm';
-import { systemPrompt } from '@/os/ai/prompts';
+import { coachSystemPrompt, newsSystemPrompt, systemPrompt } from '@/os/ai/prompts';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,19 +11,26 @@ interface ChatMessage {
 }
 
 export async function POST(req: NextRequest) {
+  // 200, not 503: "no key configured" is a supported deployment state with a
+  // working client-side fallback, not a failure. A 5xx here only buys a red
+  // line in every visitor's console.
   if (!isLlmConfigured()) {
-    return new Response(
-      JSON.stringify({ error: 'LLM_API_KEY not configured on the server.' }),
-      { status: 503, headers: { 'content-type': 'application/json' } },
-    );
+    return Response.json({ llm: 'unconfigured' });
   }
 
-  const body = (await req.json()) as { messages?: ChatMessage[]; model?: string };
+  const body = (await req.json()) as {
+    messages?: ChatMessage[];
+    model?: string;
+    /** swaps the system prompt: résumé grounding, news digest, or learning coach */
+    mode?: 'resume' | 'news' | 'coach';
+  };
   const userMessages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
+  const system =
+    body.mode === 'news' ? newsSystemPrompt() : body.mode === 'coach' ? coachSystemPrompt() : systemPrompt();
 
   const stream = await getLlm().chat.completions.create({
     model: body.model ?? DEFAULT_MODEL,
-    messages: [systemPrompt(), ...userMessages],
+    messages: [system, ...userMessages],
     stream: true,
     temperature: 0.4,
   });

@@ -11,6 +11,9 @@ import { whiteboardApp } from './apps/whiteboard/Whiteboard';
 import { assistantApp } from './apps/assistant/Assistant';
 import { codeEditorApp } from './apps/codeeditor/CodeEditor';
 import { voiceApp } from './apps/voice/Voice';
+import { writingApp } from './apps/writing/Writing';
+import { aiNewsApp } from './apps/news/AiNews';
+import { learningApp } from './apps/learning/LearningApp';
 import { mp3App } from './apps/media/Mp3';
 import { vlcApp } from './apps/media/Vlc';
 import { doomApp } from './apps/games/Doom';
@@ -20,6 +23,9 @@ import { toolApps } from './apps/tools';
 export const apps: AppDefinition[] = [
   terminalApp,
   browserApp,
+  aiNewsApp,
+  writingApp,
+  learningApp,
   fileManagerApp,
   textEditorApp,
   settingsApp,
