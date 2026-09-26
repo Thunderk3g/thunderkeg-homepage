@@ -17,6 +17,7 @@ import { learningApp } from './apps/learning/LearningApp';
 import { mp3App } from './apps/media/Mp3';
 import { vlcApp } from './apps/media/Vlc';
 import { doomApp } from './apps/games/Doom';
+import { mogArenaApp } from './apps/games/MogArena';
 import { toolApps } from './apps/tools';
 
 /** Every registered application. */
@@ -39,6 +40,7 @@ export const apps: AppDefinition[] = [
   mp3App,
   vlcApp,
   doomApp,
+  mogArenaApp,
   ...toolApps,
 ];
 

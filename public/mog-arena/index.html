@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aura Maker — Mog Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="logo">AURA<span>MAKER</span></div>
+    <div class="tag">// MOG ARENA</div>
+    <button id="muteBtn" class="icon-btn" title="Mute / unmute">🔊</button>
+  </header>
+
+  <main>
+    <section class="stage-wrap">
+      <div class="stage" id="stage">
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="scanline"></div>
+        <div class="countdown" id="countdown"></div>
+        <div class="start-screen" id="startScreen">
+          <h1>ENTER THE<br><em>MOG ARENA</em></h1>
+          <p>Scan your friends. Rate their aura. Settle it in battle.</p>
+          <button id="startBtn" class="btn big">START CAMERA</button>
+          <p class="err" id="startErr"></p>
+          <p class="fine">Runs 100% in your browser. Faces never leave this device.</p>
+        </div>
+      </div>
+      <div class="hud">
+        <span class="dot" id="dot"></span><span id="status">Camera off</span>
+      </div>
+      <div class="controls">
+        <button id="scanBtn" class="btn" disabled>📸 SCAN FACE</button>
+        <button id="liveBattleBtn" class="btn hot" disabled>⚔️ LIVE MOG BATTLE <small>2 faces</small></button>
+        <button id="gangBtn" class="btn hot" disabled>💥 GANG WAR <small>2+ faces</small></button>
+        <button id="faaahBtn" class="btn ghost" disabled>📢 FAAAAH</button>
+        <button id="thugBtn" class="btn ghost">😈 THUG MODE: ON</button>
+        <button id="questBtn" class="btn quest-btn">🕹️ MOG QUEST</button>
+      </div>
+      <p class="tip">Every friend in frame gets their own filter + FAAAAH. Thug mode adds smokes, hookahs &amp; pistols. 2+ faces = gang war.</p>
+    </section>
+
+    <section class="panel">
+      <nav class="tabs">
+        <button data-tab="roster" class="active">ROSTER</button>
+        <button data-tab="battle">BATTLE</button>
+        <button data-tab="leader">LEADERBOARD</button>
+      </nav>
+      <div class="tab" id="tab-roster">
+        <div id="rosterGrid" class="grid"></div>
+      </div>
+      <div class="tab hidden" id="tab-battle">
+        <div class="battle-pick">
+          <select id="pickA"></select>
+          <div class="vs-small">VS</div>
+          <select id="pickB"></select>
+        </div>
+        <div class="row">
+          <button id="fightBtn" class="btn hot">⚔️ FIGHT</button>
+          <button id="randomBtn" class="btn ghost">🎲 RANDOM MATCHUP</button>
+        </div>
+        <p class="empty" id="battleEmpty">Scan at least 2 friends to start battling.</p>
+      </div>
+      <div class="tab hidden" id="tab-leader">
+        <ol id="leaderList" class="leader"></ol>
+      </div>
+    </section>
+  </main>
+
+  <!-- Name entry -->
+  <div class="modal hidden" id="nameModal" data-sticky>
+    <div class="modal-card">
+      <h2>WHO IS THIS?</h2>
+      <form id="nameForm">
+        <div id="nameFields"></div>
+        <button class="btn" type="submit">🔒 LOCK IN</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scan result -->
+  <div class="modal hidden" id="revealModal">
+    <div class="modal-card reveal">
+      <div class="reveal-top">
+        <img id="revImg" alt="">
+        <div>
+          <h2 id="revName"></h2>
+          <div class="mog-big"><span id="revMog">0</span><small>MOG SCORE</small></div>
+          <div class="tier-badge" id="revTier"></div>
+          <p class="sub" id="revSub"></p>
+        </div>
+      </div>
+      <div class="stats" id="revStats"></div>
+      <div class="row">
+        <button class="btn" id="revMeme">🖼️ MAKE MEME</button>
+        <button class="btn ghost" data-close>CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meme studio -->
+  <div class="modal hidden" id="memeModal">
+    <div class="modal-card meme">
+      <canvas id="memeCanvas"></canvas>
+      <div class="chips" id="tplBtns"></div>
+      <div class="row">
+        <button class="btn ghost" id="memeReroll">🎲 NEW CAPTION</button>
+        <button class="btn ghost" id="memeSound">🔊 PLAY</button>
+        <button class="btn" id="memeDl">⬇️ DOWNLOAD</button>
+        <button class="btn ghost" data-close>CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Battle arena -->
+  <div class="modal hidden arena" id="arena" data-sticky>
+    <div class="arena-inner">
+      <div class="round-label" id="roundLabel">MOG BATTLE</div>
+      <div class="fighters">
+        <div class="fighter" id="fA"><img alt=""><h3></h3><div class="hp"><i></i></div><div class="val"></div></div>
+        <div class="vs">VS</div>
+        <div class="fighter" id="fB"><img alt=""><h3></h3><div class="hp"><i></i></div><div class="val"></div></div>
+      </div>
+      <div class="log" id="battleLog"></div>
+      <div class="result hidden" id="battleResult"><canvas id="battleCanvas"></canvas></div>
+      <div class="row">
+        <button class="btn ghost" id="skipBtn">⏩ SKIP</button>
+        <button class="btn hidden" id="battleDl">⬇️ SAVE MEME</button>
+        <button class="btn hot hidden" id="rematchBtn">🔁 RUN IT BACK</button>
+        <button class="btn ghost" id="arenaClose">✖ CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOG QUEST: retro split-screen game -->
+  <div class="modal hidden quest" id="quest" data-sticky>
+    <div class="quest-inner">
+      <div class="quest-screen"><canvas id="questCanvas" width="640" height="360"></canvas><div class="crt"></div></div>
+      <div class="quest-setup" id="questSetup">
+        <div class="quest-players">
+          <div class="qp"><img alt=""><b>PLAYER 1</b><select class="qchar" title="Face"></select><select class="qclass" title="Class"></select><select class="qctrl" title="Controls"></select><small class="qdesc"></small></div>
+          <div class="qp"><img alt=""><b>PLAYER 2</b><select class="qchar" title="Face"></select><select class="qclass" title="Class"></select><select class="qctrl" title="Controls"></select><small class="qdesc"></small></div>
+        </div>
+        <p class="quest-help">Collect ✨ aura to evolve NPC → GIGACHAD · dodge red L's · 🟦 M = mew shield · 💣 = mog bomb · evolving sends garbage to your rival.<br>Cast your class power: <b>open your mouth</b> (face) · tap the power button (finger) · <b>F</b> (P1) / <b>Enter</b> (P2).</p>
+        <div class="row">
+          <button class="btn hot" id="questStart">▶ START</button>
+          <button class="btn ghost" id="questQuit">✖ QUIT</button>
+        </div>
+      </div>
+      <div class="row hidden" id="questBar">
+        <button class="btn ghost" id="questPause">⏸ PAUSE</button>
+        <button class="btn hot hidden" id="questAgain">🔁 REMATCH</button>
+        <button class="btn ghost" id="questExit">✖ EXIT</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
