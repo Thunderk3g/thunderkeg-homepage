@@ -20,18 +20,23 @@ const WELCOME = [
   '',
 ].join('\n');
 
-function PromptLine({ path }: { path: string }) {
+/** Two-line Kali prompt; `children` (the command, or the live input) sits after the `$`. */
+function PromptLine({ path, children }: { path: string; children?: React.ReactNode }) {
   return (
-    <span className="kos-term-prompt">
-      <span className="p-deco">┌──(</span>
-      <span className="p-user">kali㉿kali</span>
-      <span className="p-deco">)-[</span>
-      <span className="p-path">{path}</span>
-      <span className="p-deco">]</span>
-      {'\n'}
-      <span className="p-deco">└─</span>
-      <span className="p-dollar">$</span>{' '}
-    </span>
+    <div className="kos-term-prompt">
+      <div>
+        <span className="p-deco">┌──(</span>
+        <span className="p-user">kali㉿kali</span>
+        <span className="p-deco">)-[</span>
+        <span className="p-path">{path}</span>
+        <span className="p-deco">]</span>
+      </div>
+      <div className="kos-term-cmdline">
+        <span className="p-deco">└─</span>
+        <span className="p-dollar">$</span>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -141,15 +146,19 @@ function TerminalApp({ windowId }: AppProps) {
   return (
     <div className="kos-term" onMouseDown={focusInput} ref={bodyRef} data-window={windowId}>
       <div className="kos-term-inner">
-        {blocks.map((b) => (
-          <div key={b.id} className="kos-term-block">
-            {b.prompt && <PromptLine path={b.prompt.path} />}
-            <span className="kos-term-text">{colorize(b.text)}</span>
-          </div>
-        ))}
+        {blocks.map((b) =>
+          b.prompt ? (
+            <PromptLine key={b.id} path={b.prompt.path}>
+              <span className="kos-term-cmd">{b.text}</span>
+            </PromptLine>
+          ) : (
+            <div key={b.id} className="kos-term-block">
+              {renderOutput(b.text)}
+            </div>
+          ),
+        )}
         {!busy && (
-          <div className="kos-term-block kos-term-active">
-            <PromptLine path={shell.prompt()} />
+          <PromptLine path={shell.prompt()}>
             <input
               ref={inputRef}
               className="kos-term-input"
@@ -161,30 +170,42 @@ function TerminalApp({ windowId }: AppProps) {
               onKeyDown={onKeyDown}
               aria-label="terminal input"
             />
-          </div>
+          </PromptLine>
         )}
       </div>
     </div>
   );
 }
 
-/** Tiny token colouriser: directories (trailing /) and prompt-ish bits. */
-function colorize(text: string): React.ReactNode {
-  if (!text.includes('/') || text.length > 4000) return text;
-  return text.split('\n').map((line, i) => (
-    <span key={i}>
-      {line.split(/(\s+)/).map((tok, j) =>
-        /^\S+\/$/.test(tok) ? (
-          <span key={j} className="kos-term-dir">
-            {tok}
-          </span>
-        ) : (
-          <span key={j}>{tok}</span>
-        ),
-      )}
-      {'\n'}
-    </span>
-  ));
+/**
+ * One row per output line. A line's leading spaces become a left padding, so
+ * when a long line wraps in a narrow window its continuation lines up under
+ * the first character instead of falling back to column 0.
+ */
+function renderOutput(text: string): React.ReactNode {
+  return text.split('\n').map((line, i) => {
+    const body = line.trimStart();
+    const indent = line.length - body.length;
+    return (
+      <div key={i} className="kos-term-line" style={indent ? { paddingLeft: `${indent}ch` } : undefined}>
+        {body ? colorize(body) : '\u00a0'}
+      </div>
+    );
+  });
+}
+
+/** Tiny token colouriser: directories (trailing /) get the `ls` colour. */
+function colorize(line: string): React.ReactNode {
+  if (!line.includes('/')) return line;
+  return line.split(/(\s+)/).map((tok, j) =>
+    /^\S+\/$/.test(tok) ? (
+      <span key={j} className="kos-term-dir">
+        {tok}
+      </span>
+    ) : (
+      tok
+    ),
+  );
 }
 
 export const terminalApp: AppDefinition = {
@@ -194,7 +215,7 @@ export const terminalApp: AppDefinition = {
   category: 'System',
   component: TerminalApp,
   description: 'qterminal — a real-feeling Kali shell',
-  defaultSize: { width: 720, height: 460 },
+  defaultSize: { width: 860, height: 560 },
   minSize: { width: 360, height: 220 },
   desktop: true,
   multi: true,

@@ -1,23 +1,23 @@
 import type { Command } from '../../../types';
 
-const KALI_DRAGON = String.raw`
-        ..,;:cc:.
-     .;cccccccc:'.
-   .:cccccccccccc:.
-  .ccccc;'.    .;cc.       kali@kali
- .ccc:.           ..
-.ccc.   ,ccccc:.            ------------------
-ccc    .ccccccccc.          OS: Kali GNU/Linux Rolling
-cc.    .cc'  .ccc.          Host: web-kali (browser)
-cc.    'cc    ccc.          Shell: zsh 5.9
-ccc    .cc.  .ccc.          DE: Xfce 4.18 (simulated)
-'ccc.   '::ccc:'            WM: xfwm4
- .ccc.      ..              Terminal: qterminal
-  .ccc:.                    CPU: V8 JavaScript Engine
-   .:cccc:,.   .,           Memory: heap-allocated
-     .;cccccccccc;.         Resolution: your viewport
-        .,;:::;'.           Uptime: this session
-`;
+const KALI_DRAGON = [
+  '        ..,;:cc:.',
+  "     .;cccccccc:'.",
+  '   .:cccccccccccc:.     kali@kali',
+  "  .ccccc;'.    .;cc.    ---------",
+  ' .ccc:.           ..    OS: Kali GNU/Linux Rolling',
+  '.ccc.   ,ccccc:.        Host: web-kali (browser)',
+  'ccc    .ccccccccc.      Shell: zsh 5.9',
+  "cc.    .cc'  .ccc.      DE: Xfce 4.18 (simulated)",
+  "cc.    'cc    ccc.      WM: xfwm4",
+  'ccc    .cc.  .ccc.      Terminal: qterminal',
+  "'ccc.   '::ccc:'        CPU: V8 JavaScript Engine",
+  ' .ccc.      ..          Memory: heap-allocated',
+  '  .ccc:.                Resolution: your viewport',
+  '   .:cccc:,.   .,       Uptime: this session',
+  '     .;cccccccccc;.',
+  "        .,;:::;'.",
+].join('\n');
 
 export const coreCommands: Command[] = [
   {

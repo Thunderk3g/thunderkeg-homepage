@@ -14,12 +14,14 @@ export function Desktop() {
   const windows = useOS((s) => s.windows);
   const launch = useOS((s) => s.launch);
   const wallpaper = useOS((s) => s.settings.wallpaper);
+  // the welcome card steps aside while an app is on screen
+  const hasOpenWindow = windows.some((w) => !w.minimized);
 
   return (
     <div className={'kos-desktop wall-' + wallpaper}>
       <Panel />
 
-      <div className="kos-desktop-surface">
+      <div className={'kos-desktop-surface' + (hasOpenWindow ? ' has-windows' : '')}>
         <div className="kos-desktop-icons">
           {desktopApps.map((a) => (
             <button

@@ -112,7 +112,9 @@ export const useOS = create<OSStore>((set, get) => ({
     const width = Math.min(size.width, vw - 40);
     const height = Math.min(size.height, vh - 100);
     const offset = (state.windows.length % 6) * 30;
-    const x = Math.max(10, Math.round((vw - width) / 2) - 120 + offset);
+    // centre in the space right of the desktop icon column, when there is room for it
+    const left = vw - width >= 440 ? 220 : 10;
+    const x = Math.max(left, Math.min(vw - width - 10, left + Math.round((vw - left - width) / 2) + offset));
     const y = Math.max(40, Math.round((vh - height) / 2) - 60 + offset);
 
     const win: WindowState = {

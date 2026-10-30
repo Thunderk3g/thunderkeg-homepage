@@ -407,10 +407,10 @@ body {
 .kos-desktop-icons {
   /* wrap into a second column instead of running off the bottom of short screens */
   display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start;
-  gap: 6px; max-height: 100%;
+  gap: 2px; max-height: 100%;
 }
 .kos-desk-icon {
-  width: 92px; padding: 8px 4px; border: 1px solid transparent; border-radius: 8px;
+  width: 92px; padding: 6px 4px; border: 1px solid transparent; border-radius: 8px;
   background: transparent; color: #eef2f7; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
@@ -425,8 +425,10 @@ body {
   background: rgba(14, 18, 26, 0.72); border: 1px solid rgba(255,255,255,0.08);
   border-left: 3px solid var(--kos-accent); border-radius: 10px;
   backdrop-filter: blur(10px); box-shadow: 0 18px 50px rgba(0,0,0,0.45);
-  user-select: text;
+  user-select: text; transition: opacity 0.2s, visibility 0.2s;
 }
+.kos-desktop-surface.has-windows .kos-welcome { opacity: 0; visibility: hidden; }
+.kos[data-reduced='true'] .kos-welcome { transition: none; }
 .kos-welcome-prompt { font-family: var(--font-mono), monospace; font-size: 0.8rem; color: var(--kos-dim); }
 .kos-welcome-prompt .p-user { color: var(--kos-good); font-weight: 700; }
 .kos-welcome-prompt .p-path { color: #7ec0ff; }
@@ -576,19 +578,25 @@ body {
   font-family: var(--font-mono), monospace; font-size: 13px; line-height: 1.5; color: #d4d4d4;
 }
 .kos-term-inner { min-height: 100%; }
-.kos-term-block { white-space: pre-wrap; word-break: break-word; }
-.kos-term-prompt { white-space: pre-wrap; }
+.kos-term-line { white-space: pre-wrap; overflow-wrap: anywhere; }
+.kos-term-prompt { margin-top: 2px; }
+.kos-term-prompt > div { white-space: pre; }
+/* `└─$ command` — the command (or live input) takes the rest of the row */
+.kos-term-prompt > .kos-term-cmdline { display: flex; align-items: baseline; }
+.kos-term-cmd { flex: 1; min-width: 0; margin-left: 1ch; white-space: pre-wrap; overflow-wrap: anywhere; color: #eaeaea; }
 .kos-term-prompt .p-deco { color: #4ea1d3; }
 .kos-term-prompt .p-user { color: #f2f2f2; font-weight: 700; }
 .kos-term-prompt .p-path { color: #7ec0ff; }
 .kos-term-prompt .p-dollar { color: var(--kos-good); }
 .kos-term-text { color: #cdd2d8; }
 .kos-term-dir { color: #4ea1d3; font-weight: 600; }
-.kos-term-active { display: flex; }
 .kos-term-input {
-  flex: 1; background: transparent; border: none; outline: none; color: #eaeaea;
-  font-family: inherit; font-size: 13px; caret-color: var(--kos-good); padding: 0;
+  flex: 1; min-width: 0; margin-left: 1ch; background: transparent; border: none; outline: none;
+  color: #eaeaea; font-family: inherit; font-size: 13px; line-height: inherit;
+  caret-color: var(--kos-good); padding: 0;
 }
+/* iOS zooms the whole page when focusing an input under 16px */
+@media (pointer: coarse) { .kos-term-input { font-size: 16px; } }
 
 /* ---------- Tool console ---------- */
 .kos-tool {
