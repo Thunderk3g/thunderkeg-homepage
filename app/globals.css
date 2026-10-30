@@ -340,6 +340,10 @@ body {
 .kos-boot-log .ok { color: #aeb4be; }
 .kos-boot-cursor { color: var(--kos-accent); animation: kos-blink 1s step-end infinite; }
 .kos[data-reduced='true'] .kos-boot-cursor { animation: none; }
+.kos-boot-skip {
+  position: absolute; bottom: 4vh; right: 6vw; font-size: 12px; color: #6b7280;
+  letter-spacing: 0.06em;
+}
 @keyframes kos-blink { 50% { opacity: 0; } }
 
 /* ---------- Login ---------- */
@@ -394,9 +398,16 @@ body {
 }
 .wall-kali-void { background: radial-gradient(100% 100% at 50% 50%, #14161c 0%, #050608 100%); }
 
+/* icons on the left, welcome card on the right; both sit under every window */
+.kos-desktop-surface {
+  position: absolute; top: 36px; left: 0; right: 0; bottom: 0; z-index: 1;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 24px; padding: 14px 14px 14px 14px;
+}
 .kos-desktop-icons {
-  position: absolute; top: 50px; left: 14px; z-index: 1;
-  display: flex; flex-direction: column; gap: 6px;
+  /* wrap into a second column instead of running off the bottom of short screens */
+  display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start;
+  gap: 6px; max-height: 100%;
 }
 .kos-desk-icon {
   width: 92px; padding: 8px 4px; border: 1px solid transparent; border-radius: 8px;
@@ -404,8 +415,68 @@ body {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .kos-desk-icon:hover { background: rgba(51,170,255,0.18); border-color: rgba(51,170,255,0.4); }
+.kos-desk-icon:focus-visible { outline: 2px solid var(--kos-accent); outline-offset: 1px; }
 .kos-desk-icon-glyph { font-size: 30px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
 .kos-desk-icon-label { font-size: 0.72rem; text-shadow: 0 1px 3px #000; }
+
+/* ---------- Welcome card ---------- */
+.kos-welcome {
+  width: min(400px, 100%); margin: 32px 32px 0 0; padding: 20px 22px 18px;
+  background: rgba(14, 18, 26, 0.72); border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid var(--kos-accent); border-radius: 10px;
+  backdrop-filter: blur(10px); box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  user-select: text;
+}
+.kos-welcome-prompt { font-family: var(--font-mono), monospace; font-size: 0.8rem; color: var(--kos-dim); }
+.kos-welcome-prompt .p-user { color: var(--kos-good); font-weight: 700; }
+.kos-welcome-prompt .p-path { color: #7ec0ff; }
+.kos-welcome-name {
+  margin-top: 6px; font-size: 1.7rem; line-height: 1.15; font-weight: 700;
+  color: #f2f5f9; letter-spacing: -0.01em;
+}
+.kos-welcome-role { margin-top: 4px; color: var(--kos-accent); font-size: 0.92rem; font-weight: 500; }
+.kos-welcome-tagline { margin-top: 10px; color: #b9c0cb; font-size: 0.86rem; line-height: 1.5; }
+.kos-welcome-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.kos-welcome-btn {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 7px;
+  border: 1px solid var(--kos-border); background: rgba(255,255,255,0.04);
+  color: var(--kos-text); font-size: 0.85rem; text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.kos-welcome-btn:hover, .kos-welcome-btn:focus-visible {
+  border-color: var(--kos-accent); background: rgba(51,170,255,0.12); outline: none;
+}
+.kos-welcome-links {
+  display: flex; gap: 16px; margin-top: 14px;
+  font-family: var(--font-mono), monospace; font-size: 0.8rem;
+}
+.kos-welcome-links a { color: var(--kos-accent); text-decoration: none; }
+.kos-welcome-links a:hover { text-decoration: underline; }
+.kos-welcome-hint {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07);
+  color: var(--kos-dim); font-size: 0.76rem;
+}
+.kos-welcome-hint kbd {
+  font-family: var(--font-mono), monospace; font-size: 0.72rem; padding: 0 5px;
+  border: 1px solid var(--kos-border); border-bottom-width: 2px; border-radius: 4px;
+  background: rgba(255,255,255,0.05); color: var(--kos-text);
+}
+
+@media (max-width: 640px) {
+  /* phones: card first, icons as a grid beneath it, the whole surface scrolls */
+  .kos-desktop-surface {
+    flex-direction: column; justify-content: flex-start; align-items: stretch;
+    overflow-y: auto; gap: 18px;
+  }
+  .kos-welcome { order: -1; width: 100%; margin: 0; padding: 16px; }
+  .kos-welcome-name { font-size: 1.45rem; }
+  .kos-desktop-icons {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    max-height: none; padding-bottom: 12px;
+  }
+  .kos-desk-icon { width: auto; }
+  .kos-welcome-hint { display: none; }
+}
 
 .kos-windows { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .kos-windows > * { pointer-events: auto; }

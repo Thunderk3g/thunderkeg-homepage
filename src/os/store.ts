@@ -126,7 +126,8 @@ export const useOS = create<OSStore>((set, get) => ({
       height,
       z: state.nextZ,
       minimized: false,
-      maximized: false,
+      // a floating window on a phone is just a smaller, fiddlier maximised one
+      maximized: vw < 640,
       args,
     };
     set((s) => ({

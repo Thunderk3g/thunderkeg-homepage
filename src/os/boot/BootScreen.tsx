@@ -16,13 +16,39 @@ const LINES = [
   'starting Xfce session …',
 ];
 
+/** The boot log is a one-time flourish: replay it at most once per browser session. */
+const BOOTED_KEY = 'kos-booted';
+
+function alreadyBooted(): boolean {
+  try {
+    return sessionStorage.getItem(BOOTED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markBooted() {
+  try {
+    sessionStorage.setItem(BOOTED_KEY, '1');
+  } catch {
+    /* storage blocked — the boot just plays again next time */
+  }
+}
+
 export function BootScreen() {
   const finishBoot = useOS((s) => s.finishBoot);
   const reduced = useOS((s) => s.settings.reducedMotion);
   const [shown, setShown] = useState(0);
   const done = useRef(false);
+  // read once on first render, so a dev-mode effect re-run doesn't see its own flag
+  const skip = useRef(alreadyBooted());
 
   useEffect(() => {
+    if (skip.current) {
+      finishBoot();
+      return;
+    }
+    markBooted();
     const step = reduced ? 40 : 170;
     const t = setInterval(() => {
       setShown((n) => {
@@ -39,6 +65,8 @@ export function BootScreen() {
     }, step);
     return () => clearInterval(t);
   }, [finishBoot, reduced]);
+
+  if (skip.current) return null;
 
   return (
     <div className="kos-boot" onClick={finishBoot} title="click to skip">
@@ -58,6 +86,7 @@ export function BootScreen() {
         ))}
         <span className="kos-boot-cursor">▋</span>
       </div>
+      <div className="kos-boot-skip">click anywhere to skip</div>
     </div>
   );
 }

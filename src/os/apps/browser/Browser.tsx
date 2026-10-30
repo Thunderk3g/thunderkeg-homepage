@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
 import { useOS } from '../../store';
 import { awards, education, profile, projects, research, roles, skills } from '@/data/resume';
@@ -228,6 +228,12 @@ function BrowserApp({ args }: AppProps) {
     },
     [cursor, history],
   );
+
+  /* The browser is single-instance: a later launch with a page focuses this
+     window and replaces `args`, so follow it there. */
+  useEffect(() => {
+    if (typeof args?.page === 'string') visit(args.page);
+  }, [args]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const body = useMemo(() => active.render(), [active, epoch]);
 
