@@ -435,7 +435,7 @@ function BootOverlay() {
 
 export const psqlApp: AppDefinition = {
   id: 'psql',
-  title: 'psql — PostgreSQL 18 (PGlite)',
+  title: 'psql',
   icon: '🐘',
   category: 'Development',
   component: PsqlApp,

@@ -731,7 +731,7 @@ function VirtualMachine({ args }: AppProps) {
 
 export const vmApp: AppDefinition = {
   id: 'vm',
-  title: 'Virtual Machine — Linux 6.8',
+  title: 'Linux VM',
   icon: '🐧',
   category: 'System',
   component: VirtualMachine,
