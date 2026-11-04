@@ -4,6 +4,7 @@ import { extraCommands } from './extra';
 import { aiCommands } from './ai';
 import { pdfCommands } from './pdf';
 import { writingCommands } from './writing';
+import { researchCommands } from './research';
 
 /** Master list of terminal commands. Fan-out command groups land in ./extra. */
 const baseCommands: Command[] = [
@@ -12,6 +13,7 @@ const baseCommands: Command[] = [
   ...aiCommands,
   ...pdfCommands,
   ...writingCommands,
+  ...researchCommands,
 ];
 
 const helpCommand: Command = {

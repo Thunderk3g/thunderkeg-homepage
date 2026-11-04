@@ -57,6 +57,22 @@ export function newsSystemPrompt(): { role: 'system'; content: string } {
   };
 }
 
+/**
+ * Reading partner for the Research app's "First pass" and "Suggest cards".
+ * The client sends the title, abstract and research questions; the model must
+ * not pretend to have read the full paper.
+ */
+export function paperSystemPrompt(): { role: 'system'; content: string } {
+  return {
+    role: 'system',
+    content:
+      'You are a rigorous reading partner. The user pastes a title + abstract + their research ' +
+      'questions. Use only the abstract; say "not stated in abstract" rather than guessing. ' +
+      'Never praise the paper. Be terse: one line per requested field, no preamble, and follow ' +
+      'the output format in the user message exactly.',
+  };
+}
+
 export function systemPrompt(): { role: 'system'; content: string } {
   return {
     role: 'system',

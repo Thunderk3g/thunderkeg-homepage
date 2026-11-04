@@ -11,7 +11,10 @@ import { profile } from '@/data/resume';
 export function WelcomeCard() {
   const launch = useOS((s) => s.launch);
 
+  // six buttons: the card's grid is two columns wide
   const actions: { label: string; icon: string; run: () => void }[] = [
+    { label: 'Research', icon: '🔬', run: () => launch('research') },
+    { label: 'Learning OS', icon: '🧭', run: () => launch('learning') },
     { label: 'About me', icon: '🦊', run: () => launch('browser', { page: 'home' }) },
     { label: 'Experience', icon: '💼', run: () => launch('browser', { page: 'experience' }) },
     { label: 'Writing', icon: '✎', run: () => launch('writing') },

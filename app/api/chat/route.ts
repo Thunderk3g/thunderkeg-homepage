@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { getLlm, DEFAULT_MODEL, isLlmConfigured } from '@/os/ai/llm';
-import { coachSystemPrompt, newsSystemPrompt, systemPrompt } from '@/os/ai/prompts';
+import { coachSystemPrompt, newsSystemPrompt, paperSystemPrompt, systemPrompt } from '@/os/ai/prompts';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,12 +21,18 @@ export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
     messages?: ChatMessage[];
     model?: string;
-    /** swaps the system prompt: résumé grounding, news digest, or learning coach */
-    mode?: 'resume' | 'news' | 'coach';
+    /** swaps the system prompt: résumé grounding, news digest, learning coach, or paper reading */
+    mode?: 'resume' | 'news' | 'coach' | 'paper';
   };
   const userMessages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
   const system =
-    body.mode === 'news' ? newsSystemPrompt() : body.mode === 'coach' ? coachSystemPrompt() : systemPrompt();
+    body.mode === 'news'
+      ? newsSystemPrompt()
+      : body.mode === 'coach'
+        ? coachSystemPrompt()
+        : body.mode === 'paper'
+          ? paperSystemPrompt()
+          : systemPrompt();
 
   const stream = await getLlm().chat.completions.create({
     model: body.model ?? DEFAULT_MODEL,

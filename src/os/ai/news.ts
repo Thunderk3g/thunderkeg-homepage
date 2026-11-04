@@ -7,6 +7,9 @@
  * normalises them, and hands back a merged timeline. No API keys, no accounts.
  */
 
+import { atomLink, entries, iso, tag } from '@/research/server/xml';
+import { UPSTREAM_UA, arxivGate } from '@/research/server/cache';
+
 export interface NewsItem {
   title: string;
   url: string;
@@ -26,8 +29,8 @@ interface Feed {
 }
 
 const FEEDS: Feed[] = [
-  { source: 'arXiv cs.CL', url: 'http://export.arxiv.org/api/query?search_query=cat:cs.CL&sortBy=submittedDate&sortOrder=descending&max_results=10', lane: 'research', kind: 'atom' },
-  { source: 'arXiv cs.AI', url: 'http://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submittedDate&sortOrder=descending&max_results=10', lane: 'research', kind: 'atom' },
+  { source: 'arXiv cs.CL', url: 'https://export.arxiv.org/api/query?search_query=cat:cs.CL&sortBy=submittedDate&sortOrder=descending&max_results=10', lane: 'research', kind: 'atom' },
+  { source: 'arXiv cs.AI', url: 'https://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submittedDate&sortOrder=descending&max_results=10', lane: 'research', kind: 'atom' },
   { source: 'Hugging Face', url: 'https://huggingface.co/blog/feed.xml', lane: 'community', kind: 'atom' },
   { source: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/', lane: 'community', kind: 'atom' },
   { source: 'Hacker News', url: 'https://hn.algolia.com/api/v1/search?tags=story&query=AI%20OR%20LLM%20OR%20OpenAI%20OR%20Anthropic&hitsPerPage=20', lane: 'community', kind: 'hn' },
@@ -37,48 +40,7 @@ const FEEDS: Feed[] = [
   { source: 'Google Research', url: 'https://research.google/blog/rss/', lane: 'research', kind: 'rss' },
 ];
 
-/* ───────────────────────── tiny XML helpers ─────────────────────────
-   ponytail: regex, not a DOM parser. These are well-formed public feeds and we
-   only ever read four fields out of them. If a feed ever needs namespaces or
-   CDATA-in-attributes, install fast-xml-parser instead of growing this. */
-
-const decode = (s: string) =>
-  s
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    // numeric entities — WordPress feeds emit &#8217; for apostrophes constantly
-    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-const tag = (xml: string, name: string): string => {
-  const m = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'i').exec(xml);
-  return m ? decode(m[1]) : '';
-};
-
-/** Atom links live in an attribute, RSS links in the element body. */
-const atomLink = (xml: string): string => {
-  const alt = /<link[^>]*rel=["']alternate["'][^>]*href=["']([^"']+)["']/i.exec(xml);
-  if (alt) return alt[1];
-  const any = /<link[^>]*href=["']([^"']+)["']/i.exec(xml);
-  return any ? any[1] : tag(xml, 'link');
-};
-
-const entries = (xml: string, name: string): string[] =>
-  xml.match(new RegExp(`<${name}(?:\\s[^>]*)?>[\\s\\S]*?</${name}>`, 'gi')) ?? [];
-
-const iso = (raw: string): string => {
-  if (!raw) return '';
-  const t = Date.parse(raw);
-  return Number.isNaN(t) ? '' : new Date(t).toISOString();
-};
+/* XML helpers are shared with the Research app's arXiv client. */
 
 const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1).trimEnd() + '…');
 
@@ -115,13 +77,19 @@ function parse(feed: Feed, text: string): NewsItem[] {
 }
 
 async function pull(feed: Feed): Promise<NewsItem[]> {
-  const res = await fetch(feed.url, {
-    headers: { 'user-agent': 'diwakar-portfolio/2.1 (+https://github.com/Thunderk3g)' },
-    signal: AbortSignal.timeout(7000),
-    next: { revalidate: 1800 },
-  });
-  if (!res.ok) throw new Error(`${feed.source}: HTTP ${res.status}`);
-  return parse(feed, await res.text()).slice(0, 12);
+  const go = async () => {
+    const res = await fetch(feed.url, {
+      headers: { 'user-agent': UPSTREAM_UA },
+      signal: AbortSignal.timeout(7000),
+      next: { revalidate: 1800 },
+    });
+    if (!res.ok) throw new Error(`${feed.source}: HTTP ${res.status}`);
+    return res.text();
+  };
+  // arXiv counts every request from this machine, so its feeds queue behind the
+  // Research app's gate instead of firing alongside it
+  const text = feed.url.includes('export.arxiv.org') ? await arxivGate(go) : await go();
+  return parse(feed, text).slice(0, 12);
 }
 
 export interface NewsPayload {
