@@ -1,16 +1,19 @@
 import type { Metadata, Viewport } from 'next';
-import { Ubuntu, Ubuntu_Mono } from 'next/font/google';
+import { Cantarell, Fira_Code } from 'next/font/google';
 import './globals.css';
 
-const ubuntu = Ubuntu({
-  weight: ['400', '500', '700'],
+// Kali's Xfce defaults (kali-defaults): Cantarell 11 for the UI, Fira Code for
+// QTerminal. The CSS variable names predate the switch and are kept because
+// every app's stylesheet refers to them.
+const uiFont = Cantarell({
+  weight: ['400', '700'],
   subsets: ['latin'],
   variable: '--font-ubuntu',
   display: 'swap',
 });
 
-const ubuntuMono = Ubuntu_Mono({
-  weight: ['400', '700'],
+const monoFont = Fira_Code({
+  weight: ['400', '500', '600'],
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
@@ -19,7 +22,7 @@ const ubuntuMono = Ubuntu_Mono({
 export const metadata: Metadata = {
   title: 'Diwakar Adhikari — Kali Linux Portfolio',
   description:
-    'Technical Lead — AI Engineering. My portfolio rendered as a fully interactive Kali Linux desktop — terminal, security tools, and a multiplayer games arcade. Plain résumé at /resume.',
+    'Technical Lead — AI Engineering. My portfolio rendered as a fully interactive, Kali-inspired Linux desktop — terminal, security tools, and a multiplayer games arcade. Plain résumé at /resume.',
   authors: [{ name: 'Diwakar Adhikari', url: 'https://github.com/Thunderk3g' }],
   openGraph: {
     type: 'website',
@@ -35,13 +38,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a0e14',
+  themeColor: '#1a1c23',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${ubuntu.variable} ${ubuntuMono.variable}`}>
+      <body className={`${uiFont.variable} ${monoFont.variable}`}>
         <noscript>
           <div className="doc-wrap">
             <h1>Diwakar Adhikari</h1>
