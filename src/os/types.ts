@@ -136,4 +136,13 @@ export interface WindowState {
   maximized: boolean;
   restore?: { x: number; y: number; width: number; height: number };
   args?: Record<string, unknown>;
+  /** virtual desktop (0-based) this window lives on; undefined = 0 */
+  workspace?: number;
+  /** half-screen tile applied by edge-snap / Super+Left/Right */
+  snapped?: 'left' | 'right';
+  /** true while the close animation plays, just before the window unmounts */
+  closing?: boolean;
 }
+
+/** Edge-snap / keyboard tiling targets. */
+export type SnapZone = 'max' | 'left' | 'right';
