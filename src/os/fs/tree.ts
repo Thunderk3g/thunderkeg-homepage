@@ -24,7 +24,7 @@ ${profile.summary.join('\n\n')}
 ${profile.email} · ${profile.phone} · github.com/${profile.github}
 
 Type 'help' for commands, 'neofetch' for the obligatory ASCII dragon.
-Try:  resume · blog · papers · news · ai <question> · firefox · games
+Try:  resume · blog · papers · news · research · learn · psql · vm · ai <question>
 `;
 
 const section = (title: string, body: string) => `# ${title}\n\n${body}\n`;
@@ -102,15 +102,18 @@ const README = `Welcome — my portfolio, rendered as a Kali Linux desktop.
 
 Everything here is interactive:
   • Terminal          try: help · resume · blog · papers · news · ai <question>
-  • Whisker menu      top-left: Kali tools, the Games arcade, everything else
-  • Writing           posts + the papers I'm reading (also at /writing)
-  • AI Radar          live AI headlines from public feeds, with a catch-up brief
+  • Firefox           the plain pages, in tabs: /resume · /writing · /learning
+  • Research          a paper desk: follow topics, keep a library, review what you read
   • Learning OS       my skill-state model — evidence, dependencies, AI-free checks
                       (run 'learn'; state stays in your browser, never on a server)
-  • Multiplayer       arcade games sync live — open two tabs and play
+  • Writing           posts + the papers I'm reading (also at /writing)
+  • Linux VM          a real Linux kernel booting in your browser (v86), with this
+                      portfolio mounted over 9p at /mnt/portfolio
+  • psql              PostgreSQL 18 compiled to WebAssembly (PGlite), in-tab
+  • Text Editor       CodeMirror with Markdown preview — try ~/Documents/resume.md
   • Documents         ~/Documents holds the real résumé content
 
-Plain pages for humans in a hurry:  /resume  ·  /writing
+Plain pages for humans in a hurry:  /resume  ·  /writing  ·  /learning
 
 — Diwakar
 `;

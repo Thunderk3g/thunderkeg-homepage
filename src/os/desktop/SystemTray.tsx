@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { usePresence } from '../net/realtime';
 import { useOS, isUndercover } from '../store';
 import { SysIcon } from '../icons';
 import { useClock } from './useClock';
@@ -43,7 +42,6 @@ function useBattery() {
 
 /** The right-hand side of the Xfce panel: cpugraph · systray · volume · bell · battery · clock · lock · logout. */
 export function SystemTray() {
-  const { users, status } = usePresence('global');
   const now = useClock(1000);
   const clock24 = useOS((s) => s.settings.clock24);
   const showGraph = useOS((s) => s.settings.panelGraph);
@@ -80,14 +78,6 @@ export function SystemTray() {
   return (
     <div className="kos-tray" ref={root}>
       {showGraph && !undercover && <CpuGraph />}
-
-      <span
-        className={'kos-tray-item kos-tray-presence s-' + status}
-        title={`${users.length} online: ${users.map((u) => u.name).join(', ') || 'just you'}`}
-      >
-        <SysIcon name="users" size={15} />
-        <span className="n">{users.length}</span>
-      </span>
 
       <span className="kos-tray-pop">
         <button className={'kos-tray-item' + (pop === 'net' ? ' open' : '')} onClick={() => toggle('net')} aria-label="Network">

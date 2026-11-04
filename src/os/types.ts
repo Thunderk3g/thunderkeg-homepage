@@ -17,8 +17,8 @@ export type AppCategory =
   | 'Reporting Tools'
   | 'Internet'
   | 'Development'
+  | 'Research'
   | 'Accessories'
-  | 'Games'
   | 'System';
 
 export interface AppProps {
@@ -46,30 +46,6 @@ export interface AppDefinition {
   launchCommands?: string[];
 }
 
-/* ───────────────────────── Games ───────────────────────── */
-
-export interface GameProps {
-  instanceId: string;
-  /** report a final/high score to the arcade leaderboard */
-  onScore?: (score: number) => void;
-  /** multiplayer room id (set by the arcade lobby for `kind: 'multi'` games) */
-  room?: string;
-}
-
-export interface GameDefinition {
-  id: string;
-  name: string;
-  icon: string;
-  tagline: string;
-  kind: 'solo' | 'multi';
-  /** e.g. "2", "2-4" */
-  players?: string;
-  tags?: string[];
-  component: ComponentType<GameProps>;
-  /** higher = listed earlier */
-  weight?: number;
-}
-
 /* ───────────────────────── Terminal ───────────────────────── */
 
 export interface FsNode {
@@ -89,7 +65,7 @@ export interface ShellApi {
   user: string;
   host: string;
   history: string[];
-  /** launch a desktop app (used by `firefox`, `games`, `thunar`, …) */
+  /** launch a desktop app (used by `firefox`, `thunar`, `psql`, …) */
   launch: (appId: string, args?: Record<string, unknown>) => void;
   /** clear the terminal screen */
   clear: () => void;

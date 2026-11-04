@@ -17,8 +17,8 @@ const LINES = [
   '[  OK  ] Started dbus.service - D-Bus System Message Bus.',
   '[  OK  ] Started NetworkManager.service - Network Manager.',
   '[  OK  ] Mounted home.mount - /home.',
-  '[  OK  ] Started realtime-bridge.service - Multiplayer presence.',
-  '[  OK  ] Started postgresql.service - PostgreSQL RDBMS.',
+  '[  OK  ] Mounted 9p portfolio share.',
+  '[  OK  ] Started PostgreSQL 18 (PGlite).',
   '[  OK  ] Reached target graphical.target - Graphical Interface.',
   '[  OK  ] Started lightdm.service - Light Display Manager.',
 ];

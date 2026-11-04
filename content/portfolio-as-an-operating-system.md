@@ -52,6 +52,11 @@ better. Both are load-bearing for the joke and dead weight for the purpose.
 
 I kept them. That is a preference, not a defence.
 
+*Update, November 2026:* not any more. The arcade and its Supabase multiplayer, the scripted
+security tools and the commands that printed made-up output are gone. What is left either
+shows the work or is useful for study — and the desktop now boots a real Linux VM and runs
+real PostgreSQL instead of pretending to.
+
 ## The bug worth writing down
 
 `html, body { height: 100%; overflow: hidden }` — set so the desktop could own the

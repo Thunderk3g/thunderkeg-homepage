@@ -22,42 +22,18 @@ interface Entry {
   run: () => void;
 }
 
-/** Kali's numbered menu sections. */
-const KALI_CATS = [
-  '01 - Information Gathering',
-  '02 - Vulnerability Analysis',
-  '03 - Web Application Analysis',
-  '04 - Database Assessment',
-  '05 - Password Attacks',
-  '06 - Wireless Attacks',
-  '07 - Reverse Engineering',
-  '08 - Exploitation Tools',
-  '09 - Sniffing & Spoofing',
-  '10 - Post Exploitation',
-  '11 - Forensics',
-  '12 - Reporting Tools',
-  '13 - Social Engineering Tools',
-];
-const USUAL = 'Usual Applications';
+/** Menu sections, in rail order; only those with at least one app are shown. */
+const CATEGORIES = ['Research', 'Internet', 'Development', 'Accessories', 'System'];
 const FAV = 'Favorites';
 const RECENT = 'Recently Used';
 const ALL = 'All Applications';
 
-function kaliSection(a: AppDefinition): string[] {
-  const c = a.category as string;
-  const hit = KALI_CATS.find((k) => k.slice(5).toLowerCase() === c.toLowerCase());
-  const out = hit ? [hit] : [];
-  // Kali lists sqlmap under both web apps and database assessment; psql is a DB client
-  if (a.id === 'sqlmap' || a.id === 'psql' || /database/i.test(c)) out.push(KALI_CATS[3]);
-  return out.length ? [...new Set(out)] : [USUAL];
-}
-
-const FAVORITE_IDS = ['terminal', 'root-terminal', 'files', 'editor', 'browser', 'vm', 'psql'];
+const FAVORITE_IDS = ['terminal', 'root-terminal', 'browser', 'research', 'learning', 'files', 'code-editor', 'vm', 'psql'];
 const WEB_LINKS = [
   { key: 'link-kali', title: 'Kali Linux', description: 'kali.org', url: 'https://www.kali.org/' },
-  { key: 'link-tools', title: 'Kali Tools', description: 'Tool documentation', url: 'https://www.kali.org/tools/' },
   { key: 'link-docs', title: 'Kali Docs', description: 'Official documentation', url: 'https://www.kali.org/docs/' },
-  { key: 'link-edb', title: 'Exploit-DB', description: 'Exploit database archive', url: 'https://www.exploit-db.com/' },
+  { key: 'link-arxiv', title: 'arXiv', description: 'Open-access preprints', url: 'https://arxiv.org/' },
+  { key: 'link-s2', title: 'Semantic Scholar', description: 'Paper search and citation graph', url: 'https://www.semanticscholar.org/' },
 ];
 
 /** subsequence fuzzy score; 0 = no match, higher = better */
@@ -102,9 +78,9 @@ export function WhiskerMenu() {
     });
     const visible = apps.filter((a) => !a.hidden);
     const byCat = new Map<string, Entry[]>();
-    for (const a of visible) for (const c of kaliSection(a)) {
-      if (!byCat.has(c)) byCat.set(c, []);
-      byCat.get(c)!.push(fromApp(a));
+    for (const a of visible) {
+      if (!byCat.has(a.category)) byCat.set(a.category, []);
+      byCat.get(a.category)!.push(fromApp(a));
     }
     const undercoverEntry: Entry = {
       key: 'undercover',
@@ -116,7 +92,8 @@ export function WhiskerMenu() {
         toggleUndercover();
       },
     };
-    byCat.set(USUAL, [...(byCat.get(USUAL) ?? []), undercoverEntry].sort((a, b) => a.title.localeCompare(b.title)));
+    byCat.set('System', [...(byCat.get('System') ?? []), undercoverEntry]);
+    for (const list of byCat.values()) list.sort((a, b) => a.title.localeCompare(b.title));
 
     const favs: Entry[] = [];
     for (const id of FAVORITE_IDS) {
@@ -149,7 +126,7 @@ export function WhiskerMenu() {
     return { byCat, favs, all };
   }, [launch, toggleUndercover]);
 
-  const rail = [FAV, RECENT, ALL, ...KALI_CATS, USUAL];
+  const rail = [FAV, RECENT, ALL, ...CATEGORIES.filter((c) => entries.byCat.has(c))];
 
   const list: Entry[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -317,12 +294,17 @@ export function WhiskerMenu() {
   );
 }
 
-function CatIcon({ c }: { c: string }) {
-  if (c === FAV) return <SysIcon name="star" size={15} />;
-  if (c === RECENT) return <SysIcon name="history" size={15} />;
-  if (c === ALL) return <SysIcon name="grid" size={15} />;
-  if (c === USUAL) return <SysIcon name="window" size={15} />;
-  const n = c.slice(0, 2);
-  return <span className="kos-whisker-cat-n">{n}</span>;
-}
+const CAT_ICONS: Record<string, string> = {
+  [FAV]: 'star',
+  [RECENT]: 'history',
+  [ALL]: 'grid',
+  Research: 'book',
+  Internet: 'globe',
+  Development: 'code',
+  Accessories: 'tools',
+  System: 'settings',
+};
 
+function CatIcon({ c }: { c: string }) {
+  return <SysIcon name={CAT_ICONS[c] ?? 'window'} size={15} />;
+}
