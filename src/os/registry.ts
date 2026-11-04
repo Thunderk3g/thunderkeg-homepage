@@ -13,7 +13,6 @@ import { assistantApp } from './apps/assistant/Assistant';
 import { codeEditorApp } from './apps/codeeditor/CodeEditor';
 import { voiceApp } from './apps/voice/Voice';
 import { writingApp } from './apps/writing/Writing';
-import { aiNewsApp } from './apps/news/AiNews';
 import { researchApp } from './apps/research/Research';
 import { learningApp } from './apps/learning/LearningApp';
 import { mp3App } from './apps/media/Mp3';
@@ -27,7 +26,6 @@ export const apps: AppDefinition[] = [
   terminalApp,
   vmApp,
   browserApp,
-  aiNewsApp,
   researchApp,
   writingApp,
   learningApp,

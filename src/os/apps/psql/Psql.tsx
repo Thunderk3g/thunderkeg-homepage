@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
 import { getDb, useDbStatus } from '../../db/workspace';
-import { startResearchMirror } from '../../db/mirror';
+import { mirrorSettled, startResearchMirror } from '../../db/mirror';
 import {
   cellText,
   errorText,
@@ -21,30 +21,55 @@ if (typeof window !== 'undefined') startResearchMirror();
 
 const SAVED: { label: string; sql: string }[] = [
   {
-    label: 'hosts with services',
-    sql: `select host(h.address) as address, h.name, h.os_name,
-       count(s.id) as services,
-       string_agg(s.port || '/' || s.proto || ' ' || coalesce(s.name, '?'), ', ' order by s.port) as ports
-from hosts h
-left join services s on s.host_id = h.id
-group by h.id
-order by h.address;`,
+    label: 'papers by RQ',
+    sql: `select rq, count(*) as papers,
+       count(*) filter (where status in ('pass2', 'pass3', 'done')) as past_skim,
+       string_agg(left(title, 48), ' · ' order by year desc nulls last) as titles
+from papers, unnest(case when rq_ids = '{}' then array['(none)'] else rq_ids end) as rq
+group by rq
+order by rq;`,
   },
   {
-    label: 'papers by status',
-    sql: `select status, count(*) as papers, max(saved_at) as last_saved
+    label: 'cards due this week',
+    sql: `select c.due, left(c.prompt, 70) as prompt, left(p.title, 40) as paper, c.interval_days, c.reps
+from cards c join papers p on p.id = c.paper_id
+where not c.suspended and c.due < current_date + 7
+order by c.due, p.title;`,
+  },
+  {
+    label: 'review accuracy by paper',
+    sql: `select left(p.title, 50) as paper, count(r.*) as reviews,
+       round(100.0 * count(*) filter (where r.grade <> 'again') / nullif(count(r.*), 0), 1) as pct_recalled,
+       count(*) filter (where r.typed_recall) as typed
+from papers p
+join cards c on c.paper_id = p.id
+left join reviews r on r.card_id = c.id
+group by p.id
+order by pct_recalled nulls last, reviews desc;`,
+  },
+  {
+    label: 'papers per venue/year',
+    sql: `select coalesce(venue, '(none)') as venue, year, count(*) as papers,
+       string_agg(status, ', ' order by status) as statuses
 from papers
-group by status
-order by papers desc;`,
+group by venue, year
+order by year desc nulls last, papers desc;`,
   },
   {
-    label: 'events timeline',
-    sql: `select at, kind, detail
-from events
-order by at desc
-limit 50;`,
+    label: 'highlights for a paper',
+    sql: `-- change the title filter
+select h.location, h.text, h.why, h.card_id is not null as carded, h.created_at
+from highlights h join papers p on p.id = h.paper_id
+where p.title ilike '%WER%'
+order by h.created_at;`,
   },
-  { label: 'select version()', sql: 'select version();' },
+  {
+    label: 'notes with no critique',
+    sql: `select left(p.title, 60) as paper, p.status
+from papers p join paper_notes n on n.paper_id = p.id
+where p.status in ('pass2', 'pass3', 'done') and n.critique = ''
+order by p.status;`,
+  },
   { label: '\\dt', sql: '\\dt' },
 ];
 
@@ -74,7 +99,9 @@ function loadHistory(): string[] {
 function PsqlApp({ args }: AppProps) {
   const status = useDbStatus();
   const [sql, setSql] = useState<string>(
-    typeof args?.sql === 'string' ? (args.sql as string) : 'select host(address) as address, name, os_name, comments\nfrom hosts\norder by address;',
+    typeof args?.sql === 'string'
+      ? (args.sql as string)
+      : 'select status, count(*) as papers, sum(cardinality(rq_ids)) as rq_links\nfrom papers\ngroup by status\norder by papers desc;',
   );
   const [out, setOut] = useState<Output>({ kind: 'none' });
   const [running, setRunning] = useState(false);
@@ -131,6 +158,8 @@ function PsqlApp({ args }: AppProps) {
       hIdx.current = -1;
       const t0 = performance.now();
       try {
+        // let a pending mirror write land first, so a fresh card shows up
+        await mirrorSettled();
         const r = await runInput(q);
         const last = [...r.results].reverse().find((s) => s.columns.length > 0) ?? r.results[r.results.length - 1];
         if (r.text) setOut({ kind: 'text', text: r.text, ms: r.ms });
@@ -284,7 +313,7 @@ function PsqlApp({ args }: AppProps) {
           ))}
         </ul>
         <div className="kos-psql-side-foot">
-          Real PostgreSQL in WebAssembly, stored in this browser&apos;s IndexedDB. Lab hosts are simulated.
+          Real PostgreSQL in WebAssembly, stored in this browser&apos;s IndexedDB. papers, paper_notes, highlights, cards and reviews mirror the Research app one way — edit there, query here.
         </div>
       </aside>
 
@@ -306,7 +335,7 @@ function PsqlApp({ args }: AppProps) {
         </div>
         <div className="kos-psql-editor">
           <div className="kos-psql-prompt" aria-hidden>
-            kali=#
+            research=#
           </div>
           <textarea
             ref={taRef}
@@ -439,11 +468,11 @@ export const psqlApp: AppDefinition = {
   icon: '🐘',
   category: 'Development',
   component: PsqlApp,
-  description: 'A real PostgreSQL 18 database running in your browser (WebAssembly)',
+  description: 'Real PostgreSQL 18 (WebAssembly) over my research library — query papers, notes, cards and reviews with SQL',
   defaultSize: { width: 920, height: 600 },
   minSize: { width: 520, height: 340 },
   desktop: true,
-  launchCommands: ['psql', 'pgcli', 'msfdb-console'],
+  launchCommands: ['psql', 'pgcli'],
 };
 
 export default PsqlApp;

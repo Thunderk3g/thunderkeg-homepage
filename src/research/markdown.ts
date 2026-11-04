@@ -1,4 +1,4 @@
-import type { Paper } from './types';
+import type { Card, Highlight, Paper } from './types';
 import { isoDay } from './schedule';
 
 /**
@@ -43,7 +43,10 @@ function venue(p: Paper): string {
   return p.venue ?? '';
 }
 
-export function toContentMarkdown(p: Paper): string {
+export function toContentMarkdown(
+  p: Paper,
+  extra: { highlights?: Highlight[]; cards?: Card[] } = {},
+): string {
   const n = p.note;
   const summary = n.delta.split('\n').find((l) => l.trim()) || n.fiveCs.contributions || p.abstract.slice(0, 200);
   const front = [
@@ -82,7 +85,26 @@ export function toContentMarkdown(p: Paper): string {
     ...section('Critique', n.critique),
     ...section('What is left for my work', n.delta),
     ...(n.freeform.trim() ? [n.freeform.trim(), ''] : []),
+    ...section('Highlights', highlightsMd(extra.highlights ?? [])),
+    ...section('Recall cards', cardsMd(extra.cards ?? [])),
   ];
 
   return [...front, '', ...body].join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
+}
+
+function highlightsMd(hs: Highlight[]): string {
+  return hs
+    .map((h) => {
+      const where = h.where ? ` (${one(h.where)})` : '';
+      const why = h.why ? `\n  — ${one(h.why)}` : '';
+      return `- > ${one(h.text)}${where}${why}`;
+    })
+    .join('\n');
+}
+
+function cardsMd(cs: Card[]): string {
+  return cs
+    .filter((c) => !c.suspended)
+    .map((c) => `- **Q.** ${one(c.prompt)}\n  **A.** ${one(c.answer)}`)
+    .join('\n');
 }

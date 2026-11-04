@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PaperHit, PapersResponse, Topic } from '@/research/types';
 import { useResearch } from '@/research/store';
-import { relevance, queryKeywords } from '@/research/rank';
+import { feedbackBoost, feedbackKeywords, feedbackWeights, relevance, queryKeywords } from '@/research/rank';
 import { buildArxivQuery, searchPapers, type SearchParams } from '@/research/client';
 
 type Sel = { kind: 'topic'; id: string } | { kind: 'hf-daily' } | { kind: 'search'; q: string; source: 'arxiv' | 'hf-search' };
@@ -43,6 +43,9 @@ export function Feed({
   const papers = useResearch((s) => s.papers);
   const savePaper = useResearch((s) => s.savePaper);
   const markTopicSeen = useResearch((s) => s.markTopicSeen);
+  const ratings = useResearch((s) => s.ratings);
+  const rate = useResearch((s) => s.rate);
+  const [showHidden, setShowHidden] = useState(false);
 
   const [sel, setSel] = useState<Sel>(() =>
     search ? { kind: 'search', q: search.q, source: 'arxiv' } : { kind: 'topic', id: topics[0]?.id ?? '' },
@@ -118,11 +121,17 @@ export function Feed({
 
   const saved = useMemo(() => new Set(papers.map((p) => p.id)), [papers]);
 
-  const rows = useMemo(() => {
-    const items = (data?.items ?? []).map((hit, i) => ({ hit, i, ...relevance(hit, keywords) }));
+  const weights = useMemo(() => feedbackWeights(ratings), [ratings]);
+  const { rows, hidden } = useMemo(() => {
+    const all = (data?.items ?? []).map((hit, i) => {
+      const r = relevance(hit, keywords);
+      const boost = feedbackBoost(hit, weights);
+      return { hit, i, ...r, boost, score: Math.max(0, r.score + boost), rating: ratings[hit.id]?.r };
+    });
+    const items = showHidden ? all : all.filter((x) => x.rating !== -1);
     if (sort === 'relevance') items.sort((a, b) => b.score - a.score || a.i - b.i);
-    return items;
-  }, [data, keywords, sort]);
+    return { rows: items, hidden: all.length - all.filter((x) => x.rating !== -1).length };
+  }, [data, keywords, sort, weights, ratings, showHidden]);
 
   const loadMore = async () => {
     if (!params || params.source !== 'arxiv' || !('q' in params) || !data) return;
@@ -250,6 +259,11 @@ export function Feed({
             <option value="relevance">Relevance</option>
           </select>
         </label>
+        {hidden > 0 && (
+          <button className="rsx-link-btn" onClick={() => setShowHidden((v) => !v)}>
+            {showHidden ? 'hide' : 'show'} {hidden} not relevant
+          </button>
+        )}
       </div>
 
       {data?.error && <p className="rsx-error">{data.error}</p>}
@@ -271,7 +285,7 @@ export function Feed({
         )}
         {!loading && !params && sel.kind === 'search' && <p className="lrn-empty">Type something to search.</p>}
 
-        {rows.map(({ hit, score, matched }) => {
+        {rows.map(({ hit, score, matched, boost, rating }) => {
           const isNew = !!baseline && hit.published > baseline;
           const expanded = open.has(hit.id);
           const inLib = saved.has(hit.id);
@@ -332,10 +346,29 @@ export function Feed({
                   </a>
                 )}
                 {hit.arxivId && (
-                  <a href={`https://www.alphaxiv.org/abs/${hit.arxivId}`} target="_blank" rel="noreferrer">
-                    alphaXiv
+                  <a href={`https://alphaxiv.org/abs/${hit.arxivId}`} target="_blank" rel="noreferrer">
+                    discuss on alphaXiv ↗
                   </a>
                 )}
+                <span className="rsx-rate" role="group" aria-label="feedback">
+                  <button
+                    className={'rsx-rate-btn' + (rating === 1 ? ' on' : '')}
+                    aria-pressed={rating === 1}
+                    title="More like this — boosts its keywords in ranking"
+                    onClick={() => rate(hit.id, rating === 1 ? null : 1, feedbackKeywords(hit, matched))}
+                  >
+                    + relevant
+                  </button>
+                  <button
+                    className={'rsx-rate-btn bad' + (rating === -1 ? ' on' : '')}
+                    aria-pressed={rating === -1}
+                    title="Not relevant — hides it and down-weights its keywords"
+                    onClick={() => rate(hit.id, rating === -1 ? null : -1, feedbackKeywords(hit, matched))}
+                  >
+                    − not relevant
+                  </button>
+                  {boost !== 0 && <span className="lrn-dim">{boost > 0 ? `+${boost}` : boost} from ratings</span>}
+                </span>
               </p>
             </article>
           );

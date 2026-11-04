@@ -1,68 +1,14 @@
 /**
- * msfdb-style workspace schema (modelled on Metasploit's hosts/services/notes/
- * loot/creds tables) plus two portfolio tables: papers (mirrored from the
- * Research app) and events (an append-only activity log).
+ * Research workspace schema. Every table except `events` is a one-way mirror
+ * of the Research app's local store (src/os/db/mirror.ts): edit in the app,
+ * query here. Writes made in psql are overwritten on the next sync.
  *
- * Every statement is idempotent so it can run on every boot.
+ * Every statement is idempotent so it runs on every boot, and the first block
+ * retires the Metasploit-style lab tables older visitors still have in
+ * IndexedDB.
  */
 export const MIGRATIONS = `
-create table if not exists workspaces (
-  id          serial primary key,
-  name        text not null unique,
-  created_at  timestamptz not null default now()
-);
-
-create table if not exists hosts (
-  id            serial primary key,
-  workspace_id  int not null references workspaces(id) on delete cascade,
-  address       inet not null,
-  name          text,
-  os_name       text,
-  os_flavor     text,
-  state         text not null default 'alive',
-  comments      text,
-  created_at    timestamptz not null default now(),
-  unique (workspace_id, address)
-);
-
-create table if not exists services (
-  id       serial primary key,
-  host_id  int not null references hosts(id) on delete cascade,
-  port     int not null check (port between 0 and 65535),
-  proto    text not null default 'tcp',
-  state    text not null default 'open',
-  name     text,
-  info     text,
-  unique (host_id, port, proto)
-);
-
-create table if not exists notes (
-  id          serial primary key,
-  host_id     int references hosts(id) on delete cascade,
-  ntype       text not null,
-  data        jsonb,
-  created_at  timestamptz not null default now()
-);
-
-create table if not exists loot (
-  id            serial primary key,
-  host_id       int references hosts(id) on delete cascade,
-  ltype         text not null,
-  path          text,
-  content_type  text,
-  name          text,
-  info          text,
-  created_at    timestamptz not null default now()
-);
-
-create table if not exists creds (
-  id            serial primary key,
-  host_id       int references hosts(id) on delete cascade,
-  username      text,
-  private_data  text,
-  private_type  text,
-  created_at    timestamptz not null default now()
-);
+drop table if exists creds, loot, notes, services, hosts, workspaces cascade;
 
 create table if not exists papers (
   id         text primary key,
@@ -75,6 +21,67 @@ create table if not exists papers (
   saved_at   timestamptz
 );
 
+alter table papers add column if not exists rq_ids text[] not null default '{}';
+alter table papers add column if not exists venue text;
+alter table papers add column if not exists year int;
+alter table papers add column if not exists citation_count int;
+alter table papers add column if not exists arxiv_id text;
+alter table papers add column if not exists bib_key text;
+alter table papers add column if not exists source text;
+alter table papers add column if not exists status_changed_at timestamptz;
+
+create table if not exists paper_notes (
+  paper_id     text primary key references papers(id) on delete cascade,
+  five_cs      jsonb not null default '{}',
+  problem      text not null default '',
+  method       text not null default '',
+  results      text not null default '',
+  limitations  text not null default '',
+  critique     text not null default '',
+  delta        text not null default '',
+  freeform     text not null default ''
+);
+
+create table if not exists highlights (
+  id          text primary key,
+  paper_id    text not null references papers(id) on delete cascade,
+  text        text not null,
+  location    text,
+  why         text,
+  card_id     text,
+  created_at  timestamptz not null default now()
+);
+
+create table if not exists cards (
+  id             text primary key,
+  paper_id       text not null references papers(id) on delete cascade,
+  prompt         text not null,
+  answer         text not null,
+  elaboration    text,
+  rq_ids         text[] not null default '{}',
+  origin         text,
+  due            date not null,
+  interval_days  int not null,
+  step           int not null default 0,
+  ease           numeric(4, 3),
+  reps           int not null default 0,
+  lapses         int not null default 0,
+  suspended      boolean not null default false,
+  created_at     timestamptz,
+  last_reviewed  date
+);
+
+comment on column cards.interval_days is 'gap the scheduler used last time: the expanding ladder 1,3,7,16,35,80,180 days at this step';
+comment on column cards.ease is 'share of this card''s reviews graded hard/good/easy (not again); null before the first review. The scheduler is a fixed ladder, not SM-2, so there is no ease factor to mirror.';
+
+create table if not exists reviews (
+  card_id       text not null references cards(id) on delete cascade,
+  at            timestamptz not null,
+  grade         text not null check (grade in ('again', 'hard', 'good', 'easy')),
+  typed_recall  boolean not null default false,
+  primary key (card_id, at)
+);
+
 create table if not exists events (
   id      bigserial primary key,
   kind    text not null,
@@ -83,66 +90,7 @@ create table if not exists events (
 );
 
 create index if not exists events_at_idx on events (at desc);
-create index if not exists services_host_idx on services (host_id);
-`;
-
-/** First-run seed — clearly fake lab hosts on a private range. Runs once. */
-export const SEED = `
-with ws as (select id from workspaces where name = 'portfolio')
-insert into hosts (workspace_id, address, name, os_name, os_flavor, state, comments)
-select ws.id, v.address::inet, v.name, v.os_name, v.os_flavor, 'alive', v.comments
-from ws, (values
-  ('10.10.10.5',  'metasploitable', 'Linux',   'Ubuntu 8.04',        'SIMULATED lab data: Metasploitable 2 training VM, not a real host'),
-  ('10.10.10.10', 'dc01',           'Windows', 'Server 2019',        'SIMULATED lab data: fictional domain controller for AD practice'),
-  ('10.10.10.20', 'web01',          'Linux',   'Debian 12',          'SIMULATED lab data: fictional nginx box'),
-  ('10.10.10.30', 'files01',        'Linux',   'Ubuntu 22.04',       'SIMULATED lab data: fictional Samba share'),
-  ('10.10.10.99', 'printer',        'Embedded','HP JetDirect',       'SIMULATED lab data: the obligatory forgotten printer')
-) as v(address, name, os_name, os_flavor, comments)
-on conflict (workspace_id, address) do nothing;
-
-insert into services (host_id, port, proto, state, name, info)
-select h.id, v.port, v.proto, 'open', v.name, v.info
-from hosts h
-join (values
-  ('10.10.10.5', 21,   'tcp', 'ftp',          'vsftpd 2.3.4'),
-  ('10.10.10.5', 22,   'tcp', 'ssh',          'OpenSSH 4.7p1 Debian 8ubuntu1'),
-  ('10.10.10.5', 23,   'tcp', 'telnet',       'Linux telnetd'),
-  ('10.10.10.5', 80,   'tcp', 'http',         'Apache httpd 2.2.8 (Ubuntu) DAV/2'),
-  ('10.10.10.5', 139,  'tcp', 'netbios-ssn',  'Samba smbd 3.X - 4.X'),
-  ('10.10.10.5', 3306, 'tcp', 'mysql',        'MySQL 5.0.51a-3ubuntu5'),
-  ('10.10.10.5', 5432, 'tcp', 'postgresql',   'PostgreSQL DB 8.3.0 - 8.3.7'),
-  ('10.10.10.10', 53,  'tcp', 'domain',       'Simple DNS Plus'),
-  ('10.10.10.10', 88,  'tcp', 'kerberos-sec', 'Microsoft Windows Kerberos'),
-  ('10.10.10.10', 389, 'tcp', 'ldap',         'Microsoft Windows Active Directory LDAP (Domain: lab.local)'),
-  ('10.10.10.10', 445, 'tcp', 'microsoft-ds', 'Windows Server 2019 microsoft-ds'),
-  ('10.10.10.10', 3389,'tcp', 'ms-wbt-server','Microsoft Terminal Services'),
-  ('10.10.10.20', 22,  'tcp', 'ssh',          'OpenSSH 9.2p1 Debian 2'),
-  ('10.10.10.20', 80,  'tcp', 'http',         'nginx 1.22.1'),
-  ('10.10.10.20', 443, 'tcp', 'https',        'nginx 1.22.1'),
-  ('10.10.10.30', 445, 'tcp', 'microsoft-ds', 'Samba smbd 4.15.13-Ubuntu'),
-  ('10.10.10.99', 9100,'tcp', 'jetdirect',    'HP JetDirect'),
-  ('10.10.10.99', 161, 'udp', 'snmp',         'SNMPv1 server (public)')
-) as v(address, port, proto, name, info) on h.address = v.address::inet
-on conflict (host_id, port, proto) do nothing;
-
-insert into notes (host_id, ntype, data)
-select h.id, v.ntype, v.data::jsonb
-from hosts h
-join (values
-  ('10.10.10.5',  'vuln.candidate', '{"service":"ftp","note":"vsftpd 2.3.4 banner - textbook lab backdoor","simulated":true}'),
-  ('10.10.10.10', 'smb.signing',    '{"required":true,"simulated":true}'),
-  ('10.10.10.99', 'snmp.community', '{"community":"public","simulated":true}')
-) as v(address, ntype, data) on h.address = v.address::inet;
-
-insert into creds (host_id, username, private_data, private_type)
-select h.id, v.username, v.private_data, v.private_type
-from hosts h
-join (values
-  ('10.10.10.5',  'msfadmin', 'msfadmin (SIMULATED - documented Metasploitable default)', 'password'),
-  ('10.10.10.10', 'lab\\svc_backup', 'not-a-real-secret', 'password')
-) as v(address, username, private_data, private_type) on h.address = v.address::inet;
-
-insert into loot (host_id, ltype, path, content_type, name, info)
-select h.id, 'host.files', '/etc/passwd', 'text/plain', 'passwd', 'SIMULATED placeholder, no file content stored'
-from hosts h where h.address = '10.10.10.5'::inet;
+create index if not exists cards_due_idx on cards (due);
+create index if not exists highlights_paper_idx on highlights (paper_id);
+create index if not exists reviews_card_idx on reviews (card_id);
 `;

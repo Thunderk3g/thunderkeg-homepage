@@ -14,7 +14,6 @@ const empty = (reason: GraphResponse['reason']): GraphResponse => ({
   reason,
   references: [],
   citations: [],
-  recommendations: [],
 });
 
 /**
