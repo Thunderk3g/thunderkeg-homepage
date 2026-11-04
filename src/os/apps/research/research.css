@@ -290,6 +290,7 @@
   .rsx-read-notes { overflow: visible; padding: 12px 10px 24px; }
   .rsx-lib-matrix { padding: 8px; }
   .rsx-mx-addcol input { width: 120px; }
+  .rsx-mx-table tbody th.c-title { min-width: 150px; }
   .rsx-radar-item { grid-template-columns: minmax(0, 1fr) auto; }
   .rsx-radar-lane { grid-column: 1 / -1; }
   .rsx-rate { margin-left: 0; }
