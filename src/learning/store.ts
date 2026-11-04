@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { SCHEMA_VERSION, seedState } from './seed';
+import { BENCHMARK_PHASES, BENCHMARK_RESOURCES, SCHEMA_VERSION, V1_TARGET, seedState } from './seed';
 import { buildSession, nextReviewDate } from './priority';
 import type {
+  ApplicationStatus,
+  DimensionLevel,
   Evidence,
   InterviewDomain,
   LearningState,
@@ -56,6 +58,10 @@ interface Actions {
   completeSession: (id: string) => void;
 
   addReassessment: (r: Omit<Reassessment, 'id' | 'date'>) => void;
+
+  setDimension: (id: string, level: DimensionLevel) => void;
+  togglePlanItem: (key: string) => void;
+  setApplication: (id: string, status: ApplicationStatus) => void;
 
   exportJson: () => string;
   importJson: (raw: string) => { ok: boolean; error?: string };
@@ -156,6 +162,12 @@ export const useLearning = create<LearningStore>()(
           lastReassessedAt: today(),
         })),
 
+      setDimension: (id, level) => set((s) => ({ benchmark: { ...s.benchmark, [id]: level } })),
+
+      togglePlanItem: (key) => set((s) => ({ planDone: { ...s.planDone, [key]: !s.planDone[key] } })),
+
+      setApplication: (id, status) => set((s) => ({ applications: { ...s.applications, [id]: status } })),
+
       exportJson: () => {
         const s = get();
         const data: LearningState = {
@@ -173,6 +185,9 @@ export const useLearning = create<LearningStore>()(
           currentSkillId: s.currentSkillId,
           todayFocus: s.todayFocus,
           lastReassessedAt: s.lastReassessedAt,
+          benchmark: s.benchmark,
+          planDone: s.planDone,
+          applications: s.applications,
         };
         return JSON.stringify(data, null, 2);
       },
@@ -183,7 +198,8 @@ export const useLearning = create<LearningStore>()(
           if (!Array.isArray(parsed.skills) || !parsed.target) {
             return { ok: false, error: 'Not a Learning OS export (missing skills/target).' };
           }
-          set({ ...seedState(), ...parsed, version: SCHEMA_VERSION });
+          const upgraded = migrateState(parsed, typeof parsed.version === 'number' ? parsed.version : 1);
+          set({ ...seedState(), ...upgraded, version: SCHEMA_VERSION });
           return { ok: true };
         } catch (err) {
           return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -212,7 +228,11 @@ export const useLearning = create<LearningStore>()(
         currentSkillId: s.currentSkillId,
         todayFocus: s.todayFocus,
         lastReassessedAt: s.lastReassessedAt,
+        benchmark: s.benchmark,
+        planDone: s.planDone,
+        applications: s.applications,
       }),
+      migrate: (persisted, version) => migrateState(persisted as Partial<LearningState>, version) as LearningStore,
       /**
        * A stored export predates any skill added to the seed later. Union the
        * two by id so new seed skills appear instead of silently going missing.
@@ -224,11 +244,57 @@ export const useLearning = create<LearningStore>()(
           ...(p.skills ?? []),
           ...current.skills.filter((s) => !seededIds.has(s.id)),
         ];
-        return { ...current, ...p, skills };
+        return {
+          ...current,
+          ...p,
+          skills,
+          benchmark: p.benchmark ?? {},
+          planDone: p.planDone ?? {},
+          applications: p.applications ?? {},
+        };
       },
     },
   ),
 );
+
+/**
+ * Schema migrations, applied in order to persisted state (zustand's
+ * `migrate`) and to imported exports. Without a `migrate`, zustand discards
+ * persisted state on a version bump — that is the failure this prevents.
+ *
+ * v1 → v2 (role benchmark): adds `benchmark`, `planDone` and `applications`;
+ * appends roadmap phases p4–p6 and the benchmark reading items by id; and
+ * replaces the target only field by field where it still equals the v1 seed,
+ * so an edited north star survives. New skills arrive through `merge`.
+ */
+export function migrateState(p: Partial<LearningState>, fromVersion: number): Partial<LearningState> {
+  let out: Partial<LearningState> = { ...p };
+  if (fromVersion < 2) {
+    const seed = seedState();
+    const roadmap = out.roadmap ?? seed.roadmap;
+    const resources = out.resources ?? seed.resources;
+    const has = (list: { id: string }[], id: string) => list.some((x) => x.id === id);
+    const t = out.target;
+    out = {
+      ...out,
+      benchmark: out.benchmark ?? {},
+      planDone: out.planDone ?? {},
+      applications: out.applications ?? {},
+      roadmap: [...roadmap, ...BENCHMARK_PHASES.filter((ph) => !has(roadmap, ph.id))],
+      resources: [...resources, ...BENCHMARK_RESOURCES.filter((r) => !has(resources, r.id))],
+      target: t
+        ? {
+            ...t,
+            northStar: t.northStar === V1_TARGET.northStar ? seed.target.northStar : t.northStar,
+            notes: t.notes === V1_TARGET.notes ? seed.target.notes : t.notes,
+            companies:
+              t.companies?.join('|') === V1_TARGET.companies.join('|') ? seed.target.companies : t.companies,
+          }
+        : seed.target,
+    };
+  }
+  return { ...out, version: SCHEMA_VERSION };
+}
 
 /**
  * localStorage does not exist during the prerender, so zustand disables the

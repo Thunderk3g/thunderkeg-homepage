@@ -43,7 +43,8 @@ export type Domain =
   | 'Infrastructure'
   | 'Foundations'
   | 'Interview craft'
-  | 'Product & leadership';
+  | 'Product & leadership'
+  | 'Governance & safety';
 
 export type QueueLane = 'NOW' | 'NEXT' | 'LATER' | 'MAINTAIN' | 'IGNORE';
 
@@ -240,8 +241,13 @@ export interface Reassessment {
   dropped: string;
 }
 
+/** Which career track a plan phase or benchmark gap serves. */
+export type Track = 'lead' | 'research' | 'both';
+
 export interface RoadmapPhase {
   id: string;
+  /** absent on the original learning phases (p1–p3) */
+  track?: Track;
   /** relative, not calendar-pinned: 'Day 0–30' */
   window: string;
   theme: string;
@@ -257,6 +263,19 @@ export interface CareerTarget {
   companies: string[];
   notes: string;
 }
+
+/** Self-assessed position on one lead-vs-senior dimension. */
+export type DimensionLevel = 'senior' | 'between' | 'lead';
+
+export type ApplicationStatus = 'not-started' | 'researching' | 'drafting' | 'submitted' | 'decided';
+
+export const APPLICATION_STATUS_LABEL: Record<ApplicationStatus, string> = {
+  'not-started': 'Not started',
+  researching: 'Researching',
+  drafting: 'Drafting',
+  submitted: 'Submitted',
+  decided: 'Decided',
+};
 
 export interface LearningState {
   version: number;
@@ -275,4 +294,10 @@ export interface LearningState {
   /** max 3, ids or free text */
   todayFocus: string[];
   lastReassessedAt?: string;
+  /** role benchmark: dimension id → self-assessment (schema v2) */
+  benchmark: Record<string, DimensionLevel>;
+  /** role benchmark: `${phaseId}:${artifactIndex}` → done (schema v2) */
+  planDone: Record<string, boolean>;
+  /** role benchmark: programme id → application status (schema v2) */
+  applications: Record<string, ApplicationStatus>;
 }
