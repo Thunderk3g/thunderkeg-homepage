@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+// Run: node --experimental-strip-types scripts/research-pdf-proxy.test.mts
+const mod = await import(new URL('../src/research/server/pdf.ts', import.meta.url).href);
+const { handleReader, parseArxivId, isAllowedUrl, capped } = mod;
+const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log('ok -', m); };
+ok(parseArxivId('2606.02548') === '2606.02548', 'new id');
+ok(parseArxivId('arXiv:2606.02548v2') === '2606.02548v2', 'prefixed versioned id');
+ok(parseArxivId('hep-th/9901001') === 'hep-th/9901001', 'old id');
+for (const bad of ['../../x', '2606.02548/../../etc', 'http://evil.com/a.pdf', '2606.02548?x=1', '', '1234']) ok(parseArxivId(bad) === null, `rejects ${JSON.stringify(bad)}`);
+ok(!isAllowedUrl('https://evil.com/pdf/1'), 'host allow-list');
+ok(!isAllowedUrl('http://arxiv.org/pdf/1'), 'https only');
+ok(!isAllowedUrl('https://arxiv.org.evil.com/pdf/1'), 'suffix trick');
+let r = await handleReader({ id: '../../x', format: null });
+ok(r.status === 400, 'traversal id -> 400');
+const pdfBytes = new TextEncoder().encode('%PDF-1.7 fake');
+const mock = async (url: string, init?: RequestInit) => {
+  if (url.endsWith('/pdf/2606.02548')) return new Response(null, { status: 301, headers: { location: '/pdf/2606.02548v1' } });
+  if (url.endsWith('/pdf/2606.02548v1')) return new Response(pdfBytes, { status: 200, headers: { 'content-type': 'application/pdf', 'content-length': String(pdfBytes.length) } });
+  if (url.endsWith('/pdf/2601.00001')) return new Response(null, { status: 302, headers: { location: 'https://evil.com/x.pdf' } });
+  if (url.endsWith('/pdf/2601.00002')) return new Response('x', { status: 200, headers: { 'content-type': 'application/pdf', 'content-length': String(30 * 1024 * 1024) } });
+  if (url.includes('/html/2606.02548')) return new Response('<html><head><script>alert(1)</script></head><body><p class="ltx_p">We find a 12% reduction in WER.</p><p onclick="x()">In this paper we propose X.</p></body></html>', { status: 200, headers: { 'content-type': 'text/html' } });
+  return new Response('nope', { status: 404, headers: { 'content-type': 'text/html' } });
+};
+r = await handleReader({ id: '2606.02548', format: null }, mock);
+ok(r.status === 200 && r.headers.get('content-type') === 'application/pdf', 'streams pdf after redirect');
+ok((await r.text()).startsWith('%PDF'), 'pdf body intact');
+ok(/max-age/.test(r.headers.get('cache-control') ?? ''), 'cache headers: ' + r.headers.get('cache-control'));
+r = await handleReader({ id: '2601.00001', format: null }, mock);
+ok(r.status === 400, 'off-list redirect refused');
+r = await handleReader({ id: '2601.00002', format: null }, mock);
+ok(r.status === 413, '25 MB cap via content-length');
+r = await handleReader({ id: '2606.02548', format: 'html', facets: 'all' }, mock);
+const html = await r.text();
+ok(!/<script/i.test(html) && !/onclick/i.test(html), 'scripts and handlers stripped');
+ok(html.includes('rsx-f-result') && html.includes('rsx-f-goal'), 'facets tinted');
+ok(/sandbox/.test(r.headers.get('content-security-policy') ?? ''), 'csp sandbox');
+r = await handleReader({ id: '2609.99999', format: null, check: true }, mock);
+const j = await r.json(); ok(j.ok === false && j.status === 404, 'check reports missing');
+r = await handleReader({ id: '2606.02548', format: null, check: true }, mock);
+ok((await r.json()).ok === true, 'check ok');
+r = await handleReader({ id: '2606.02548', format: 'exe' }, mock);
+ok(r.status === 400, 'bad format 400');
+const big = new Response(new Uint8Array(1000)).body!;
+try { await new Response(capped(big, 100)).arrayBuffer(); ok(false, 'cap'); } catch { ok(true, 'stream cap errors past limit'); }
