@@ -1,17 +1,29 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { STATUS_LABEL, STATUS_ORDER, type GraphRef, type GraphResponse, type Paper, type PaperHit, type ReadStatus } from '@/research/types';
+import {
+  STATUS_LABEL,
+  STATUS_ORDER,
+  type GraphRef,
+  type GraphResponse,
+  type Paper,
+  type PaperHit,
+  type ReadMode,
+  type ReadStatus,
+  type RelatedResponse,
+} from '@/research/types';
 import { emptyNote, useResearch } from '@/research/store';
 import { isoDay } from '@/research/schedule';
 import { toBibtex } from '@/research/bibtex';
 import { contentSlug, toContentMarkdown } from '@/research/markdown';
 import { cardsPrompt, firstPassPrompt, offlineCards, offlineFirstPass, parseCardLines, parseFiveCs, type CardDraft } from '@/research/offline';
-import { copyText, download, fetchGraph, searchPapers } from '@/research/client';
+import { copyText, download, fetchGraph, fetchRelated, searchPapers, type FacetLevel } from '@/research/client';
 import { streamChat } from '@/os/ai/stream';
 import { useLearning } from '@/learning/store';
 import { ASSISTANCE_LABEL, type AiAssistance } from '@/learning/types';
+import { HighlightAdd, HighlightList } from './Highlights';
+import { ReaderPane, useReaderSources, type Source } from './Reader';
 
 /* ───────────────────────── small pieces ───────────────────────── */
 
@@ -21,17 +33,20 @@ function Field({
   onChange,
   rows = 2,
   placeholder,
+  k,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   rows?: number;
   placeholder?: string;
+  /** shortcut target (n → notes-pN, c → card-prompt) */
+  k?: string;
 }) {
   return (
     <label className="lrn-field">
       {label}
-      <textarea rows={rows} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      <textarea data-k={k} rows={rows} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
     </label>
   );
 }
@@ -59,28 +74,60 @@ const s2Link = (p: Paper) =>
     ? `https://www.semanticscholar.org/arxiv/${p.arxivId}`
     : `https://www.semanticscholar.org/search?q=${encodeURIComponent(p.title)}`;
 
+/* ───────────────────────── keyboard ───────────────────────── */
+
+/** True when a keystroke belongs to a text field, not to the shortcuts. */
+export function isTyping(t: EventTarget | null): boolean {
+  if (!(t instanceof HTMLElement)) return false;
+  if (t.isContentEditable) return true;
+  if (t instanceof HTMLTextAreaElement) return !t.readOnly;
+  if (t instanceof HTMLSelectElement) return true;
+  if (t instanceof HTMLInputElement) return !['checkbox', 'radio', 'button', 'submit', 'range'].includes(t.type);
+  return false;
+}
+
+export type KeyHandler = (e: React.KeyboardEvent) => boolean;
+
 /* ───────────────────────── detail ───────────────────────── */
+
+const PASS_KEYS: Record<string, ReadStatus> = { '1': 'pass1', '2': 'pass2', '3': 'pass3' };
 
 export function PaperDetail({
   paper,
   onBack,
   onOpenPaper,
+  keysRef,
 }: {
   paper: Paper;
   onBack: () => void;
   onOpenPaper: (id: string) => void;
+  /** Library forwards keystrokes it does not use itself */
+  keysRef?: React.MutableRefObject<KeyHandler | null>;
 }) {
   const rqs = useResearch((s) => s.rqs);
   const allCards = useResearch((s) => s.cards);
+  const allHighlights = useResearch((s) => s.highlights);
   const setStatus = useResearch((s) => s.setStatus);
   const patchNote = useResearch((s) => s.patchNote);
   const setTags = useResearch((s) => s.setTags);
   const toggleRq = useResearch((s) => s.toggleRq);
   const removePaper = useResearch((s) => s.removePaper);
+  const mode = useResearch((s) => s.prefs.readMode[paper.id] ?? 'off');
+  const splitPct = useResearch((s) => s.prefs.splitPct);
+  const setReadMode = useResearch((s) => s.setReadMode);
+  const setPrefs = useResearch((s) => s.setPrefs);
 
   const cards = useMemo(() => allCards.filter((c) => c.paperId === paper.id), [allCards, paper.id]);
+  const hlCount = useMemo(() => allHighlights.filter((h) => h.paperId === paper.id).length, [allHighlights, paper.id]);
   const [tagText, setTagText] = useState(paper.tags.join(', '));
   const [warn, setWarn] = useState('');
+  const rootRef = useRef<HTMLDivElement>(null);
+  const splitRef = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<number | null>(null);
+  const [source, setSource] = useState<Source>('pdf');
+  const [facets, setFacets] = useState<FacetLevel>('off');
+  const reading = mode !== 'off';
+  const sources = useReaderSources(paper);
 
   const note = paper.note ?? emptyNote();
   const group = PASS_GROUP[paper.status];
@@ -97,11 +144,85 @@ export function PaperDetail({
       [...new Set(tagText.split(',').map((t) => t.trim()).filter(Boolean))],
     );
 
+  /** focus a field by its data-k, opening its <details> first */
+  const focusK = (k: string) => {
+    const root = rootRef.current;
+    if (!root) return false;
+    const el = [...root.querySelectorAll<HTMLElement>(`[data-k="${k}"]`)].find((x) => x.offsetParent !== null || x.closest('details:not([open])'));
+    if (!el) return false;
+    const det = el.closest('details');
+    if (det && !det.open) det.open = true;
+    el.scrollIntoView({ block: 'nearest' });
+    el.focus({ preventScroll: true });
+    return true;
+  };
+
+  const lastMode = useRef<ReadMode>(mode === 'off' ? 'split' : mode);
+  if (mode !== 'off') lastMode.current = mode;
+  const toggleRead = () => setReadMode(paper.id, reading ? 'off' : lastMode.current);
+
+  const onKey: KeyHandler = (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return false;
+    const k = e.key;
+    if (PASS_KEYS[k]) {
+      changeStatus(PASS_KEYS[k]);
+      return true;
+    }
+    if (k === 'r') {
+      toggleRead();
+      return true;
+    }
+    if (k === 'Escape' && reading) {
+      setReadMode(paper.id, 'off');
+      return true;
+    }
+    if (k === 'n') {
+      if (mode === 'reader') setReadMode(paper.id, 'split');
+      requestAnimationFrame(() => focusK(`notes-${group}`));
+      return true;
+    }
+    if (k === 'c') {
+      if (mode === 'reader') setReadMode(paper.id, 'split');
+      requestAnimationFrame(() => focusK('card-prompt'));
+      return true;
+    }
+    if (k === 'h') {
+      focusK('hl-text');
+      return true;
+    }
+    return false;
+  };
+  if (keysRef) keysRef.current = onKey;
+
+  // divider drag: a shield over the iframe keeps pointer events coming
+  const onDividerDown = (e: React.PointerEvent) => {
+    const box = splitRef.current?.getBoundingClientRect();
+    if (!box) return;
+    e.preventDefault();
+    const at = (x: number) => Math.max(25, Math.min(80, Math.round(((x - box.left) / box.width) * 100)));
+    setDrag(at(e.clientX));
+    const move = (ev: PointerEvent) => setDrag(at(ev.clientX));
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      setPrefs({ splitPct: at(ev.clientX) });
+      setDrag(null);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const onDividerKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      setPrefs({ splitPct: Math.max(25, Math.min(80, splitPct + (e.key === 'ArrowLeft' ? -4 : 4))) });
+    }
+  };
+
   const groups = {
     p1: (
       <details key="p1" className="rsx-group" open={group === 'p1'}>
         <summary>Pass 1 — the five Cs</summary>
-        <Field label="Category — what type of paper?" value={cs.category} onChange={(v) => patchNote(paper.id, { fiveCs: { category: v } })} />
+        <Field k="notes-p1" label="Category — what type of paper?" value={cs.category} onChange={(v) => patchNote(paper.id, { fiveCs: { category: v } })} />
         <Field label="Context — which papers is it related to?" value={cs.context} onChange={(v) => patchNote(paper.id, { fiveCs: { context: v } })} />
         <Field label="Correctness — do the assumptions look valid?" value={cs.correctness} onChange={(v) => patchNote(paper.id, { fiveCs: { correctness: v } })} />
         <Field label="Contributions — the main ones" value={cs.contributions} onChange={(v) => patchNote(paper.id, { fiveCs: { contributions: v } })} />
@@ -111,7 +232,7 @@ export function PaperDetail({
     p2: (
       <details key="p2" className="rsx-group" open={group === 'p2'}>
         <summary>Pass 2 — the content</summary>
-        <Field label="Problem" value={note.problem} onChange={(v) => patchNote(paper.id, { problem: v })} rows={3} />
+        <Field k="notes-p2" label="Problem" value={note.problem} onChange={(v) => patchNote(paper.id, { problem: v })} rows={3} />
         <Field label="Method" value={note.method} onChange={(v) => patchNote(paper.id, { method: v })} rows={3} />
         <Field label="Results (with the numbers)" value={note.results} onChange={(v) => patchNote(paper.id, { results: v })} rows={3} />
         <Field label="Limitations" value={note.limitations} onChange={(v) => patchNote(paper.id, { limitations: v })} rows={3} />
@@ -120,7 +241,7 @@ export function PaperDetail({
     p3: (
       <details key="p3" className="rsx-group" open={group === 'p3'}>
         <summary>Pass 3 — re-derive and critique</summary>
-        <Field label="My critique — what would break it?" value={note.critique} onChange={(v) => patchNote(paper.id, { critique: v })} rows={4} />
+        <Field k="notes-p3" label="My critique — what would break it?" value={note.critique} onChange={(v) => patchNote(paper.id, { critique: v })} rows={4} />
         <Field
           label="Delta — what is left for my work after this paper"
           value={note.delta}
@@ -132,11 +253,13 @@ export function PaperDetail({
   };
   const order = group === 'p1' ? ['p1', 'p2', 'p3'] : group === 'p2' ? ['p2', 'p1', 'p3'] : ['p3', 'p2', 'p1'];
 
-  return (
+  const notesColumn = (
     <div className="rsx-detail">
-      <button className="lrn-btn tiny rsx-back" onClick={onBack}>
-        ← Library
-      </button>
+      {!reading && (
+        <button className="lrn-btn tiny rsx-back" onClick={onBack}>
+          ← Library
+        </button>
+      )}
 
       <header className="rsx-detail-head">
         <h2 className="rsx-detail-title">{paper.title}</h2>
@@ -144,8 +267,16 @@ export function PaperDetail({
           {paper.authors.join(', ') || 'authors unknown'}
           {paper.arxivId && ` · arXiv:${paper.arxivId}`}
           {paper.primaryCategory && ` · ${paper.primaryCategory}`}
-          {paper.venue && ` · ${paper.venue}`}
+          {paper.venue && !(paper.arxivId && paper.venue.startsWith(`arXiv:${paper.arxivId}`)) && ` · ${paper.venue}`}
+          {typeof paper.citationCount === 'number' && ` · ${paper.citationCount} citations`}
         </p>
+        {!reading && (
+          <div className="lrn-btn-row rsx-read-cta">
+            <button className="lrn-btn primary" onClick={() => setReadMode(paper.id, lastMode.current)} title="Read mode (r)">
+              Read <kbd>r</kbd>
+            </button>
+          </div>
+        )}
         <p className="rsx-links">
           <a href={paper.absUrl} target="_blank" rel="noreferrer">
             {paper.arxivId ? 'abs' : 'link'}
@@ -156,8 +287,8 @@ export function PaperDetail({
             </a>
           )}
           {paper.arxivId && (
-            <a href={`https://www.alphaxiv.org/abs/${paper.arxivId}`} target="_blank" rel="noreferrer">
-              alphaXiv
+            <a href={`https://alphaxiv.org/abs/${paper.arxivId}`} target="_blank" rel="noreferrer">
+              discuss on alphaXiv ↗
             </a>
           )}
           <a href={s2Link(paper)} target="_blank" rel="noreferrer">
@@ -172,12 +303,13 @@ export function PaperDetail({
       </header>
 
       <ol className="rsx-stepper" aria-label="Reading status">
-        {STATUS_ORDER.map((s) => (
+        {STATUS_ORDER.map((s, i) => (
           <li key={s}>
             <button
               className={'rsx-step' + (paper.status === s ? ' on' : '') + (s === 'dropped' ? ' drop' : '')}
               aria-pressed={paper.status === s}
               onClick={() => changeStatus(s)}
+              title={i >= 1 && i <= 3 ? `key ${i}` : undefined}
             >
               {STATUS_LABEL[s]}
             </button>
@@ -211,11 +343,15 @@ export function PaperDetail({
       </div>
 
       {paper.abstract && (
-        <details className="rsx-group" open={paper.status === 'inbox' || paper.status === 'pass1'}>
+        <details className="rsx-group" open={!reading && (paper.status === 'inbox' || paper.status === 'pass1')}>
           <summary>{paper.source === 'note' ? 'Summary' : 'Abstract'}</summary>
           <p className="rsx-abstract open">{paper.abstract}</p>
         </details>
       )}
+
+      <h3 className="rsx-h">Highlights ({hlCount})</h3>
+      {mode !== 'split' && <HighlightAdd paper={paper} />}
+      <HighlightList paper={paper} />
 
       <h3 className="rsx-h">Notes</h3>
       <FirstPass paper={paper} />
@@ -245,6 +381,69 @@ export function PaperDetail({
         >
           Remove from library
         </button>
+      </div>
+    </div>
+  );
+
+  if (!reading) {
+    return (
+      <div ref={rootRef} className="rsx-detail-root">
+        {notesColumn}
+      </div>
+    );
+  }
+
+  const pct = drag ?? splitPct;
+  return (
+    <div ref={rootRef} className={`rsx-read mode-${mode}`} data-testid="rsx-read">
+      <div className="rsx-read-bar">
+        <button className="lrn-btn tiny" onClick={onBack} title="Back to the library">
+          ← Library
+        </button>
+        <span className="rsx-seg" role="group" aria-label="Read layout">
+          {(['split', 'reader', 'notes'] as const).map((m) => (
+            <button key={m} className={mode === m ? 'on' : ''} aria-pressed={mode === m} onClick={() => setReadMode(paper.id, m)}>
+              {m === 'split' ? 'Split' : m === 'reader' ? 'Reader only' : 'Notes only'}
+            </button>
+          ))}
+        </span>
+        <span className="rsx-read-title" title={paper.title}>
+          {paper.title}
+        </span>
+        <span className={`rsx-pill st-${paper.status}`}>{STATUS_LABEL[paper.status].split(' ·')[0]}</span>
+        <a className="rsx-reader-out" href={paper.pdfUrl ?? paper.absUrl} target="_blank" rel="noreferrer">
+          open PDF ↗
+        </a>
+        <button className="lrn-btn tiny" onClick={() => setReadMode(paper.id, 'off')} title="Leave Read mode (r or Esc)">
+          Close <kbd>r</kbd>
+        </button>
+      </div>
+      <div ref={splitRef} className="rsx-read-split" style={{ ['--split' as string]: `${pct}%` }}>
+        {mode !== 'notes' && (
+          <section className="rsx-read-pane" aria-label="Paper">
+            <ReaderPane paper={paper} state={sources} source={source} onSource={setSource} facets={facets} onFacets={setFacets} />
+            <div className="rsx-read-quick">
+              <HighlightAdd paper={paper} compact />
+            </div>
+          </section>
+        )}
+        {mode === 'split' && (
+          <div
+            className="rsx-read-divider"
+            role="separator"
+            aria-orientation="vertical"
+            aria-valuenow={pct}
+            aria-valuemin={25}
+            aria-valuemax={80}
+            aria-label="Resize reader and notes"
+            tabIndex={0}
+            onPointerDown={onDividerDown}
+            onKeyDown={onDividerKey}
+            onDoubleClick={() => setPrefs({ splitPct: 58 })}
+          />
+        )}
+        {mode !== 'reader' && <section className="rsx-read-notes" aria-label="Notes">{notesColumn}</section>}
+        {drag !== null && <div className="rsx-read-shield" />}
       </div>
     </div>
   );
@@ -358,14 +557,17 @@ function Cards({ paper }: { paper: Paper }) {
       parsed = offlineCards(paper);
       src = 'offline';
     }
-    setDrafts(parsed.map((d) => ({ ...d, origin: src })));
+    setDrafts(parsed.slice(0, Math.max(1, 5 - cards.length)).map((d) => ({ ...d, origin: src })));
     if (!parsed.length) toast.message('No numeric claims in the abstract to cloze — write these yourself.');
     setBusy(false);
   };
 
   return (
     <div className="rsx-cards">
-      {cards.length === 0 && <p className="lrn-empty">No cards yet. Two or three per paper: the claims you would cite.</p>}
+      {cards.length === 0 && (
+        <p className="lrn-empty">No cards yet. A few atomic cards per paper — about five at most: the claims you would cite.</p>
+      )}
+      {cards.length > 5 && <p className="lrn-dim">{cards.length} cards: past about five per paper, review time grows faster than what you keep.</p>}
       <ul className="rsx-card-list">
         {cards.map((c) => (
           <li key={c.id} className={c.suspended ? 'suspended' : ''}>
@@ -433,7 +635,7 @@ function Cards({ paper }: { paper: Paper }) {
         }}
       >
         <div className="rsx-form-row">
-          <Field label="Prompt" value={prompt} onChange={setPrompt} placeholder="What does SN-WER canonicalise to, and why?" />
+          <Field k="card-prompt" label="Prompt (c)" value={prompt} onChange={setPrompt} placeholder="What does SN-WER canonicalise to, and why?" />
           <Field label="Answer" value={answer} onChange={setAnswer} />
         </div>
         <Field
@@ -459,6 +661,8 @@ function Cards({ paper }: { paper: Paper }) {
 
 function Tools({ paper, cardCount }: { paper: Paper; cardCount: number }) {
   const markEvidenceLogged = useResearch((s) => s.markEvidenceLogged);
+  const allHighlights = useResearch((s) => s.highlights);
+  const allCards = useResearch((s) => s.cards);
   const skills = useLearning((s) => s.skills);
   const addEvidence = useLearning((s) => s.addEvidence);
   const [logging, setLogging] = useState(false);
@@ -470,7 +674,11 @@ function Tools({ paper, cardCount }: { paper: Paper; cardCount: number }) {
   const [learned, setLearned] = useState(paper.note.delta || paper.note.fiveCs.contributions);
 
   const canLog = ['pass2', 'pass3', 'done'].includes(paper.status);
-  const md = () => toContentMarkdown(paper);
+  const md = () =>
+    toContentMarkdown(paper, {
+      highlights: allHighlights.filter((h) => h.paperId === paper.id),
+      cards: allCards.filter((c) => c.paperId === paper.id),
+    });
 
   const logEvidence = () => {
     addEvidence({
@@ -510,7 +718,7 @@ function Tools({ paper, cardCount }: { paper: Paper; cardCount: number }) {
             else download(`${contentSlug(paper)}.md`, md(), 'text/markdown');
           }}
         >
-          Export as content note
+          Export note as Markdown
         </button>
         <button className="lrn-btn tiny" onClick={() => download(`${contentSlug(paper)}.md`, md(), 'text/markdown')}>
           .md ↓
@@ -580,16 +788,23 @@ function Tools({ paper, cardCount }: { paper: Paper; cardCount: number }) {
 function Connections({ paper, onOpenPaper }: { paper: Paper; onOpenPaper: (id: string) => void }) {
   const papers = useResearch((s) => s.papers);
   const savePaper = useResearch((s) => s.savePaper);
+  const patchPaper = useResearch((s) => s.patchPaper);
   const [graph, setGraph] = useState<GraphResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [related, setRelated] = useState<RelatedResponse | null>(null);
   const gid = paper.arxivId ? `arXiv:${paper.arxivId}` : paper.doi ? `DOI:${paper.doi}` : '';
   const saved = new Set(papers.map((p) => p.id));
 
   const load = async () => {
     if (graph || loading || !gid) return;
     setLoading(true);
-    setGraph(await fetchGraph(gid));
+    // two routes, so a 429 on one does not blank the other
+    const [g, r] = await Promise.all([fetchGraph(gid), fetchRelated(gid)]);
+    setGraph(g);
+    setRelated(r);
     setLoading(false);
+    const n = g.paper?.citationCount;
+    if (typeof n === 'number' && n !== paper.citationCount) patchPaper(paper.id, { citationCount: n });
   };
 
   const saveRef = async (ref: GraphRef) => {
@@ -647,6 +862,7 @@ function Connections({ paper, onOpenPaper }: { paper: Paper; onOpenPaper: (id: s
                 </a>
                 <span className="lrn-dim">
                   {r.year ? ` · ${r.year}` : ''}
+                  {'venue' in r && typeof r.venue === 'string' && r.venue ? ` · ${r.venue}` : ''}
                   {typeof r.citationCount === 'number' ? ` · ${r.citationCount} cites` : ''}
                 </span>
                 {id &&
@@ -679,7 +895,7 @@ function Connections({ paper, onOpenPaper }: { paper: Paper; onOpenPaper: (id: s
 
   return (
     <details className="rsx-group rsx-conn" onToggle={(e) => (e.currentTarget as HTMLDetailsElement).open && void load()}>
-      <summary>Connections — references, citations, recommendations</summary>
+      <summary>Connections — prior work, derivative work, recommended</summary>
       {!gid ? (
         <p className="lrn-empty">
           No arXiv id or DOI to look up.{' '}
@@ -688,7 +904,7 @@ function Connections({ paper, onOpenPaper }: { paper: Paper; onOpenPaper: (id: s
           </a>
         </p>
       ) : loading ? (
-        <p className="lrn-empty">Asking Semantic Scholar… (four calls, one after another)</p>
+        <p className="lrn-empty">Asking Semantic Scholar… (graph and recommendations)</p>
       ) : graph ? (
         <>
           {(!graph.available || graph.reason) && fallback}
@@ -705,9 +921,24 @@ function Connections({ paper, onOpenPaper }: { paper: Paper; onOpenPaper: (id: s
               )}
             </p>
           )}
-          {list('References', graph.references)}
-          {list('Cited by', graph.citations)}
-          {list('Recommended', graph.recommendations)}
+          {list('Prior work — references', graph.references)}
+          {list('Derivative work — cited by', graph.citations)}
+          {related &&
+            (related.available ? (
+              related.items.length ? (
+                list('Recommended — similar papers', related.items)
+              ) : (
+                <p className="lrn-dim">Semantic Scholar has no recommendations for this paper.</p>
+              )
+            ) : (
+              <p className="rsx-error">
+                Recommendations unavailable
+                {related.reason === 'rate-limited' ? ' (Semantic Scholar is rate-limiting; set S2_API_KEY)' : related.reason === 'not-found' ? ' (not indexed yet)' : ' (Semantic Scholar unreachable)'}.{' '}
+                <a href={s2Link(paper)} target="_blank" rel="noreferrer">
+                  find similar on semanticscholar.org ↗
+                </a>
+              </p>
+            ))}
         </>
       ) : null}
     </details>

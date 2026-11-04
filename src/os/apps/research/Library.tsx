@@ -1,19 +1,40 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { STATUS_ORDER, STATUS_SHORT, type ReadStatus } from '@/research/types';
 import { useResearch } from '@/research/store';
 import { isoDay } from '@/research/schedule';
 import { toBibtexAll } from '@/research/bibtex';
 import { download } from '@/research/client';
-import { PaperDetail } from './PaperDetail';
+import { PaperDetail, isTyping, type KeyHandler } from './PaperDetail';
+import { Matrix } from './Matrix';
+
+export type LibraryView = 'list' | 'matrix';
+export interface LibraryFilter {
+  rq?: string;
+  status?: string;
+  nonce: number;
+}
 
 /**
  * Library: filterable list on the left, the open paper on the right. Under
  * 640px of window width (a phone, or a narrow window) it is one pane at a time.
  */
-export function Library({ openId, onOpen }: { openId: string | null; onOpen: (id: string | null) => void }) {
+export function Library({
+  openId,
+  onOpen,
+  view,
+  onView,
+  filter,
+}: {
+  openId: string | null;
+  onOpen: (id: string | null) => void;
+  view: LibraryView;
+  onView: (v: LibraryView) => void;
+  /** set from the Today tab (coverage grid, inbox) */
+  filter?: LibraryFilter | null;
+}) {
   const papers = useResearch((s) => s.papers);
   const cards = useResearch((s) => s.cards);
   const rqs = useResearch((s) => s.rqs);
@@ -25,6 +46,16 @@ export function Library({ openId, onOpen }: { openId: string | null; onOpen: (id
   const [tag, setTag] = useState('');
   const [text, setText] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const keysRef = useRef<KeyHandler | null>(null);
+  const readMode = useResearch((s) => (openId ? s.prefs.readMode[openId] ?? 'off' : 'off'));
+
+  useEffect(() => {
+    if (!filter) return;
+    setRq(filter.rq ?? '');
+    setStatus((filter.status as typeof status) ?? 'all');
+    setText('');
+    setTag('');
+  }, [filter]);
 
   const today = isoDay();
   const cardStats = useMemo(() => {
@@ -63,6 +94,50 @@ export function Library({ openId, onOpen }: { openId: string | null; onOpen: (id
   }, [papers, status, rq, tag, text]);
 
   const open = openId ? papers.find((p) => p.id === openId) : undefined;
+  const reading = !!open && readMode !== 'off';
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // take focus when a paper opens from elsewhere (Today, Review), so its keys work at once
+  useEffect(() => {
+    const a = document.activeElement;
+    if (openId && rootRef.current && (!a || a === document.body || !rootRef.current.contains(a))) rootRef.current.focus({ preventScroll: true });
+  }, [openId]);
+
+  // j/k walk the filtered list; everything else goes to the open paper
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (view !== 'list') return;
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target) && (e.key === 'j' || e.key === 'k')) {
+      if (!filtered.length) return;
+      const i = filtered.findIndex((p) => p.id === openId);
+      const next = e.key === 'j' ? (i < 0 ? 0 : Math.min(filtered.length - 1, i + 1)) : i < 0 ? 0 : Math.max(0, i - 1);
+      onOpen(filtered[next].id);
+      e.preventDefault();
+      e.stopPropagation();
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[data-paper-row="${CSS.escape(filtered[next].id)}"]`)?.scrollIntoView({ block: 'nearest' }),
+      );
+      return;
+    }
+    if (open && keysRef.current?.(e)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  if (view === 'matrix') {
+    return (
+      <div className="rsx-lib-matrix">
+        <ViewToggle view={view} onView={onView} />
+        <Matrix
+          papers={papers}
+          onOpen={(id) => {
+            onOpen(id);
+            onView('list');
+          }}
+        />
+      </div>
+    );
+  }
 
   const onImport = async (file: File) => {
     const r = importJson(await file.text());
@@ -71,8 +146,9 @@ export function Library({ openId, onOpen }: { openId: string | null; onOpen: (id
   };
 
   return (
-    <div className={'rsx-lib' + (open ? ' has-detail' : '')}>
+    <div className={'rsx-lib' + (open ? ' has-detail' : '') + (reading ? ' reading' : '')} onKeyDown={onKeyDown} ref={rootRef} tabIndex={-1}>
       <section className="rsx-lib-list" aria-label="Library">
+        <ViewToggle view={view} onView={onView} />
         <div className="rsx-filters">
           <input
             value={text}
@@ -144,7 +220,11 @@ export function Library({ openId, onOpen }: { openId: string | null; onOpen: (id
               const st = cardStats.get(p.id);
               return (
                 <li key={p.id}>
-                  <button className={'rsx-lib-row' + (p.id === openId ? ' open' : '')} onClick={() => onOpen(p.id)}>
+                  <button
+                    className={'rsx-lib-row' + (p.id === openId ? ' open' : '')}
+                    onClick={() => onOpen(p.id)}
+                    data-paper-row={p.id}
+                  >
                     <span className={`rsx-pill st-${p.status}`}>{STATUS_SHORT[p.status]}</span>
                     <span className="rsx-lib-title">{p.title}</span>
                     <span className="rsx-lib-meta">
@@ -166,11 +246,27 @@ export function Library({ openId, onOpen }: { openId: string | null; onOpen: (id
 
       <section className="rsx-lib-detail" aria-label="Paper">
         {open ? (
-          <PaperDetail key={open.id} paper={open} onBack={() => onOpen(null)} onOpenPaper={onOpen} />
+          <PaperDetail key={open.id} paper={open} onBack={() => onOpen(null)} onOpenPaper={onOpen} keysRef={keysRef} />
         ) : (
-          <p className="lrn-empty rsx-pick">Pick a paper to read, annotate and write recall cards for.</p>
+          <p className="lrn-empty rsx-pick">
+            Pick a paper to read, annotate and write recall cards for. <kbd>j</kbd>/<kbd>k</kbd> walk the list, <kbd>?</kbd> lists
+            every shortcut.
+          </p>
         )}
       </section>
     </div>
+  );
+}
+
+function ViewToggle({ view, onView }: { view: LibraryView; onView: (v: LibraryView) => void }) {
+  return (
+    <span className="rsx-seg rsx-view-toggle" role="group" aria-label="Library view">
+      <button className={view === 'list' ? 'on' : ''} aria-pressed={view === 'list'} onClick={() => onView('list')}>
+        List
+      </button>
+      <button className={view === 'matrix' ? 'on' : ''} aria-pressed={view === 'matrix'} onClick={() => onView('matrix')}>
+        Matrix
+      </button>
+    </span>
   );
 }
