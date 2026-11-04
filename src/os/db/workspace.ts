@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import type { PGlite } from '@electric-sql/pglite';
-import { MIGRATIONS, SEED } from './schema';
+import { MIGRATIONS } from './schema';
 
 /**
  * The Elephant — a real PostgreSQL 18 (PGlite, WebAssembly) living in the
@@ -10,7 +10,8 @@ import { MIGRATIONS, SEED } from './schema';
  *
  * Nothing here runs until something asks for the database: the ~3 MB wasm is a
  * dynamic import, so it never lands in the main bundle and a visitor who never
- * opens psql/msfconsole/nmap never downloads it.
+ * opens psql never downloads it. The research tables are filled by the mirror
+ * (./mirror.ts) from the Research app's local store.
  */
 
 export const DATA_DIR = 'idb://kali-workspace';
@@ -115,16 +116,13 @@ export function dbIfReady(): Promise<PGlite> | null {
   return status.phase === 'ready' ? dbPromise : null;
 }
 
-/** Idempotent schema + first-run seed. Returns true when the seed ran. */
+/** Idempotent schema. Returns true on the first boot of this schema version. */
 async function migrate(db: PGlite): Promise<boolean> {
   await db.exec(MIGRATIONS);
-  const ws = await db.query<{ id: number }>(
-    `insert into workspaces (name) values ('portfolio') on conflict (name) do nothing returning id`,
-  );
-  if (ws.rows.length === 0) return false;
-  await db.exec(SEED);
-  await db.query(`insert into events (kind, detail) values ('db.init', $1)`, [
-    { note: 'schema created and lab data seeded', dataDir: DATA_DIR },
+  const seen = await db.query<{ n: number }>(`select count(*)::int as n from events where kind = 'db.init.research'`);
+  if ((seen.rows[0]?.n ?? 0) > 0) return false;
+  await db.query(`insert into events (kind, detail) values ('db.init.research', $1)`, [
+    { note: 'research schema created; tables mirror the Research app', dataDir: DATA_DIR },
   ]);
   return true;
 }
