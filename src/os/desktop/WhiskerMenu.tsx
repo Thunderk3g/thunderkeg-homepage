@@ -31,9 +31,9 @@ const ALL = 'All Applications';
 const FAVORITE_IDS = ['terminal', 'root-terminal', 'browser', 'research', 'learning', 'files', 'code-editor', 'vm', 'psql'];
 const WEB_LINKS = [
   { key: 'link-kali', title: 'Kali Linux', description: 'kali.org', url: 'https://www.kali.org/' },
-  { key: 'link-tools', title: 'Kali Tools', description: 'Tool documentation', url: 'https://www.kali.org/tools/' },
   { key: 'link-docs', title: 'Kali Docs', description: 'Official documentation', url: 'https://www.kali.org/docs/' },
-  { key: 'link-edb', title: 'Exploit-DB', description: 'Exploit database archive', url: 'https://www.exploit-db.com/' },
+  { key: 'link-arxiv', title: 'arXiv', description: 'Open-access preprints', url: 'https://arxiv.org/' },
+  { key: 'link-s2', title: 'Semantic Scholar', description: 'Paper search and citation graph', url: 'https://www.semanticscholar.org/' },
 ];
 
 /** subsequence fuzzy score; 0 = no match, higher = better */
