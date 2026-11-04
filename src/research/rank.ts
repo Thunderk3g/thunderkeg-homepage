@@ -44,3 +44,34 @@ export function queryKeywords(q: string): string[] {
     .filter((w) => w.length >= 3);
   return [...new Set([...phrases, ...words])];
 }
+
+/* ───────────────────────── explicit feedback ───────────────────────── */
+
+const STOP = new Set(
+  'about above after again against among based being between both could does doing during each from have having into more most other over same should some such than that their them then there these they this those through under until very what when where which while with would your using towards via without large language model models'.split(' '),
+);
+
+/** What a rating remembers about a paper: the keywords it matched plus its title's content words. */
+export function feedbackKeywords(hit: Pick<PaperHit, 'title'>, matched: string[]): string[] {
+  const words = hit.title
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}-]+/u)
+    .filter((w) => w.length >= 5 && !STOP.has(w));
+  return [...new Set([...matched, ...words])].slice(0, 20);
+}
+
+/** Per-keyword weights learned from ± ratings (Scholar Inbox-style, but just counts). */
+export function feedbackWeights(ratings: Record<string, { r: 1 | -1; keywords: string[] }>): Map<string, number> {
+  const w = new Map<string, number>();
+  for (const { r, keywords } of Object.values(ratings)) for (const k of keywords) w.set(k, (w.get(k) ?? 0) + r);
+  return w;
+}
+
+/** A bounded nudge: ±2 per net-rated keyword present, clipped to ±8. */
+export function feedbackBoost(hit: Pick<PaperHit, 'title' | 'abstract'>, weights: Map<string, number>): number {
+  if (!weights.size) return 0;
+  const text = `${hit.title} ${hit.abstract}`.toLowerCase();
+  let b = 0;
+  for (const [k, v] of weights) if (v && text.includes(k)) b += Math.sign(v) * Math.min(2, Math.abs(v));
+  return Math.max(-8, Math.min(8, b));
+}
