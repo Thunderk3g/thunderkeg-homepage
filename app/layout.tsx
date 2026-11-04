@@ -19,7 +19,7 @@ const ubuntuMono = Ubuntu_Mono({
 export const metadata: Metadata = {
   title: 'Diwakar Adhikari — Kali Linux Portfolio',
   description:
-    'AI/ML Lead Engineer. My portfolio rendered as a fully interactive Kali Linux desktop — terminal, security tools, and a multiplayer games arcade. Plain résumé at /resume.',
+    'Technical Lead — AI Engineering. My portfolio rendered as a fully interactive Kali Linux desktop — terminal, security tools, and a multiplayer games arcade. Plain résumé at /resume.',
   authors: [{ name: 'Diwakar Adhikari', url: 'https://github.com/Thunderk3g' }],
   openGraph: {
     type: 'website',

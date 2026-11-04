@@ -4,7 +4,7 @@ import { awards, education, profile, projects, research, roles, skills } from '@
 export const metadata: Metadata = {
   title: 'Résumé — Diwakar Adhikari',
   description:
-    'Diwakar Adhikari — Technical Lead, AI Engineering at Bajaj Life Insurance. Retrieval-grounded compliance AI, speech and call intelligence, evaluation methodology.',
+    'Diwakar Adhikari — research-track CV: AI & Law (retrieval-grounded compliance, legal knowledge representation) and code-switched speech evaluation.',
 };
 
 export default function ResumePage() {
@@ -37,6 +37,35 @@ export default function ResumePage() {
           </p>
         ))}
 
+        <h2>Research interests</h2>
+        <ul>
+          {research.directions.map((d, i) => (
+            <li key={i}>{d}</li>
+          ))}
+        </ul>
+
+        <h2>Research</h2>
+        {[...research.inPreparation, ...research.published].map((r) => (
+          <section key={r.title} className="doc-project">
+            <h3>{r.title}</h3>
+            <p className="doc-meta">{r.venue}</p>
+            <p className="doc-para">{r.summary}</p>
+          </section>
+        ))}
+        <p className="doc-para">{research.track}</p>
+        <p className="doc-para">
+          Longer notes and a reading shelf live in <a href="/writing">/writing</a>.
+        </p>
+
+        <h2>Education</h2>
+        <ul>
+          {education.map((e) => (
+            <li key={e.degree}>
+              <strong>{e.degree}</strong> — {e.org} · {e.period} · {e.detail}
+            </li>
+          ))}
+        </ul>
+
         <h2>Experience</h2>
         {roles.map((r) => (
           <section key={r.id} className="doc-role-block">
@@ -62,31 +91,19 @@ export default function ResumePage() {
         {projects.map((p) => (
           <section key={p.name} className="doc-project">
             <h3>
-              {p.name} <span className="doc-kind">— {p.kind}</span>
+              {p.url ? (
+                <a href={p.url} target="_blank" rel="noreferrer">
+                  {p.name}
+                </a>
+              ) : (
+                p.name
+              )}{' '}
+              <span className="doc-kind">— {p.kind}</span>
             </h3>
             <p className="doc-para">{p.blurb}</p>
             {p.caveat && <p className="doc-caveat">{p.caveat}</p>}
           </section>
         ))}
-
-        <h2>Research</h2>
-        {[...research.inPreparation, ...research.published].map((r) => (
-          <section key={r.title} className="doc-project">
-            <h3>{r.title}</h3>
-            <p className="doc-meta">{r.venue}</p>
-            <p className="doc-para">{r.summary}</p>
-          </section>
-        ))}
-        <h4>Research directions</h4>
-        <ul>
-          {research.directions.map((d, i) => (
-            <li key={i}>{d}</li>
-          ))}
-        </ul>
-        <p className="doc-para">{research.track}</p>
-        <p className="doc-para">
-          Longer notes and a reading shelf live in <a href="/writing">/writing</a>.
-        </p>
 
         <h2>Technical skills</h2>
         <dl className="doc-skills">
@@ -97,15 +114,6 @@ export default function ResumePage() {
             </div>
           ))}
         </dl>
-
-        <h2>Education</h2>
-        <ul>
-          {education.map((e) => (
-            <li key={e.degree}>
-              <strong>{e.degree}</strong> — {e.org} · {e.period} · {e.detail}
-            </li>
-          ))}
-        </ul>
 
         <h2>Awards</h2>
         <ul>
