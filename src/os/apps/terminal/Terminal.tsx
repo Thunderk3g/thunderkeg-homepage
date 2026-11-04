@@ -40,7 +40,7 @@ function PromptLine({ path, children }: { path: string; children?: React.ReactNo
   );
 }
 
-function TerminalApp({ windowId }: AppProps) {
+function TerminalApp({ windowId, args }: AppProps) {
   const fs = useOS((s) => s.fs);
   const user = useOS((s) => s.user);
   const host = useOS((s) => s.host);
@@ -72,6 +72,8 @@ function TerminalApp({ windowId }: AppProps) {
       },
       onClear: () => setBlocks([]),
     });
+    const cwd = typeof args?.cwd === 'string' ? fs.resolve(args.cwd as string) : null;
+    if (cwd && fs.isDir(cwd)) s.api.setCwd(cwd);
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
