@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
-import { useOS } from '../../store';
+import { useOS, isUndercover } from '../../store';
 import { Shell } from './shell';
 import { commandMap } from './commands';
 import { appLaunchCommands } from '../../registry';
@@ -22,6 +22,19 @@ const WELCOME = [
 
 /** Two-line Kali prompt; `children` (the command, or the live input) sits after the `$`. */
 function PromptLine({ path, children }: { path: string; children?: React.ReactNode }) {
+  // Kali Undercover swaps the two-line prompt for a plain one-liner
+  const plain = useOS(isUndercover);
+  if (plain) {
+    return (
+      <div className="kos-term-prompt plain">
+        <div className="kos-term-cmdline">
+          <span className="p-user">kali@kali</span>:<span className="p-path">{path}</span>
+          <span className="p-dollar">$</span>
+          {children}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="kos-term-prompt">
       <div>
