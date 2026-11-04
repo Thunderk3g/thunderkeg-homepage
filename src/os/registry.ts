@@ -1,5 +1,6 @@
 import type { AppDefinition, Command } from './types';
 import { terminalApp } from './apps/terminal/Terminal';
+import { vmApp } from './apps/vm/VirtualMachine';
 import { browserApp } from './apps/browser/Browser';
 import { fileManagerApp } from './apps/files/FileManager';
 import { textEditorApp } from './apps/editor/TextEditor';
@@ -19,10 +20,12 @@ import { mp3App } from './apps/media/Mp3';
 import { vlcApp } from './apps/media/Vlc';
 import { doomApp } from './apps/games/Doom';
 import { toolApps } from './apps/tools';
+import { psqlApp } from './apps/psql/Psql';
 
 /** Every registered application. */
 export const apps: AppDefinition[] = [
   terminalApp,
+  vmApp,
   browserApp,
   aiNewsApp,
   researchApp,
@@ -41,6 +44,7 @@ export const apps: AppDefinition[] = [
   mp3App,
   vlcApp,
   doomApp,
+  psqlApp,
   ...toolApps,
 ];
 

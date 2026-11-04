@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
-import { useOS } from '../../store';
+import { useOS, isUndercover } from '../../store';
 import { Shell } from './shell';
 import { commandMap } from './commands';
 import { appLaunchCommands } from '../../registry';
@@ -22,6 +22,19 @@ const WELCOME = [
 
 /** Two-line Kali prompt; `children` (the command, or the live input) sits after the `$`. */
 function PromptLine({ path, children }: { path: string; children?: React.ReactNode }) {
+  // Kali Undercover swaps the two-line prompt for a plain one-liner
+  const plain = useOS(isUndercover);
+  if (plain) {
+    return (
+      <div className="kos-term-prompt plain">
+        <div className="kos-term-cmdline">
+          <span className="p-user">kali@kali</span>:<span className="p-path">{path}</span>
+          <span className="p-dollar">$</span>
+          {children}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="kos-term-prompt">
       <div>
@@ -40,7 +53,7 @@ function PromptLine({ path, children }: { path: string; children?: React.ReactNo
   );
 }
 
-function TerminalApp({ windowId }: AppProps) {
+function TerminalApp({ windowId, args }: AppProps) {
   const fs = useOS((s) => s.fs);
   const user = useOS((s) => s.user);
   const host = useOS((s) => s.host);
@@ -72,6 +85,8 @@ function TerminalApp({ windowId }: AppProps) {
       },
       onClear: () => setBlocks([]),
     });
+    const cwd = typeof args?.cwd === 'string' ? fs.resolve(args.cwd as string) : null;
+    if (cwd && fs.isDir(cwd)) s.api.setCwd(cwd);
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

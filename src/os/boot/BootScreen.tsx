@@ -2,18 +2,25 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useOS } from '../store';
+import { KALI_MARK_PATH } from '../icons';
+import { prefersReducedMotion } from '../desktop/layout';
 
+/**
+ * Boot: a Plymouth-style splash (the mark's outline draws itself and fills in
+ * over a thin progress bar), then the systemd log, then the LightDM greeter.
+ */
 const LINES = [
-  'GRUB loading Kali GNU/Linux …',
-  '[    0.000000] Linux version 6.8.0-kali3-amd64',
-  '[  OK  ] Reached target Basic System.',
-  '[  OK  ] Started D-Bus System Message Bus.',
-  '[  OK  ] Started NetworkManager.',
-  '[  OK  ] Mounted /home.',
-  '[  OK  ] Started Realtime multiplayer bridge.',
-  '[  OK  ] Reached target Graphical Interface.',
-  '[  OK  ] Started Light Display Manager.',
-  'starting Xfce session …',
+  '[    0.000000] Linux version 6.8.11-amd64 (devel@kali.org) (gcc 13.2.0) #1 SMP PREEMPT_DYNAMIC',
+  '[    0.412337] ACPI: PM-Timer IO Port: 0x608',
+  '[  OK  ] Started systemd-journald.service - Journal Service.',
+  '[  OK  ] Reached target local-fs.target - Local File Systems.',
+  '[  OK  ] Started dbus.service - D-Bus System Message Bus.',
+  '[  OK  ] Started NetworkManager.service - Network Manager.',
+  '[  OK  ] Mounted home.mount - /home.',
+  '[  OK  ] Started realtime-bridge.service - Multiplayer presence.',
+  '[  OK  ] Started postgresql.service - PostgreSQL RDBMS.',
+  '[  OK  ] Reached target graphical.target - Graphical Interface.',
+  '[  OK  ] Started lightdm.service - Light Display Manager.',
 ];
 
 /** The boot log is a one-time flourish: replay it at most once per browser session. */
@@ -21,6 +28,7 @@ const BOOTED_KEY = 'kos-booted';
 
 function alreadyBooted(): boolean {
   try {
+    if (new URLSearchParams(window.location.search).get('boot') === 'skip') return true;
     return sessionStorage.getItem(BOOTED_KEY) === '1';
   } catch {
     return false;
@@ -37,68 +45,79 @@ function markBooted() {
 
 export function BootScreen() {
   const finishBoot = useOS((s) => s.finishBoot);
-  const reduced = useOS((s) => s.settings.reducedMotion);
+  const login = useOS((s) => s.login);
+  const bootNonce = useOS((s) => s.bootNonce);
+  const reducedSetting = useOS((s) => s.settings.reducedMotion);
+  const [stage, setStage] = useState<'splash' | 'log'>('splash');
   const [shown, setShown] = useState(0);
   const done = useRef(false);
-  // read once on first render, so a dev-mode effect re-run doesn't see its own flag
-  const skip = useRef(alreadyBooted());
+  // read once on first render, so a dev-mode effect re-run doesn't see its own flag;
+  // a Restart (bootNonce > 0) always replays
+  const skip = useRef(bootNonce === 0 && alreadyBooted());
+  const reduced = reducedSetting || prefersReducedMotion();
+
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    finishBoot();
+  };
 
   useEffect(() => {
     if (skip.current) {
-      finishBoot();
+      login();
       return;
     }
     markBooted();
-    const step = reduced ? 40 : 170;
+    const t = setTimeout(() => setStage('log'), reduced ? 250 : 1500);
+    return () => clearTimeout(t);
+  }, [login, reduced]);
+
+  useEffect(() => {
+    if (stage !== 'log' || skip.current) return;
+    const step = reduced ? 25 : 85;
     const t = setInterval(() => {
       setShown((n) => {
         if (n >= LINES.length) {
           clearInterval(t);
-          if (!done.current) {
-            done.current = true;
-            setTimeout(finishBoot, reduced ? 150 : 600);
-          }
+          setTimeout(finish, reduced ? 100 : 450);
           return n;
         }
         return n + 1;
       });
     }, step);
     return () => clearInterval(t);
-  }, [finishBoot, reduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, reduced]);
 
   if (skip.current) return null;
 
   return (
-    <div className="kos-boot" onClick={finishBoot} title="click to skip">
-      <pre className="kos-boot-logo">{KALI_LOGO}</pre>
-      <div className="kos-boot-log">
-        {LINES.slice(0, shown).map((l, i) => (
-          <div key={i} className={l.includes('[  OK  ]') ? 'ok' : ''}>
-            {l.includes('[  OK  ]') ? (
-              <>
-                <span className="kos-boot-ok">[  OK  ]</span>
-                {l.replace('[  OK  ]', '')}
-              </>
-            ) : (
-              l
-            )}
+    <div className={'kos-boot stage-' + stage} onClick={finish} title="click to skip">
+      {stage === 'splash' ? (
+        <div className="kos-splash" aria-label="Starting">
+          <svg className="kos-splash-mark" viewBox="0 0 24 24" width="96" height="96" aria-hidden="true">
+            <path className="kos-splash-fill" d={KALI_MARK_PATH} />
+            <path className="kos-splash-line" d={KALI_MARK_PATH} pathLength={1} />
+          </svg>
+          <div className="kos-splash-bar">
+            <span />
           </div>
-        ))}
-        <span className="kos-boot-cursor">▋</span>
-      </div>
-      <div className="kos-boot-skip">click anywhere to skip</div>
+        </div>
+      ) : (
+        <div className="kos-boot-log">
+          {LINES.slice(0, shown).map((l, i) =>
+            l.startsWith('[  OK  ]') ? (
+              <div key={i} className="ok">
+                [<span className="kos-boot-ok">  OK  </span>]{l.slice(8)}
+              </div>
+            ) : (
+              <div key={i}>{l}</div>
+            ),
+          )}
+          <span className="kos-boot-cursor">_</span>
+        </div>
+      )}
+      <div className="kos-boot-skip">click to skip</div>
     </div>
   );
 }
-
-const KALI_LOGO = String.raw`
-      ..,;:cc:.
-   .;cccccccc:'.        K A L I
- .:ccccccccccc:.        ---------
-.ccccc;'  ':ccc.        GNU/Linux Rolling
-ccc'        'cc.        web edition
-'cc.        .cc'        portfolio of
- ':ccccccccccc:'        Diwakar Adhikari
-   ':cccccccc;'
-      '::::'
-`;

@@ -1,0 +1,122 @@
+/* psql — PostgreSQL 18 (PGlite). Uses the OS theme tokens so every theme applies. */
+.kos-psql {
+  position: relative; display: flex; width: 100%; height: 100%; min-height: 0;
+  background: var(--kos-bg); color: var(--kos-text);
+  font-family: var(--font-ubuntu), system-ui, sans-serif; font-size: 13px;
+}
+.kos-psql button { font: inherit; color: inherit; cursor: pointer; }
+.kos-psql button:disabled { cursor: default; opacity: 0.5; }
+.kos-psql code, .kos-psql kbd, .kos-psql pre { font-family: var(--font-mono), monospace; }
+
+/* sidebar */
+.kos-psql-side {
+  width: 210px; flex: 0 0 210px; display: flex; flex-direction: column; min-height: 0;
+  background: var(--kos-panel); border-right: 1px solid var(--kos-border);
+}
+.kos-psql-side-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--kos-dim);
+  border-bottom: 1px solid var(--kos-border);
+}
+.kos-psql-icon-btn { border: 0; background: transparent; padding: 2px 4px; border-radius: 3px; color: var(--kos-dim); display: grid; place-items: center; }
+.kos-psql-icon-btn:hover { color: var(--kos-text); background: var(--kos-panel-2); }
+.kos-psql-tables { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1; }
+.kos-psql-table { display: flex; align-items: center; gap: 2px; padding: 0 8px 0 4px; }
+.kos-psql-table:hover { background: var(--kos-panel-2); }
+.kos-psql-caret { border: 0; background: transparent; width: 18px; color: var(--kos-dim); font-size: 10px; padding: 4px 0; }
+.kos-psql-tname {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; padding: 4px 2px;
+  font-family: var(--font-mono), monospace; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kos-psql-tname:hover { color: var(--kos-accent); }
+.kos-psql-count {
+  font-family: var(--font-mono), monospace; font-size: 11px; color: var(--kos-dim);
+  background: var(--kos-panel-2); border-radius: 8px; padding: 0 6px; min-width: 18px; text-align: center;
+}
+.kos-psql-cols { list-style: none; margin: 0 0 4px; padding: 0 8px 0 26px; }
+.kos-psql-cols li {
+  display: flex; justify-content: space-between; gap: 6px; padding: 1px 0;
+  font-family: var(--font-mono), monospace; font-size: 11px; border-left: 1px solid var(--kos-border); padding-left: 8px;
+}
+.kos-psql-ctype { color: var(--kos-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kos-psql-side-foot { padding: 8px 10px; font-size: 11px; line-height: 1.45; color: var(--kos-dim); border-top: 1px solid var(--kos-border); }
+
+/* main column */
+.kos-psql-main { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.kos-psql-chips {
+  display: flex; align-items: center; gap: 6px; padding: 6px 10px; overflow-x: auto; flex-wrap: nowrap;
+  border-bottom: 1px solid var(--kos-border); background: var(--kos-panel);
+}
+.kos-psql-chips-label { font-size: 11px; color: var(--kos-dim); white-space: nowrap; margin-right: 2px; }
+.kos-psql-chip {
+  white-space: nowrap; border: 1px solid var(--kos-border); background: var(--kos-panel-2);
+  border-radius: 12px; padding: 2px 10px; font-size: 12px;
+}
+.kos-psql-chip:hover { border-color: var(--kos-accent); color: var(--kos-accent); }
+
+.kos-psql-editor {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr auto;
+  border-bottom: 1px solid var(--kos-border); background: var(--kos-bg);
+  height: 34%; min-height: 96px; max-height: 50%;
+}
+.kos-psql-prompt { padding: 8px 0 0 10px; font-family: var(--font-mono), monospace; font-size: 12.5px; color: var(--kos-good); user-select: none; }
+.kos-psql-sql {
+  resize: none; border: 0; outline: none; background: transparent; color: var(--kos-text);
+  font-family: var(--font-mono), monospace; font-size: 12.5px; line-height: 1.55; padding: 8px 10px; min-height: 0;
+  caret-color: var(--kos-accent); tab-size: 2;
+}
+.kos-psql-actions { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: flex-end; padding: 0 8px 6px; }
+.kos-psql-run, .kos-psql-btn {
+  border: 1px solid var(--kos-border); background: var(--kos-panel-2); border-radius: 4px; padding: 3px 10px; font-size: 12px;
+}
+.kos-psql-run { background: var(--kos-accent); color: var(--kos-bg) !important; border-color: transparent; font-weight: 600; }
+.kos-psql-run kbd { font-size: 10px; opacity: 0.75; margin-left: 4px; font-weight: 400; }
+.kos-psql-btn:hover:not(:disabled) { border-color: var(--kos-accent); }
+
+.kos-psql-results { flex: 1; min-height: 0; overflow: auto; background: var(--kos-win); }
+.kos-psql-empty { padding: 16px; color: var(--kos-dim); }
+.kos-psql-empty code { color: var(--kos-text); }
+.kos-psql-text { margin: 0; padding: 10px 12px; font-size: 12.5px; white-space: pre-wrap; color: var(--kos-text); }
+.kos-psql-error { margin: 0; padding: 10px 12px; font-size: 12.5px; white-space: pre-wrap; color: #ff6b6b; }
+.kos-psql-grid-title { padding: 6px 10px; font-size: 12px; color: var(--kos-dim); }
+.kos-psql-grid { border-collapse: separate; border-spacing: 0; font-family: var(--font-mono), monospace; font-size: 12px; min-width: 100%; }
+.kos-psql-grid th {
+  position: sticky; top: 0; z-index: 1; text-align: left; font-weight: 600; white-space: nowrap;
+  background: var(--kos-panel); color: var(--kos-text); padding: 5px 10px;
+  border-bottom: 1px solid var(--kos-border); border-right: 1px solid var(--kos-border);
+}
+.kos-psql-grid td {
+  padding: 3px 10px; vertical-align: top; white-space: nowrap; max-width: 520px; overflow: hidden; text-overflow: ellipsis;
+  border-bottom: 1px solid color-mix(in srgb, var(--kos-border) 55%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--kos-border) 40%, transparent);
+}
+.kos-psql-grid tbody tr:hover td { background: color-mix(in srgb, var(--kos-accent) 8%, transparent); }
+.kos-psql-grid .kos-psql-rownum { color: var(--kos-dim); text-align: right; width: 1%; user-select: none; }
+.kos-psql-num { text-align: right; color: color-mix(in srgb, var(--kos-accent) 70%, var(--kos-text)); }
+.kos-psql-null { color: var(--kos-dim); opacity: 0.55; font-style: italic; }
+.kos-psql-json pre { margin: 0; font-size: 11.5px; white-space: pre; color: var(--kos-good); }
+.kos-psql-status {
+  padding: 3px 10px; font-family: var(--font-mono), monospace; font-size: 11.5px; color: var(--kos-dim);
+  border-top: 1px solid var(--kos-border); background: var(--kos-panel); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* boot overlay */
+.kos-psql-boot {
+  position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--kos-bg) 88%, transparent); backdrop-filter: blur(2px);
+}
+.kos-psql-boot-card {
+  width: min(420px, 90%); padding: 20px 22px; border: 1px solid var(--kos-border); border-radius: 8px;
+  background: var(--kos-panel); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+}
+.kos-psql-boot-logo { color: var(--kos-accent); }
+.kos-psql-boot-title { font-weight: 600; }
+.kos-psql-boot-ms { font-family: var(--font-mono), monospace; font-size: 22px; color: var(--kos-accent); }
+.kos-psql-boot-note { font-size: 12px; line-height: 1.5; color: var(--kos-dim); }
+.kos-psql-bar { width: 100%; height: 3px; background: var(--kos-panel-2); border-radius: 2px; overflow: hidden; }
+.kos-psql-bar span { display: block; width: 30%; height: 100%; background: var(--kos-accent); animation: kos-psql-slide 1.1s ease-in-out infinite; }
+@keyframes kos-psql-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+
+@media (max-width: 640px) {
+  .kos-psql-side { display: none; }
+}

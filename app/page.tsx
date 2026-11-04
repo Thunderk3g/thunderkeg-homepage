@@ -9,8 +9,8 @@ const KaliOS = dynamic(() => import('@/os/KaliOS'), {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0a0e14',
-        color: '#7aa2f7',
+        background: '#000',
+        color: '#5a6170',
         display: 'grid',
         placeItems: 'center',
         fontFamily: 'monospace',
