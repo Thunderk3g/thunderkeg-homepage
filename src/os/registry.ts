@@ -19,7 +19,6 @@ const OVERRIDES: Record<string, Partial<Pick<AppDefinition, 'category' | 'deskto
   research: { category: 'Research' },
   learning: { category: 'Research' },
   writing: { category: 'Research' },
-  ainews: { category: 'Research', desktop: false },
   psql: { category: 'Research' },
 };
 
@@ -40,7 +39,6 @@ export const apps: AppDefinition[] = [
   psqlApp,
   assistantApp,
   codeEditorApp,
-  aiNewsApp,
   settingsApp,
 ].map(withOverrides);
 

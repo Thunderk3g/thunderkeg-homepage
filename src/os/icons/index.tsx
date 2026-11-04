@@ -217,7 +217,6 @@ const GLYPHS: Record<string, Plate> = {
 
 /** registry ids and aliases → plate key */
 const ALIAS: Record<string, string> = {
-  ainews: 'news',
   'code-editor': 'text-editor',
   files: 'dolphin',
   vm: 'penguin',

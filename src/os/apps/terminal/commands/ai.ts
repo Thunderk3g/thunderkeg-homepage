@@ -18,8 +18,8 @@ const news: Command['run'] = async ({ args, shell }) => {
     return `usage: news [research|industry|community|open]`;
   }
   if (args[0] === 'open') {
-    shell.launch('ainews');
-    return 'opening AI Radar…';
+    shell.launch('research', { arg: 'radar' });
+    return 'opening Research → Radar…';
   }
 
   let data: NewsPayload;
