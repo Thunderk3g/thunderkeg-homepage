@@ -19,10 +19,10 @@ export function WelcomeCard() {
   const actions: { label: string; app: string; run: () => void }[] = [
     { label: 'Research', app: 'research', run: () => launch('research') },
     { label: 'Learning OS', app: 'learning', run: () => launch('learning') },
-    { label: 'About me', app: 'browser', run: () => launch('browser', { page: 'home' }) },
-    { label: 'Experience', app: 'file', run: () => launch('browser', { page: 'experience' }) },
     { label: 'Writing', app: 'writing', run: () => launch('writing') },
+    { label: 'Résumé', app: 'browser', run: () => launch('browser', { url: '/resume' }) },
     { label: 'Terminal', app: 'terminal', run: () => launch('terminal') },
+    { label: 'Linux VM', app: 'vm', run: () => launch('vm') },
   ];
 
   const uptimeMin = Math.max(1, Math.round(performance.now() / 60000));
