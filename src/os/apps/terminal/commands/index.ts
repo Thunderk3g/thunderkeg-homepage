@@ -6,6 +6,8 @@ import { pdfCommands } from './pdf';
 import { writingCommands } from './writing';
 import { researchCommands } from './research';
 import { dbCommands } from './db';
+import { vmCommands } from './vm';
+import { undercoverCommands } from './undercover';
 
 /** Master list of terminal commands. Fan-out command groups land in ./extra. */
 const baseCommands: Command[] = [
@@ -16,6 +18,8 @@ const baseCommands: Command[] = [
   ...writingCommands,
   ...researchCommands,
   ...dbCommands,
+  ...vmCommands,
+  ...undercoverCommands,
 ];
 
 const helpCommand: Command = {

@@ -10,3 +10,5 @@ next-env.d.ts
 *.pdf
 .shots/
 verify_game.py
+public/vm/*.wasm
+public/vm/libv86.mjs
