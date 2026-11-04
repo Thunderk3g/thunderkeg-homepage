@@ -3,7 +3,6 @@
 import { useEffect, useState, version as reactVersion } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
 import { useOS, isUndercover, UNDERCOVER_THEME } from '../../store';
-import { getDisplayName, setDisplayName } from '../../net/supabase';
 import { THEMES } from '../../themes';
 import { SysIcon, KaliMark } from '../../icons';
 import { WALLPAPERS } from '../../desktop/wallpapers';
@@ -12,7 +11,7 @@ import pkg from '../../../../package.json';
 
 const ACCENTS = ['#2777ff', '#367bf0', '#16a085', '#e0322f', '#9b59b6', '#f39c12', '#2ecc71'];
 
-type Page = 'appearance' | 'wallpaper' | 'panel' | 'wm' | 'keyboard' | 'multiplayer' | 'a11y' | 'about';
+type Page = 'appearance' | 'wallpaper' | 'panel' | 'wm' | 'keyboard' | 'a11y' | 'about';
 
 const PAGES: { id: Page; label: string; icon: string }[] = [
   { id: 'appearance', label: 'Appearance', icon: 'desktop' },
@@ -20,7 +19,6 @@ const PAGES: { id: Page; label: string; icon: string }[] = [
   { id: 'panel', label: 'Panel', icon: 'panel' },
   { id: 'wm', label: 'Window Manager Tweaks', icon: 'window' },
   { id: 'keyboard', label: 'Keyboard Shortcuts', icon: 'keyboard' },
-  { id: 'multiplayer', label: 'Multiplayer', icon: 'users' },
   { id: 'a11y', label: 'Accessibility', icon: 'a11y' },
   { id: 'about', label: 'About Kali OS', icon: 'info' },
 ];
@@ -60,7 +58,6 @@ function SettingsApp({ args }: AppProps) {
   const setSetting = useOS((s) => s.setSetting);
   const toggleUndercover = useOS((s) => s.toggleUndercover);
   const undercover = useOS(isUndercover);
-  const [name, setName] = useState(getDisplayName());
   const requested = typeof args?.page === 'string' ? (args.page as Page) : undefined;
   const [page, setPage] = useState<Page>(requested ?? 'appearance');
 
@@ -233,23 +230,6 @@ function SettingsApp({ args }: AppProps) {
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {page === 'multiplayer' && (
-          <div className="kos-settings-group">
-            <h3>Handle</h3>
-            <p className="kos-settings-hint">Shown to other players in online games and chat.</p>
-            <input
-              className="kos-settings-input"
-              value={name}
-              maxLength={24}
-              aria-label="Multiplayer handle"
-              onChange={(e) => {
-                setName(e.target.value);
-                setDisplayName(e.target.value);
-              }}
-            />
           </div>
         )}
 

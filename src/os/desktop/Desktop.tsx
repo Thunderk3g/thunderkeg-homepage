@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useOS } from '../store';
-import { apps, getApp } from '../registry';
+import { desktopApps } from '../registry';
 import type { AppDefinition } from '../types';
 import { AppIcon, SysIcon } from '../icons';
 import { Panel } from './Panel';
@@ -17,28 +17,9 @@ import { wallpaperFor } from './wallpapers';
 const isCoarsePointer = () =>
   typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
-/**
- * Desktop launcher order. `vm` and `psql` are registered by other modules;
- * they show up here when present and are skipped silently when not.
- */
-const DESKTOP_ORDER = [
-  'terminal', 'files', 'browser', 'vm', 'psql', 'research', 'learning', 'writing',
-  'ainews', 'assistant', 'code-editor', 'voice', 'games', 'doom',
-];
-const ALWAYS_ON_DESKTOP = new Set(['vm', 'psql']);
-
+/** Desktop launchers, in registry order. */
 export function desktopLaunchers(): AppDefinition[] {
-  const seen = new Set<string>();
-  const out: AppDefinition[] = [];
-  for (const id of DESKTOP_ORDER) {
-    const a = getApp(id);
-    if (a && (a.desktop || ALWAYS_ON_DESKTOP.has(id))) {
-      out.push(a);
-      seen.add(id);
-    }
-  }
-  for (const a of apps) if (a.desktop && !seen.has(a.id)) out.push(a);
-  return out;
+  return desktopApps;
 }
 
 interface Menu {

@@ -22,13 +22,13 @@ const monoFont = Fira_Code({
 export const metadata: Metadata = {
   title: 'Diwakar Adhikari — Kali Linux Portfolio',
   description:
-    'Technical Lead — AI Engineering. My portfolio rendered as a fully interactive, Kali-inspired Linux desktop — terminal, security tools, and a multiplayer games arcade. Plain résumé at /resume.',
+    'Technical Lead — AI Engineering. My portfolio rendered as a fully interactive, Kali-inspired Linux desktop — a working terminal, research and study tools, a real Linux VM booting in the browser, and PostgreSQL in WebAssembly. Plain résumé at /resume.',
   authors: [{ name: 'Diwakar Adhikari', url: 'https://github.com/Thunderk3g' }],
   openGraph: {
     type: 'website',
     title: 'Diwakar Adhikari — Technical Lead, AI Engineering',
     description:
-      'Retrieval-grounded and speech AI, built where a wrong answer is a regulatory event. A portfolio you can boot: terminal, writing, research and an arcade.',
+      'Retrieval-grounded and speech AI, built where a wrong answer is a regulatory event. A portfolio you can boot: terminal, research tools, a real Linux VM and PostgreSQL.',
   },
   twitter: {
     card: 'summary',

@@ -297,7 +297,6 @@ body {
 }
 .md th { background: var(--doc-panel); color: #9fb4d0; font-family: var(--doc-mono); font-size: 0.76rem; }
 
-
 /* ============================================================================
    KALI OS — web desktop environment (scoped under .kos)
    Kali-Dark (kali-themes 2026.x) on an Xfce/xfwm4 layout. Colour tokens are
@@ -362,14 +361,13 @@ body {
 .kos :focus-visible { outline: 2px solid var(--kos-accent); outline-offset: 1px; }
 .kos input, .kos textarea, .kos select { font-family: inherit; }
 /* fields draw their own focus ring */
-.kos-greeter-field input:focus-visible, .kos-whisker-search:focus-visible, .kos-settings-input:focus-visible,
-.kos-lobby-row input:focus-visible { outline: none; }
+.kos-greeter-field input:focus-visible, .kos-whisker-search:focus-visible { outline: none; }
 .kos-panel :focus-visible { outline-offset: -2px; }
 .kos ::selection { background: var(--kos-accent); color: #fff; }
 .kos-appicon { display: block; flex: none; }
 .kos-appicon-fallback { display: inline-grid; place-items: center; flex: none; text-align: center; }
 
-.kos-avatar, .kos-web-avatar {
+.kos-avatar {
   width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 0.6rem;
   display: grid; place-items: center; font-weight: 700; color: #fff; letter-spacing: 0.02em;
   background: linear-gradient(135deg, #3d8bff 0%, #6a3cf0 100%);
@@ -383,13 +381,6 @@ body {
   background: rgba(255,255,255,0.05); font-size: 13px;
 }
 .kos-btn:hover { background: var(--kos-hover); }
-
-.kos-settings-input, .kos-lobby-row input {
-  width: 100%; height: 34px; padding: 0 10px; border-radius: var(--kos-radius);
-  border: 1px solid var(--kos-border); background: #1a1c23; color: var(--kos-text);
-  outline: none; font-size: 0.9rem;
-}
-.kos-settings-input:focus, .kos-lobby-row input:focus { border-color: var(--kos-accent); box-shadow: 0 0 0 1px var(--kos-accent); }
 
 /* ---------- Boot: Plymouth splash + systemd log ---------- */
 .kos-boot {
@@ -660,10 +651,6 @@ body {
   transition: background-color var(--kos-fast);
 }
 button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); color: #fff; }
-.kos-tray-presence { cursor: default; }
-.kos-tray-presence .n { font-variant-numeric: tabular-nums; }
-.kos-tray-presence.s-connected { color: var(--kos-good); }
-.kos-tray-presence.s-offline { color: var(--kos-dim); }
 .kos-cpugraph { display: flex; margin: 0 6px; padding: 1px; border: 1px solid var(--kos-hair-2); border-radius: 2px; background: rgba(0,0,0,0.35); }
 .kos-cpugraph canvas { display: block; }
 .kos-tray-clock {
@@ -1023,8 +1010,7 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
 /* ---------- Phones ---------- */
 @media (max-width: 640px) {
   .kos { --kos-panel-h: 44px; }
-  .kos-hide-sm, .kos-tray-hide-sm, .kos-cpugraph, .kos-tray-presence { display: none !important; }
-  .kos-panel { padding: 0 2px; }
+  .kos-hide-sm, .kos-tray-hide-sm, .kos-cpugraph,   .kos-panel { padding: 0 2px; }
   .kos-panel-menu { width: 44px; height: 40px; justify-content: center; padding: 0; }
   .kos-task, .kos-tray-item, .kos-tray-clock { height: 40px; }
   .kos-task { width: 42px; }
@@ -1057,152 +1043,10 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
   .kos-rz { display: none; }
 }
 
-/* ---------- Tool console ---------- */
-.kos-tool {
-  width: 100%; height: 100%; overflow-y: auto; padding: 8px 10px; background: #0c0f13;
-  font-family: var(--font-mono), monospace; font-size: 12.5px; line-height: 1.45; color: #c7ccd2;
-}
-.kos-tool-line { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; }
-.kos-tool-active { display: flex; gap: 6px; }
-.kos-tool-prompt { color: var(--kos-accent); white-space: nowrap; }
-.kos-tool-input { flex: 1; background: transparent; border: none; outline: none; color: #eaeaea; font: inherit; }
-
-/* ---------- Browser / About ---------- */
-.kos-web { display: flex; flex-direction: column; height: 100%; background: #1f2228; }
-.kos-web-toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #2a2d35; border-bottom: 1px solid #11131a; }
-.kos-web-nav { display: flex; gap: 2px; }
-.kos-web-btn { width: 26px; height: 26px; border: none; border-radius: 5px; background: rgba(255,255,255,0.06); color: var(--kos-text); }
-.kos-web-urlbar { flex: 1; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px; background: #15171d; color: #aeb4be; font-size: 0.8rem; }
-.kos-web-body { flex: 1; display: flex; overflow: hidden; }
-.kos-web-side { width: 150px; border-right: 1px solid #11131a; padding: 8px; display: flex; flex-direction: column; gap: 2px; background: #191c22; }
-.kos-web-tab { text-align: left; padding: 8px 10px; border: none; border-radius: 6px; background: transparent; color: var(--kos-text); font-size: 0.85rem; }
-.kos-web-tab:hover { background: rgba(255,255,255,0.06); }
-.kos-web-tab.active { background: var(--kos-accent); color: #04121f; font-weight: 600; }
-.kos-web-content { flex: 1; overflow-y: auto; padding: 24px 28px; line-height: 1.6; user-select: text; }
-.kos-web-hero { text-align: center; max-width: 640px; margin: 0 auto; }
-.kos-web-avatar { width: 84px; height: 84px; font-size: 1.4rem; margin-bottom: 14px; }
-.kos-web-hero h1 { font-size: 1.7rem; margin: 0 0 4px; }
-.kos-web-role { color: var(--kos-accent); font-weight: 600; }
-.kos-web-loc { color: var(--kos-dim); margin-bottom: 16px; }
-.kos-web-summary { text-align: left; color: #c5cad1; }
-.kos-web-summary p { margin: 0 0 10px; }
-.kos-web-links { margin-top: 16px; display: flex; gap: 10px; justify-content: center; color: var(--kos-dim); }
-.kos-web-links a { color: var(--kos-accent); }
-.kos-web-section h2 { font-size: 1.2rem; border-bottom: 1px solid var(--kos-border); padding-bottom: 6px; margin-bottom: 14px; }
-.kos-web-card { background: #25282f; border: 1px solid var(--kos-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
-.kos-web-card-head { display: flex; flex-direction: column; margin-bottom: 8px; }
-.kos-web-card-head span { color: var(--kos-dim); font-size: 0.82rem; }
-.kos-web-card ul, .kos-web-list { margin: 0; padding-left: 18px; }
-.kos-web-card li, .kos-web-list li { margin: 5px 0; color: #c5cad1; }
-.kos-web-list a { color: var(--kos-accent); }
-
-/* ---------- File manager ---------- */
-.kos-fm { display: flex; flex-direction: column; height: 100%; background: #1f2228; }
-.kos-fm-toolbar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: #2a2d35; border-bottom: 1px solid #11131a; }
-.kos-fm-btn { width: 28px; height: 26px; border: none; border-radius: 5px; background: rgba(255,255,255,0.06); color: var(--kos-text); }
-.kos-fm-path { flex: 1; display: flex; align-items: center; flex-wrap: wrap; font-size: 0.82rem; color: var(--kos-dim); }
-.kos-fm-crumb { border: none; background: transparent; color: var(--kos-text); padding: 2px 4px; }
-.kos-fm-crumb:hover { color: var(--kos-accent); }
-.kos-fm-body { flex: 1; display: flex; overflow: hidden; }
-.kos-fm-side { width: 150px; border-right: 1px solid #11131a; padding: 8px; background: #191c22; }
-.kos-fm-side-label { color: var(--kos-dim); font-size: 0.72rem; text-transform: uppercase; padding: 4px 6px; }
-.kos-fm-place { width: 100%; text-align: left; display: flex; gap: 8px; padding: 7px 8px; border: none; border-radius: 6px; background: transparent; color: var(--kos-text); font-size: 0.84rem; }
-.kos-fm-place:hover { background: rgba(255,255,255,0.06); }
-.kos-fm-place.active { background: rgba(51,170,255,0.2); }
-.kos-fm-grid { flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, 96px); gap: 8px; align-content: start; }
-.kos-fm-item { width: 96px; padding: 10px 4px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--kos-text); display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.kos-fm-item:hover { background: rgba(51,170,255,0.14); border-color: rgba(51,170,255,0.3); }
-.kos-fm-icon { font-size: 32px; }
-.kos-fm-name { font-size: 0.74rem; text-align: center; word-break: break-word; }
-.kos-fm-empty { color: var(--kos-dim); padding: 20px; }
-.kos-fm-status { padding: 5px 10px; border-top: 1px solid #11131a; background: #191c22; color: var(--kos-dim); font-size: 0.76rem; }
-
-/* ---------- Editor ---------- */
-.kos-editor { display: flex; flex-direction: column; height: 100%; }
-.kos-editor-menu { display: flex; align-items: center; gap: 12px; padding: 6px 10px; background: #2a2d35; border-bottom: 1px solid #11131a; }
-.kos-editor-btn { border: 1px solid var(--kos-border); background: rgba(255,255,255,0.05); color: var(--kos-text); border-radius: 5px; padding: 4px 12px; }
-.kos-editor-btn:hover { border-color: var(--kos-accent); }
-.kos-editor-file { color: var(--kos-dim); font-size: 0.8rem; }
-.kos-editor-msg { color: var(--kos-good); font-size: 0.8rem; margin-left: auto; }
-.kos-editor-area { flex: 1; resize: none; border: none; outline: none; padding: 14px; background: #181b21; color: #d4d4d4; font-family: var(--font-mono), monospace; font-size: 13px; line-height: 1.6; user-select: text; }
-
-/* ---------- Calculator ---------- */
-.kos-calc { display: flex; flex-direction: column; height: 100%; background: #14161b; }
-.kos-calc-display { padding: 18px 16px; text-align: right; border-bottom: 1px solid #000; }
-.kos-calc-expr { color: var(--kos-dim); min-height: 18px; font-size: 0.9rem; word-break: break-all; }
-.kos-calc-result { font-size: 2rem; font-weight: 600; }
-.kos-calc-keys { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #000; }
-.kos-calc-key { border: none; background: #23262e; color: var(--kos-text); font-size: 1.15rem; }
-.kos-calc-key:hover { background: #2d313a; }
-.kos-calc-key.op { background: var(--kos-accent); color: #04121f; font-weight: 700; }
-
-/* ---------- Games / Arcade ---------- */
-.kos-arcade { display: flex; flex-direction: column; height: 100%; background: #16181d; }
-.kos-arcade-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 16px 18px 8px; }
-.kos-arcade-header h2 { margin: 0; }
-.kos-arcade-sub { color: var(--kos-dim); font-size: 0.82rem; margin: 2px 0 0; }
-.kos-arcade-online { font-size: 0.8rem; color: var(--kos-dim); padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,0.05); }
-.kos-arcade-online.s-connected { color: var(--kos-good); }
-.kos-arcade-filters { display: flex; gap: 6px; padding: 0 18px 10px; }
-.kos-arcade-filter { border: 1px solid var(--kos-border); background: transparent; color: var(--kos-text); border-radius: 16px; padding: 5px 14px; font-size: 0.82rem; }
-.kos-arcade-filter.active { background: var(--kos-accent); color: #04121f; border-color: var(--kos-accent); font-weight: 600; }
-.kos-arcade-grid { flex: 1; overflow-y: auto; padding: 0 18px 18px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; align-content: start; }
-.kos-arcade-card { display: flex; flex-direction: column; gap: 4px; padding: 16px 14px; border: 1px solid var(--kos-border); border-radius: 12px; background: #20232b; color: var(--kos-text); text-align: left; transition: transform 0.08s, border-color 0.08s; }
-.kos[data-reduced='true'] .kos-arcade-card { transition: none; }
-.kos-arcade-card:hover { transform: translateY(-3px); border-color: var(--kos-accent); }
-.kos-arcade-icon { font-size: 32px; }
-.kos-arcade-name { font-weight: 600; }
-.kos-arcade-tag { color: var(--kos-dim); font-size: 0.76rem; min-height: 30px; }
-.kos-arcade-meta { font-size: 0.76rem; color: var(--kos-accent); }
-.kos-arcade-bar { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: #20232b; border-bottom: 1px solid #11131a; }
-.kos-arcade-title { font-weight: 600; }
-.kos-arcade-room { color: var(--kos-dim); font-size: 0.8rem; margin-left: auto; }
-.kos-arcade-stage { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 14px; }
+/* ---------- Shared push buttons (Assistant, Writing, AI Radar) ---------- */
 .kos-game-btn { border: 1px solid var(--kos-border); background: rgba(255,255,255,0.06); color: var(--kos-text); border-radius: 6px; padding: 6px 14px; font-size: 0.84rem; }
 .kos-game-btn:hover { border-color: var(--kos-accent); }
 .kos-game-btn.primary { background: var(--kos-accent); color: #04121f; font-weight: 700; border-color: var(--kos-accent); }
-
-/* Lobby */
-.kos-lobby { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: grid; place-items: center; z-index: 50; }
-.kos-lobby-card { width: 320px; background: #20232b; border: 1px solid var(--kos-border); border-radius: 12px; padding: 20px; }
-.kos-lobby-card h3 { margin: 0 0 6px; }
-.kos-lobby-card p { color: var(--kos-dim); font-size: 0.82rem; margin: 0 0 12px; }
-.kos-lobby-card label { font-size: 0.78rem; color: var(--kos-dim); }
-.kos-lobby-row { display: flex; gap: 6px; margin: 6px 0; }
-.kos-lobby-row input { flex: 1; text-transform: uppercase; letter-spacing: 3px; font-family: var(--font-mono), monospace; text-align: center; }
-.kos-lobby-hint { font-size: 0.74rem !important; }
-.kos-lobby-actions { display: flex; gap: 8px; margin-top: 8px; }
-
-/* Game shells */
-.kos-game { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.kos-game-hud { display: flex; align-items: center; gap: 16px; font-size: 0.86rem; }
-.kos-game-hint { color: var(--kos-dim); font-size: 0.78rem; }
-.kos-game-over { color: #ff7a6c; font-weight: 600; }
-
-/* Room bar (multiplayer) */
-.kos-roombar { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 420px; padding: 8px 10px; background: #20232b; border: 1px solid var(--kos-border); border-radius: 8px; font-size: 0.78rem; }
-.kos-roombar-room code { color: var(--kos-accent); font-weight: 700; letter-spacing: 2px; }
-.kos-roombar-label { color: var(--kos-dim); margin-right: 4px; }
-.kos-roombar-players { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; }
-.kos-roombar-chip { background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 10px; }
-.kos-roombar-chip.me { background: rgba(51,170,255,0.22); }
-.kos-roombar-status.s-connected { color: var(--kos-good); }
-.kos-roombar-status.s-offline { color: var(--kos-dim); }
-
-/* Snake */
-.kos-snake-board { display: grid; gap: 1px; background: #0c0f13; padding: 4px; border-radius: 8px; width: min(70vh, 440px); aspect-ratio: 1; }
-.kos-snake-cell { background: #14181f; border-radius: 2px; }
-.kos-snake-cell.body { background: #2f8f5b; }
-.kos-snake-cell.head { background: var(--kos-good); }
-.kos-snake-cell.food { background: #e0533f; border-radius: 50%; }
-
-/* Tic-tac-toe */
-.kos-ttt { width: 100%; max-width: 360px; }
-.kos-ttt-status { text-align: center; margin: 6px 0; min-height: 22px; }
-.kos-ttt-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.kos-ttt-cell { aspect-ratio: 1; font-size: 2.4rem; border: 1px solid var(--kos-border); border-radius: 10px; background: #20232b; color: #eef2f7; }
-.kos-ttt-cell:disabled { cursor: default; }
-.kos-ttt-cell:not(:disabled):hover { border-color: var(--kos-accent); }
 
 /* ---------- AI Assistant ---------- */
 .kos-assistant { display: flex; flex-direction: column; height: 100%; background: #14171d; }
@@ -1225,15 +1069,6 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
 .kos-assistant-input { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--kos-border); background: #11141a; }
 .kos-assistant-input input { flex: 1; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--kos-border); background: rgba(255,255,255,0.05); color: var(--kos-text); outline: none; font-size: 0.88rem; }
 .kos-assistant-input input:focus { border-color: var(--kos-accent); }
-
-
-/* ---------- Firefox app additions ---------- */
-.kos-web-btn:disabled { opacity: 0.35; cursor: default; }
-.kos-web-btn:not(:disabled):hover { background: rgba(255,255,255,0.14); }
-.kos-web-blurb { color: #c5cad1; margin: 0 0 8px; }
-.kos-web-caveat { color: var(--kos-dim); font-style: italic; font-size: 0.84rem; margin: 6px 0 0; }
-.kos-web-sub { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9fb4d0; margin: 12px 0 6px; }
-.kos-web-content a { color: var(--kos-accent); }
 
 /* ---------- Writing app ---------- */
 .kos-writing { display: flex; flex-direction: column; height: 100%; background: #1b1e24; user-select: text; }

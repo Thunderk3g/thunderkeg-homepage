@@ -3,50 +3,47 @@ import { terminalApp } from './apps/terminal/Terminal';
 import { vmApp } from './apps/vm/VirtualMachine';
 import { browserApp } from './apps/browser/Browser';
 import { fileManagerApp } from './apps/files/FileManager';
-import { textEditorApp } from './apps/editor/TextEditor';
 import { settingsApp } from './apps/settings/Settings';
-import { calculatorApp } from './apps/calculator/Calculator';
-import { gamesApp } from './apps/games/GamesApp';
-import { chatApp } from './apps/chat/Chat';
-import { whiteboardApp } from './apps/whiteboard/Whiteboard';
 import { assistantApp } from './apps/assistant/Assistant';
 import { codeEditorApp } from './apps/codeeditor/CodeEditor';
-import { voiceApp } from './apps/voice/Voice';
 import { writingApp } from './apps/writing/Writing';
 import { aiNewsApp } from './apps/news/AiNews';
 import { researchApp } from './apps/research/Research';
 import { learningApp } from './apps/learning/LearningApp';
-import { mp3App } from './apps/media/Mp3';
-import { vlcApp } from './apps/media/Vlc';
-import { doomApp } from './apps/games/Doom';
-import { toolApps } from './apps/tools';
 import { psqlApp } from './apps/psql/Psql';
 
-/** Every registered application. */
+/**
+ * Shell-side overrides for apps whose definition lives in a module owned
+ * elsewhere: the menu category and whether it gets a desktop launcher.
+ */
+const OVERRIDES: Record<string, Partial<Pick<AppDefinition, 'category' | 'desktop'>>> = {
+  research: { category: 'Research' },
+  learning: { category: 'Research' },
+  writing: { category: 'Research' },
+  ainews: { category: 'Research', desktop: false },
+  psql: { category: 'Research' },
+};
+
+const withOverrides = (a: AppDefinition): AppDefinition => (OVERRIDES[a.id] ? { ...a, ...OVERRIDES[a.id] } : a);
+
+/**
+ * Every registered application. The order of the `desktop: true` entries is
+ * the order of the desktop launchers.
+ */
 export const apps: AppDefinition[] = [
   terminalApp,
-  vmApp,
   browserApp,
-  aiNewsApp,
   researchApp,
-  writingApp,
   learningApp,
+  writingApp,
   fileManagerApp,
-  textEditorApp,
-  settingsApp,
-  calculatorApp,
-  gamesApp,
-  chatApp,
-  whiteboardApp,
+  vmApp,
+  psqlApp,
   assistantApp,
   codeEditorApp,
-  voiceApp,
-  mp3App,
-  vlcApp,
-  doomApp,
-  psqlApp,
-  ...toolApps,
-];
+  aiNewsApp,
+  settingsApp,
+].map(withOverrides);
 
 const appMap = new Map(apps.map((a) => [a.id, a]));
 
@@ -66,7 +63,7 @@ export function appsByCategory(): Map<string, AppDefinition[]> {
 
 export const desktopApps = apps.filter((a) => a.desktop);
 
-/** Terminal commands that launch apps (firefox, thunar, games, msfconsole…). */
+/** Terminal commands that launch apps (firefox, thunar, nano, psql…). */
 export const appLaunchCommands: Command[] = apps.flatMap((app) =>
   (app.launchCommands ?? []).map((name) => ({
     name,
@@ -74,7 +71,11 @@ export const appLaunchCommands: Command[] = apps.flatMap((app) =>
     category: 'apps',
     run: ({ shell, args }) => {
       const launchArgs: Record<string, unknown> = {};
-      if (args[0]) launchArgs.arg = args[0];
+      if (args[0]) {
+        launchArgs.arg = args[0];
+        // file-taking apps (nano notes.md) get an absolute path as well
+        if (app.id === 'code-editor') launchArgs.path = shell.fs.resolve(args[0], shell.cwd);
+      }
       shell.launch(app.id, launchArgs);
       return `opening ${app.title}…`;
     },
