@@ -69,7 +69,7 @@ function AssistantApp() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  /* voice: dictation in, speech out (both hidden where the browser lacks them) */
+  /* speech: dictation in, read-aloud out (both hidden where the browser lacks them) */
   const [canListen, setCanListen] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
   const [listening, setListening] = useState(false);
@@ -232,7 +232,7 @@ function AssistantApp() {
         )}
       </div>
       {(micError || (canSpeak && messages.length > 0)) && (
-        <div className="kos-assistant-voicebar">
+        <div className="kos-assistant-speechbar">
           {micError && <span className="kos-assistant-micerr">{micError}</span>}
           {canSpeak && (
             <label className="kos-assistant-autospeak">
@@ -284,7 +284,7 @@ export const assistantApp: AppDefinition = {
   icon: '🤖',
   category: 'Development',
   component: AssistantApp,
-  description: 'Ask about Diwakar by text or voice; replies can be read aloud',
+  description: 'Ask about Diwakar by typing or dictating; replies can be read aloud',
   defaultSize: { width: 540, height: 580 },
   minSize: { width: 340, height: 380 },
   desktop: true,

@@ -138,7 +138,7 @@ const GLYPHS: Record<string, Plate> = {
       </>
     ),
   },
-  editor: {
+  'text-editor': {
     from: '#8fc1ff', to: '#3f78d8',
     glyph: (
       <>
@@ -218,7 +218,7 @@ const GLYPHS: Record<string, Plate> = {
 /** registry ids and aliases → plate key */
 const ALIAS: Record<string, string> = {
   ainews: 'news',
-  'code-editor': 'editor',
+  'code-editor': 'text-editor',
   files: 'dolphin',
   vm: 'penguin',
   psql: 'elephant',
