@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { AppDefinition, AppProps, FsNode } from '../../types';
 import { useOS } from '../../store';
-import { getApp } from '../../registry';
 import { FileIcon } from './icons';
 import { InfoPanel } from './InfoPanel';
 import { TerminalPanel } from './TerminalPanel';
@@ -47,15 +46,6 @@ function dirAndName(path: string): { dir: string; name: string } {
   const parts = path.split('/').filter(Boolean);
   const name = parts.pop() ?? '';
   return { dir: '/' + parts.join('/'), name };
-}
-
-/** Icon-string for the window title bar. */
-const EDIT_APPS = { editor: 'editor', code: 'code-editor' } as const;
-
-function openerFor(name: string): string {
-  if (/\.(md|markdown|txt|log|csv)$/i.test(name)) return EDIT_APPS.editor;
-  if (/\.(ts|tsx|js|jsx|mjs|cjs|json|css|html|sh)$/i.test(name)) return getApp(EDIT_APPS.code) ? EDIT_APPS.code : EDIT_APPS.editor;
-  return EDIT_APPS.editor;
 }
 
 /* ───────────────────────── main ───────────────────────── */
@@ -159,7 +149,8 @@ function FileManagerApp({ args }: AppProps) {
         pane.go(e.path);
         return;
       }
-      launch(openerFor(e.name), { path: e.path });
+      // every file opens in the Text Editor (CodeMirror, with Markdown preview)
+      launch('code-editor', { path: e.path });
     },
     [launch],
   );
@@ -349,7 +340,7 @@ function FileManagerApp({ args }: AppProps) {
           menu={menu}
           onClose={() => setMenu(null)}
           onOpen={(e) => openEntry(activePane === 0 ? left : right, e)}
-          onOpenWith={(e) => launch('editor', { path: e.path })}
+          onOpenWith={(e) => launch('code-editor', { path: e.path })}
           onTerminalHere={(path) => launch('terminal', { cwd: path })}
           onNewFolder={(pane) => createNode(pane === 0 ? left : right, 'dir')}
           onNewText={(pane) => createNode(pane === 0 ? left : right, 'file', '.txt')}
