@@ -1,4 +1,5 @@
 import { bottleneck, evidenceFor, impliedState, lanes, overclaimed, rank, weekPlan } from './priority';
+import { nextGap } from './benchmark';
 import type { LearningState } from './types';
 
 /**
@@ -11,6 +12,7 @@ import type { LearningState } from './types';
  */
 
 export const COACH_PROMPTS = [
+  'What should I do next against the role benchmark?',
   'What should I learn next, and why that instead of the alternatives?',
   'Am I ready to move from PyTorch to transformer training?',
   'Give me an AI-free test for my current skill.',
@@ -72,6 +74,11 @@ export function coachContext(state: LearningState): string {
           .map((e) => `  ${e.date} ${e.kind} "${e.artifact}" assistance=${e.assistance}${e.negative ? ' [negative result]' : ''} → ${e.whatLearned.slice(0, 90)}`)
       : ['  none yet — every skill estimate is currently an unverified self-assessment.']),
     '',
+    `ROLE BENCHMARK NEXT GAP: ${(() => {
+      const n = nextGap(state);
+      return n ? `${n.gap.title} — skills below APPLIED: ${n.below.map((s) => s.name).join(', ')}; proof: ${n.gap.proof}` : 'all mapped skills at APPLIED or better';
+    })()}`,
+    '',
     `THIS WEEK: understand="${week.understand}" implement="${week.implement}" apply="${week.apply}"`,
   ].join('\n');
 }
@@ -92,6 +99,25 @@ export function offlineCoach(question: string, state: LearningState): string {
   const out: string[] = [];
 
   const footer = '\n— computed locally from your skill graph. Set LLM_API_KEY for a conversational coach.';
+
+  if (/do next|benchmark|\brole\b|\blead\b/.test(q)) {
+    const n = nextGap(state);
+    if (!n) {
+      out.push('Every skill mapped to a role-benchmark gap is at APPLIED or better. Turn the proof artefacts into public evidence.');
+      return out.join('\n') + footer;
+    }
+    out.push(
+      `Next against the role benchmark: gap ${n.gap.priority} — ${n.gap.title}.`,
+      '',
+      `  why: ${n.gap.why}`,
+      `  below APPLIED: ${n.below.map((s) => `${s.name} (${s.state})`).join(', ')}`,
+      `  ship this: ${n.gap.proof}`,
+      '',
+      `Start with ${n.below[0].name}: ${n.below[0].objective}`,
+      `AI-free check: ${n.below[0].aiFreeCheck}`,
+    );
+    return out.join('\n') + footer;
+  }
 
   if (/thin|too many|fragment|breadth/.test(q)) {
     const active = queue.NOW.length + queue.NEXT.length;

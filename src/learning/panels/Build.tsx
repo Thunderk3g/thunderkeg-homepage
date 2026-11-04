@@ -26,13 +26,19 @@ const KINDS: EvidenceKind[] = [
   'commit',
 ];
 
-function EvidenceForm({ onDone }: { onDone: () => void }) {
+export interface EvidencePrefill {
+  skillIds?: string[];
+  kind?: EvidenceKind;
+  artifact?: string;
+}
+
+export function EvidenceForm({ onDone, initial }: { onDone: () => void; initial?: EvidencePrefill }) {
   const skills = useLearning((s) => s.skills);
   const addEvidence = useLearning((s) => s.addEvidence);
 
-  const [skillIds, setSkillIds] = useState<string[]>([]);
-  const [kind, setKind] = useState<EvidenceKind>('implementation');
-  const [artifact, setArtifact] = useState('');
+  const [skillIds, setSkillIds] = useState<string[]>(initial?.skillIds ?? []);
+  const [kind, setKind] = useState<EvidenceKind>(initial?.kind ?? 'implementation');
+  const [artifact, setArtifact] = useState(initial?.artifact ?? '');
   const [url, setUrl] = useState('');
   const [didMyself, setDidMyself] = useState('');
   const [assistance, setAssistance] = useState<AiAssistance>('none');
