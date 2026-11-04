@@ -1,0 +1,240 @@
+/* Virtual Machine app (v86). All classes are prefixed kos-vm-. */
+
+.kos-vm {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #000;
+  color: var(--kos-text);
+  font-family: var(--font-ubuntu), 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+}
+.kos-vm:fullscreen { width: 100vw; height: 100vh; }
+
+/* ---------- toolbar ---------- */
+.kos-vm-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  background: var(--kos-panel);
+  border-bottom: 1px solid var(--kos-border);
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 3;
+}
+.kos-vm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 10px 3px 8px;
+  border: 1px solid var(--kos-border);
+  border-radius: 999px;
+  background: var(--kos-panel-2);
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  color: var(--kos-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kos-vm-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--kos-dim);
+}
+.kos-vm-pill[data-phase='running'] { color: var(--kos-text); }
+.kos-vm-pill[data-phase='running'] .kos-vm-dot { background: var(--kos-good); box-shadow: 0 0 6px var(--kos-good); }
+.kos-vm-pill[data-phase='downloading'] .kos-vm-dot,
+.kos-vm-pill[data-phase='booting'] .kos-vm-dot { background: var(--kos-accent); animation: kos-vm-pulse 1s ease-in-out infinite; }
+.kos-vm-pill[data-phase='paused'] .kos-vm-dot { background: #e5c07b; }
+.kos-vm-pill[data-phase='error'] { color: #ff6b6b; }
+.kos-vm-pill[data-phase='error'] .kos-vm-dot { background: #ff6b6b; }
+@keyframes kos-vm-pulse { 50% { opacity: 0.35; } }
+
+.kos-vm-progress {
+  width: 70px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--kos-border);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.kos-vm-progress > span { display: block; height: 100%; background: var(--kos-accent); transition: width 0.15s linear; }
+
+.kos-vm-spacer { flex: 1 1 auto; }
+.kos-vm-group { display: inline-flex; gap: 4px; align-items: center; }
+
+.kos-vm-btn {
+  appearance: none;
+  border: 1px solid var(--kos-border);
+  background: var(--kos-panel-2);
+  color: var(--kos-text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.kos-vm-btn:hover:not(:disabled) { border-color: var(--kos-accent); }
+.kos-vm-btn:disabled { opacity: 0.4; cursor: default; }
+.kos-vm-btn:focus-visible { outline: 1px solid var(--kos-accent); outline-offset: 1px; }
+
+.kos-vm-seg { display: inline-flex; border: 1px solid var(--kos-border); border-radius: 4px; overflow: hidden; }
+.kos-vm-seg > span { padding: 5px 7px; font-size: 11px; color: var(--kos-dim); background: var(--kos-panel); }
+.kos-vm-seg > button {
+  appearance: none;
+  border: 0;
+  border-left: 1px solid var(--kos-border);
+  background: var(--kos-panel-2);
+  color: var(--kos-dim);
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.kos-vm-seg > button[aria-pressed='true'] { color: var(--kos-text); background: var(--kos-win); box-shadow: inset 0 -2px 0 var(--kos-accent); }
+
+/* ---------- help popover ---------- */
+.kos-vm-help {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 8px;
+  width: min(380px, calc(100% - 16px));
+  padding: 12px 14px;
+  background: var(--kos-win);
+  border: 1px solid var(--kos-border);
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-size: 12.5px;
+  line-height: 1.5;
+  z-index: 5;
+}
+.kos-vm-help h4 { margin: 0 0 6px; font-size: 13px; color: var(--kos-accent); font-weight: 600; }
+.kos-vm-help p { margin: 0 0 8px; color: var(--kos-text); }
+.kos-vm-help ul { margin: 0 0 8px; padding-left: 16px; color: var(--kos-dim); }
+.kos-vm-help code, .kos-vm-card code { font-family: var(--font-mono), monospace; font-size: 11.5px; color: var(--kos-text); }
+
+/* ---------- console stage ---------- */
+.kos-vm-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+.kos-vm-serial {
+  position: absolute;
+  inset: 0;
+  padding: 6px 4px 4px 8px;
+  background: rgba(0, 0, 0, var(--kos-term-opacity));
+}
+.kos-vm-serial .xterm { height: 100%; }
+.kos-vm-serial .xterm-viewport { background: transparent !important; }
+.kos-vm-serial .xterm-viewport::-webkit-scrollbar { width: 8px; }
+.kos-vm-serial .xterm-viewport::-webkit-scrollbar-thumb { background: var(--kos-border); border-radius: 4px; }
+
+.kos-vm-vga {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  outline: none;
+}
+.kos-vm-vga:focus-visible { box-shadow: inset 0 0 0 1px var(--kos-accent); }
+.kos-vm-vga-screen { position: relative; margin: auto; }
+.kos-vm-vga-screen > div { white-space: pre; font: 14px monospace; line-height: 14px; color: #ccc; }
+.kos-vm-vga-screen > canvas { display: none; }
+.kos-vm-vga-hint {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--kos-dim);
+  pointer-events: none;
+}
+
+/* ---------- power-on card ---------- */
+.kos-vm-card-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.04), transparent 60%),
+    var(--kos-bg);
+}
+.kos-vm-card {
+  width: min(560px, 100%);
+  padding: 22px 24px 20px;
+  border: 1px solid var(--kos-border);
+  border-radius: 8px;
+  background: var(--kos-win);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+.kos-vm-eyebrow { font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--kos-accent); }
+.kos-vm-card h3 { margin: 6px 0 8px; font-size: 20px; font-weight: 600; color: var(--kos-text); }
+.kos-vm-card p { margin: 0 0 14px; color: var(--kos-dim); line-height: 1.55; }
+.kos-vm-specs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--kos-panel-2);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+.kos-vm-specs dt { color: var(--kos-dim); }
+.kos-vm-specs dd { margin: 0; color: var(--kos-text); }
+.kos-vm-works { margin: 0 0 16px; padding-left: 18px; color: var(--kos-dim); line-height: 1.6; }
+.kos-vm-works b { color: var(--kos-text); font-weight: 500; }
+.kos-vm-cta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kos-vm-boot {
+  appearance: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 11px 26px;
+  background: var(--kos-accent);
+  color: #0b0d10;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kos-vm-boot:hover { filter: brightness(1.1); }
+.kos-vm-boot:focus-visible { outline: 2px solid var(--kos-text); outline-offset: 2px; }
+.kos-vm-note { font-size: 11.5px; color: var(--kos-dim); }
+.kos-vm-error {
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 107, 107, 0.5);
+  border-radius: 5px;
+  background: rgba(255, 107, 107, 0.08);
+  color: #ff8b8b;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 640px) {
+  .kos-vm-bar { gap: 4px; padding: 5px 6px; }
+  .kos-vm-pill { flex: 1 1 100%; order: -1; }
+  .kos-vm-seg > span { display: none; }
+  .kos-vm-card { padding: 16px; }
+  .kos-vm-card h3 { font-size: 17px; }
+  .kos-vm-specs { grid-template-columns: 1fr; }
+  .kos-vm-specs dt { margin-top: 4px; }
+}

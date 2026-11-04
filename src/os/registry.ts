@@ -1,5 +1,6 @@
 import type { AppDefinition, Command } from './types';
 import { terminalApp } from './apps/terminal/Terminal';
+import { vmApp } from './apps/vm/VirtualMachine';
 import { browserApp } from './apps/browser/Browser';
 import { fileManagerApp } from './apps/files/FileManager';
 import { textEditorApp } from './apps/editor/TextEditor';
@@ -23,6 +24,7 @@ import { toolApps } from './apps/tools';
 /** Every registered application. */
 export const apps: AppDefinition[] = [
   terminalApp,
+  vmApp,
   browserApp,
   aiNewsApp,
   researchApp,
