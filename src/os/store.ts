@@ -21,6 +21,9 @@ interface OSStore {
   user: string;
   host: string;
   fs: FileSystem;
+  /** bumped after FS mutations so views over the (mutable) FileSystem re-render */
+  fsVersion: number;
+  bumpFs: () => void;
 
   windows: WindowState[];
   focusedId: string | null;
@@ -67,6 +70,8 @@ export const useOS = create<OSStore>((set, get) => ({
   user: 'kali',
   host: 'kali',
   fs: createDefaultFileSystem(),
+  fsVersion: 0,
+  bumpFs: () => set((s) => ({ fsVersion: s.fsVersion + 1 })),
 
   windows: [],
   focusedId: null,

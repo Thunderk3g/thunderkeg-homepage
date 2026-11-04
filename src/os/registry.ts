@@ -19,6 +19,7 @@ import { mp3App } from './apps/media/Mp3';
 import { vlcApp } from './apps/media/Vlc';
 import { doomApp } from './apps/games/Doom';
 import { toolApps } from './apps/tools';
+import { psqlApp } from './apps/psql/Psql';
 
 /** Every registered application. */
 export const apps: AppDefinition[] = [
@@ -41,6 +42,7 @@ export const apps: AppDefinition[] = [
   mp3App,
   vlcApp,
   doomApp,
+  psqlApp,
   ...toolApps,
 ];
 

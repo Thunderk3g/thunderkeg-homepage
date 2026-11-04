@@ -1,0 +1,164 @@
+/* Dolphin — KDE/Breeze-dark file manager. All colours from the OS --kos-* tokens. */
+.kos-dolphin {
+  display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; outline: none;
+  background: var(--kos-bg); color: var(--kos-text);
+  font-family: var(--font-ubuntu), system-ui, sans-serif; font-size: 13px;
+}
+.kos-dolphin button { font: inherit; color: inherit; cursor: pointer; }
+.kos-dolphin button:disabled { opacity: 0.4; cursor: default; }
+
+/* toolbar */
+.kos-dolphin-toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 5px 8px; flex-wrap: wrap;
+  background: var(--kos-panel); border-bottom: 1px solid var(--kos-border);
+}
+.kos-dolphin-nav, .kos-dolphin-views { display: flex; gap: 2px; align-items: center; }
+.kos-dolphin-tbtn {
+  width: 28px; height: 26px; display: grid; place-items: center; border: 1px solid transparent;
+  background: transparent; border-radius: 5px; color: var(--kos-text);
+}
+.kos-dolphin-tbtn:hover:not(:disabled) { background: var(--kos-panel-2); }
+.kos-dolphin-tbtn.active { background: color-mix(in srgb, var(--kos-accent) 24%, transparent); border-color: color-mix(in srgb, var(--kos-accent) 60%, transparent); color: var(--kos-accent); }
+.kos-dolphin-viewtoggle { display: flex; border: 1px solid var(--kos-border); border-radius: 6px; overflow: hidden; margin-right: 4px; }
+.kos-dolphin-viewtoggle .kos-dolphin-tbtn { border-radius: 0; border: 0; }
+
+.kos-dolphin-crumbs {
+  flex: 1; min-width: 120px; display: flex; align-items: center; gap: 1px; overflow: hidden;
+  background: var(--kos-bg); border: 1px solid var(--kos-border); border-radius: 6px; padding: 2px 4px; height: 26px;
+}
+.kos-dolphin-crumb {
+  border: 0; background: transparent; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+  color: var(--kos-text); font-size: 12.5px;
+}
+.kos-dolphin-crumb:hover { background: var(--kos-panel-2); color: var(--kos-accent); }
+.kos-dolphin-crumb-fill { flex: 1; min-width: 20px; height: 100%; }
+.kos-dolphin-locedit, .kos-dolphin-filter {
+  flex: 1; min-width: 120px; height: 26px; background: var(--kos-bg); color: var(--kos-text);
+  border: 1px solid var(--kos-accent); border-radius: 6px; padding: 2px 8px; outline: none;
+  font-family: var(--font-mono), monospace; font-size: 12.5px;
+}
+.kos-dolphin-filter { max-width: 200px; flex: 0 1 200px; font-family: inherit; }
+
+/* body: places | panes | info */
+.kos-dolphin-body { flex: 1; min-height: 0; display: flex; }
+.kos-dolphin-places {
+  width: 176px; flex: 0 0 176px; overflow-y: auto; padding: 6px 4px;
+  background: var(--kos-panel); border-right: 1px solid var(--kos-border);
+}
+.kos-dolphin-placegroup { margin-bottom: 6px; }
+.kos-dolphin-placehdr {
+  width: 100%; text-align: left; border: 0; background: transparent; color: var(--kos-dim);
+  font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 6px;
+}
+.kos-dolphin-caret { font-size: 9px; }
+.kos-dolphin-place {
+  width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; border: 0;
+  background: transparent; color: var(--kos-text); padding: 5px 8px; border-radius: 5px; font-size: 12.5px;
+}
+.kos-dolphin-place:hover { background: var(--kos-panel-2); }
+.kos-dolphin-place.active { background: color-mix(in srgb, var(--kos-accent) 22%, transparent); color: var(--kos-accent); }
+.kos-dolphin-placeicon { color: var(--kos-dim); flex: 0 0 auto; }
+.kos-dolphin-place.active .kos-dolphin-placeicon { color: var(--kos-accent); }
+.kos-dolphin-free { margin-top: 10px; padding: 6px; font-size: 11px; color: var(--kos-dim); border-top: 1px solid var(--kos-border); }
+
+.kos-dolphin-panes { flex: 1; min-width: 0; display: flex; }
+.kos-dolphin-pane { flex: 1; min-width: 0; overflow: auto; position: relative; background: var(--kos-win); }
+.kos-dolphin-pane.split { border-right: 1px solid var(--kos-border); }
+.kos-dolphin-pane.active { box-shadow: inset 2px 0 0 var(--kos-accent); }
+
+.kos-dolphin-empty { padding: 24px; color: var(--kos-dim); text-align: center; }
+
+/* icons view */
+.kos-dolphin-icons {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--kos-icon, 64px) + 24px), 1fr));
+  gap: 4px; padding: 10px; align-content: start;
+}
+.kos-dolphin-item {
+  display: flex; align-items: center; border: 1px solid transparent; background: transparent;
+  border-radius: 6px; text-align: left; overflow: hidden;
+}
+.kos-dolphin-item.icons { flex-direction: column; gap: 4px; padding: 8px 4px; text-align: center; }
+.kos-dolphin-item.compact { gap: 8px; padding: 4px 8px; }
+.kos-dolphin-item:hover { background: var(--kos-panel-2); }
+.kos-dolphin-item.selected { background: color-mix(in srgb, var(--kos-accent) 26%, transparent); border-color: color-mix(in srgb, var(--kos-accent) 55%, transparent); }
+.kos-dolphin-ico { display: inline-grid; place-items: center; flex: 0 0 auto; }
+.kos-dolphin-svg { display: block; }
+.kos-dolphin-label { font-size: 12px; line-height: 1.25; overflow: hidden; }
+.kos-dolphin-item.icons .kos-dolphin-label { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; max-width: 100%; }
+.kos-dolphin-item.compact .kos-dolphin-label { white-space: nowrap; text-overflow: ellipsis; }
+
+.kos-dolphin-compact { display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 28px); gap: 1px; padding: 8px; align-content: start; }
+
+/* details view */
+.kos-dolphin-details { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.kos-dolphin-details th {
+  position: sticky; top: 0; z-index: 1; text-align: left; font-weight: 600; cursor: pointer; user-select: none;
+  background: var(--kos-panel); color: var(--kos-text); padding: 6px 10px; border-bottom: 1px solid var(--kos-border);
+}
+.kos-dolphin-details th:hover { color: var(--kos-accent); }
+.kos-dolphin-details th.sorted { color: var(--kos-accent); }
+.kos-dolphin-sortarrow { font-size: 9px; }
+.kos-dolphin-details td { padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--kos-border) 45%, transparent); white-space: nowrap; }
+.kos-dolphin-details tr:hover td { background: var(--kos-panel-2); }
+.kos-dolphin-details tr.selected td { background: color-mix(in srgb, var(--kos-accent) 24%, transparent); }
+.kos-dolphin-dname { display: flex; align-items: center; gap: 8px; }
+.kos-dolphin-num { text-align: right; color: var(--kos-dim); }
+
+.kos-dolphin-rename {
+  background: var(--kos-bg); color: var(--kos-text); border: 1px solid var(--kos-accent); border-radius: 3px;
+  padding: 1px 4px; font: inherit; font-size: 12px; width: 100%; max-width: 160px; outline: none;
+}
+
+/* information panel */
+.kos-dolphin-infowrap { width: 232px; flex: 0 0 232px; border-left: 1px solid var(--kos-border); background: var(--kos-panel); overflow-y: auto; }
+.kos-dolphin-info { padding: 12px; }
+.kos-dolphin-info-head { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding-bottom: 10px; }
+.kos-dolphin-info-name { font-weight: 600; word-break: break-word; }
+.kos-dolphin-meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0 0 12px; font-size: 12px; }
+.kos-dolphin-meta dt { color: var(--kos-dim); }
+.kos-dolphin-meta dd { margin: 0; word-break: break-word; }
+.kos-dolphin-mono, .kos-dolphin-info .kos-dolphin-mono { font-family: var(--font-mono), monospace; font-size: 11px; }
+.kos-dolphin-preview-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--kos-dim); border-top: 1px solid var(--kos-border); padding-top: 8px; margin-bottom: 6px; }
+.kos-dolphin-preview-count { font-size: 12px; color: var(--kos-text); margin-bottom: 4px; }
+.kos-dolphin-preview-list { list-style: none; margin: 0; padding: 0; font-family: var(--font-mono), monospace; font-size: 11px; color: var(--kos-dim); }
+.kos-dolphin-text-preview { margin: 0; font-family: var(--font-mono), monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; color: var(--kos-text); }
+.kos-dolphin-md { font-size: 12px; max-height: 320px; overflow: auto; }
+.kos-dolphin-md > * { margin-top: 0.5rem !important; }
+.kos-dolphin-md h1, .kos-dolphin-md h2, .kos-dolphin-md h3 { font-size: 13px; color: var(--kos-text); }
+.kos-dolphin-dim { color: var(--kos-dim); }
+
+/* terminal panel */
+.kos-dolphin-termwrap { height: 40%; min-height: 120px; max-height: 60%; display: flex; flex-direction: column; border-top: 1px solid var(--kos-border); background: rgba(12,12,14,0.96); }
+.kos-dolphin-panel-head { display: flex; justify-content: space-between; align-items: center; padding: 3px 10px; font-size: 11px; color: var(--kos-dim); background: var(--kos-panel); border-bottom: 1px solid var(--kos-border); }
+.kos-dolphin-x { border: 0; background: transparent; color: var(--kos-dim); font-size: 15px; line-height: 1; padding: 0 4px; }
+.kos-dolphin-x:hover { color: var(--kos-text); }
+.kos-dolphin-term { flex: 1; overflow-y: auto; padding: 6px 10px; font-family: var(--font-mono), monospace; font-size: 12.5px; line-height: 1.5; color: #d4d4d4; }
+.kos-dolphin-term-cmd { white-space: pre-wrap; word-break: break-word; }
+.kos-dolphin-term-out { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.kos-dolphin-term-prompt { color: #4ea1d3; }
+.kos-dolphin-term-live { display: flex; }
+.kos-dolphin-term-live input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #eaeaea; font: inherit; margin-left: 1ch; caret-color: var(--kos-good); }
+
+/* context menu */
+.kos-dolphin-menu {
+  position: fixed; z-index: 50; min-width: 190px; padding: 4px; border-radius: 7px;
+  background: var(--kos-panel); border: 1px solid var(--kos-border); box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+.kos-dolphin-mi { display: block; width: 100%; text-align: left; border: 0; background: transparent; color: var(--kos-text); padding: 6px 10px; border-radius: 5px; font-size: 12.5px; }
+.kos-dolphin-mi:hover { background: var(--kos-accent); color: var(--kos-bg); }
+.kos-dolphin-mi.danger:hover { background: #d05050; color: #fff; }
+.kos-dolphin-mi-label { padding: 4px 10px 2px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--kos-dim); }
+.kos-dolphin-sep { height: 1px; background: var(--kos-border); margin: 4px 2px; }
+
+/* status bar */
+.kos-dolphin-status {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 3px 10px; font-size: 11.5px; color: var(--kos-dim);
+  background: var(--kos-panel); border-top: 1px solid var(--kos-border);
+}
+.kos-dolphin-zoom { display: flex; align-items: center; gap: 6px; }
+.kos-dolphin-zoom input[type='range'] { width: 110px; accent-color: var(--kos-accent); }
+
+@media (max-width: 640px) {
+  .kos-dolphin-places, .kos-dolphin-infowrap { display: none; }
+}

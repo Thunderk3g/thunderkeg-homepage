@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppDefinition } from '../../types';
+import { recordScan } from '../../db/msf';
 
 /* Educational simulation only — produces canned, realistic-looking nmap output.
    No packets are ever sent; nothing on the network is touched. */
@@ -25,11 +26,29 @@ interface PortRow {
   version: string;
 }
 
-const OPEN_PORTS: PortRow[] = [
+export const OPEN_PORTS: PortRow[] = [
   { port: '22/tcp', service: 'ssh', version: 'OpenSSH 8.9p1 Ubuntu 3ubuntu0.6' },
   { port: '80/tcp', service: 'http', version: 'nginx 1.18.0 (Ubuntu)' },
   { port: '443/tcp', service: 'ssl/http', version: 'nginx 1.18.0 (Ubuntu)' },
 ];
+
+/** Stable fake address for a target: an IPv4 literal is kept, a name hashes into 10.10.0.0/16. */
+export function fakeAddress(target: string): string {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(target)) return target;
+  let h = 2166136261;
+  for (let i = 0; i < target.length; i++) h = Math.imul(h ^ target.charCodeAt(i), 16777619);
+  h >>>= 0;
+  return `10.10.${(h % 250) + 1}.${((h >>> 8) % 250) + 1}`;
+}
+
+/** The services a canned scan "found", in the shape the workspace db stores. */
+export function scanServices(profileKey: string) {
+  const showVer = profileKey === 'intense' || profileKey === 'intenseUdp';
+  return OPEN_PORTS.map((r) => {
+    const [port, proto] = r.port.split('/');
+    return { port: Number(port), proto, name: r.service, info: showVer ? r.version : null };
+  });
+}
 
 const COLORS = {
   bg: '#0b0f12',
@@ -50,7 +69,7 @@ function buildOutput(target: string, profileKey: string): string[] {
   out.push(`$ nmap ${p.flags ? p.flags + ' ' : ''}${target}`.trimEnd());
   out.push(`Starting Nmap 7.94 ( https://nmap.org ) at ${stamp} UTC`);
   out.push('');
-  out.push(`Nmap scan report for ${target} (10.10.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1})`);
+  out.push(`Nmap scan report for ${target} (${fakeAddress(target)})`);
   out.push(`Host is up (${latency}s latency).`);
 
   if (profileKey === 'ping') {
@@ -88,6 +107,7 @@ function Nmap() {
   const [profile, setProfile] = useState<string>('intense');
   const [lines, setLines] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [dbNote, setDbNote] = useState<string | null>(null);
   const bodyRef = useRef<HTMLPreElement>(null);
   const queue = useRef<string[]>([]);
   const timer = useRef<number | null>(null);
@@ -108,7 +128,9 @@ function Nmap() {
     if (!host || scanning) return;
     if (timer.current !== null) window.clearInterval(timer.current);
     setLines([]);
+    setDbNote(null);
     setScanning(true);
+    const scanProfile = profile;
     queue.current = buildOutput(host, profile);
     timer.current = window.setInterval(() => {
       const next = queue.current.shift();
@@ -116,6 +138,17 @@ function Nmap() {
         if (timer.current !== null) window.clearInterval(timer.current);
         timer.current = null;
         setScanning(false);
+        // the scan "completed": store what it printed in the workspace database
+        const address = fakeAddress(host);
+        const services = scanProfile === 'ping' ? [] : scanServices(scanProfile);
+        recordScan(host, address, services, {
+          os_name: scanProfile === 'ping' ? undefined : 'Linux',
+          source: 'zenmap',
+          flags: PROFILES[scanProfile]?.flags,
+        }).then(
+          () => setDbNote(`[db] saved ${address} with ${services.length} service(s) to workspace (psql: select * from hosts)`),
+          (e: unknown) => setDbNote(`[db] not saved: ${e instanceof Error ? e.message : String(e)}`),
+        );
         return;
       }
       setLines((l) => [...l, next]);
@@ -229,6 +262,7 @@ function Nmap() {
             );
           })
         )}
+        {dbNote && <div style={{ color: COLORS.dim }}>{dbNote}</div>}
       </pre>
     </div>
   );
