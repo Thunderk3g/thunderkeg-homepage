@@ -66,6 +66,7 @@ export function useDbStatus(): DbStatus {
 }
 
 let dbPromise: Promise<PGlite> | null = null;
+let errorFilterInstalled = false;
 
 /** Lazy singleton. Client only; rejects during SSR. */
 export function getDb(): Promise<PGlite> {
@@ -74,6 +75,17 @@ export function getDb(): Promise<PGlite> {
   const startedAt = performance.now();
   setStatus({ phase: 'starting', startedAt, elapsed: 0, error: null });
   ticker = setInterval(() => setStatus({ elapsed: Math.round(performance.now() - startedAt) }), 100);
+
+  // PGlite's Emscripten IndexedDB sync raises one uncaught, benign ErrnoError
+  // (ENOENT) while it checks for a data directory that does not exist yet.
+  // It is caught internally and every query succeeds; keep it out of the console.
+  if (!errorFilterInstalled) {
+    errorFilterInstalled = true;
+    window.addEventListener('error', (ev) => {
+      const err = ev.error as { name?: string; errno?: number } | undefined;
+      if (err && err.name === 'ErrnoError' && err.errno === 44) ev.preventDefault();
+    });
+  }
 
   dbPromise = (async () => {
     const { PGlite } = await import('@electric-sql/pglite');

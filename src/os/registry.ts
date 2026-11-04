@@ -20,6 +20,8 @@ const OVERRIDES: Record<string, Partial<Pick<AppDefinition, 'category' | 'deskto
   learning: { category: 'Research' },
   writing: { category: 'Research' },
   psql: { category: 'Research' },
+  // reachable from Dolphin, the menu and `nano`; keeps the desktop to one column
+  'code-editor': { desktop: false },
 };
 
 const withOverrides = (a: AppDefinition): AppDefinition => (OVERRIDES[a.id] ? { ...a, ...OVERRIDES[a.id] } : a);
