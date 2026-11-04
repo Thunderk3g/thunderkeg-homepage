@@ -1,30 +1,39 @@
 'use client';
 
 import { useOS } from '../store';
+import { AppIcon } from '../icons';
 import { profile } from '@/data/resume';
+import { useClock } from './useClock';
 
 /**
- * Conky-style card pinned to the desktop so a first-time visitor sees who this
- * is and where to start, instead of an empty wallpaper and a column of icons.
- * Sits below every window (z-index 1), so it never gets in the way.
+ * A Conky widget on the desktop: who this is and where to start. Monospaced,
+ * translucent, bottom-right; it steps aside while windows are open on the
+ * current workspace. On phones it is the hero at the top of the surface.
  */
 export function WelcomeCard() {
   const launch = useOS((s) => s.launch);
+  const user = useOS((s) => s.user);
+  const host = useOS((s) => s.host);
+  const now = useClock(60_000);
 
-  // six buttons: the card's grid is two columns wide
-  const actions: { label: string; icon: string; run: () => void }[] = [
-    { label: 'Research', icon: '🔬', run: () => launch('research') },
-    { label: 'Learning OS', icon: '🧭', run: () => launch('learning') },
-    { label: 'About me', icon: '🦊', run: () => launch('browser', { page: 'home' }) },
-    { label: 'Experience', icon: '💼', run: () => launch('browser', { page: 'experience' }) },
-    { label: 'Writing', icon: '✎', run: () => launch('writing') },
-    { label: 'Terminal', icon: '🖳', run: () => launch('terminal') },
+  const actions: { label: string; app: string; run: () => void }[] = [
+    { label: 'Research', app: 'research', run: () => launch('research') },
+    { label: 'Learning OS', app: 'learning', run: () => launch('learning') },
+    { label: 'About me', app: 'browser', run: () => launch('browser', { page: 'home' }) },
+    { label: 'Experience', app: 'file', run: () => launch('browser', { page: 'experience' }) },
+    { label: 'Writing', app: 'writing', run: () => launch('writing') },
+    { label: 'Terminal', app: 'terminal', run: () => launch('terminal') },
   ];
+
+  const uptimeMin = Math.max(1, Math.round(performance.now() / 60000));
 
   return (
     <section className="kos-welcome" aria-label="Introduction">
       <div className="kos-welcome-prompt">
-        <span className="p-user">kali@kali</span>:<span className="p-path">~</span>$ whoami
+        <span className="p-user">
+          {user}@{host}
+        </span>
+        :<span className="p-path">~</span>$ whoami
       </div>
       <h1 className="kos-welcome-name">Diwakar Adhikari</h1>
       <p className="kos-welcome-role">
@@ -32,10 +41,25 @@ export function WelcomeCard() {
       </p>
       <p className="kos-welcome-tagline">{profile.tagline}</p>
 
+      <dl className="kos-welcome-stats">
+        <div>
+          <dt>location</dt>
+          <dd>{profile.location}</dd>
+        </div>
+        <div>
+          <dt>local</dt>
+          <dd>{now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</dd>
+        </div>
+        <div>
+          <dt>uptime</dt>
+          <dd>{uptimeMin} min</dd>
+        </div>
+      </dl>
+
       <div className="kos-welcome-actions">
         {actions.map((a) => (
           <button key={a.label} className="kos-welcome-btn" onClick={a.run}>
-            <span aria-hidden="true">{a.icon}</span> {a.label}
+            <AppIcon id={a.app} size={18} /> {a.label}
           </button>
         ))}
       </div>
@@ -51,7 +75,7 @@ export function WelcomeCard() {
       </div>
 
       <p className="kos-welcome-hint">
-        Open anything from <strong>Applications</strong>, the icons, or press <kbd>Ctrl</kbd>+<kbd>K</kbd>.
+        Press <kbd>Super</kbd> for applications, <kbd>Ctrl</kbd>+<kbd>K</kbd> to search.
       </p>
     </section>
   );
