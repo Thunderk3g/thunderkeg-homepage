@@ -240,10 +240,10 @@ export function resumeText(): string {
   out.push(`${profile.email} · ${profile.phone} · github.com/${profile.github}`, '');
   out.push('## Summary', ...profile.summary.map((s) => '- ' + s), '');
   out.push('## Research interests', ...research.directions.map((d) => '- ' + d));
-  out.push('', '## Research');
-  for (const r of [...research.inPreparation, ...research.published]) {
-    out.push('', `### ${r.title}`, r.venue, r.summary);
-  }
+  out.push('', '## Publications');
+  for (const r of research.published) out.push('', `### ${r.title}`, r.venue, r.summary);
+  out.push('', '## Manuscripts');
+  for (const r of research.inPreparation) out.push('', `### ${r.title}`, r.venue, r.summary);
   out.push('', research.track);
   out.push('', '## Education', ...education.map((e) => `${e.degree} — ${e.org} · ${e.period} · ${e.detail}`));
   out.push('', '## Experience');
