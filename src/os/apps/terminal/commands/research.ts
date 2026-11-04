@@ -4,6 +4,9 @@ import { STATUS_ORDER, STATUS_SHORT, type ReadStatus } from '@/research/types';
 import { dueCards, ensureSeeded, useResearch } from '@/research/store';
 import { toBibtex, toBibtexAll } from '@/research/bibtex';
 import { buildArxivQuery } from '@/research/client';
+import { planText, studyPlan } from '@/research/plan';
+import { matrixRows, matrixText, sortRows } from '@/research/matrix';
+import type { Paper } from '@/research/types';
 
 /**
  * Research app from the shell. Local data comes straight from the store;
@@ -17,7 +20,95 @@ const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n - 1) + 
 /** argv after the command name, with quotes kept (the tokenizer strips them). */
 const rest = (raw: string, name: string) => raw.trim().replace(new RegExp(`^${name}\\s*`), '');
 
+/** Library lookup by id, arXiv id, bibkey, slug, or a unique fragment of any of those. */
+function findPaper(q: string): Paper | undefined {
+  const k = q.toLowerCase().replace(/^arxiv:/, '');
+  const papers = useResearch.getState().papers;
+  return (
+    papers.find((p) => p.id.toLowerCase() === q.toLowerCase() || p.arxivId === k || p.bibKey === k || p.contentSlug === k) ??
+    papers.find((p) => p.id.toLowerCase().includes(k) || p.bibKey.includes(k))
+  );
+}
+
+/** `highlight <id> "text" [@ p. 4]` → id and text; quotes are optional. */
+export function parseHighlightArgs(raw: string): { id: string; text: string; where?: string } | null {
+  const body = rest(raw, 'highlight');
+  const m = /^(\S+)\s+([\s\S]+)$/.exec(body);
+  if (!m) return null;
+  let text = m[2].trim();
+  let where: string | undefined;
+  const at = /\s+@\s*([^"“”]+)$/.exec(text);
+  if (at) {
+    where = at[1].trim();
+    text = text.slice(0, at.index).trim();
+  }
+  text = text.replace(/^["“']([\s\S]*)["”']$/, '$1').trim();
+  return text ? { id: m[1], text, where } : null;
+}
+
 export const researchCommands: Command[] = [
+  {
+    name: 'today',
+    summary: 'the study plan: due cards, reading queue with time budgets, week, RQ coverage',
+    usage: 'today',
+    category: 'research',
+    run: async () => {
+      await ensureSeeded();
+      const s = useResearch.getState();
+      const plan = studyPlan(s);
+      const title = (id: string) => s.papers.find((p) => p.id === id)?.title ?? id;
+      return planText(plan, title) + '\n\nopen the GUI:  research today';
+    },
+  },
+  {
+    name: 'matrix',
+    summary: 'the literature matrix as a text table (optionally one RQ)',
+    usage: 'matrix [rq1..rq5]',
+    category: 'research',
+    run: async ({ args }) => {
+      await ensureSeeded();
+      const s = useResearch.getState();
+      const rq = (args[0] ?? '').toLowerCase();
+      if (rq && !s.rqs.some((q) => q.id === rq)) return `matrix: unknown research question '${args[0]}' (${s.rqs.map((q) => q.id).join(', ')})`;
+      const papers = s.papers.filter((p) => p.status !== 'dropped' && (!rq || p.rqIds.includes(rq)));
+      if (!papers.length) return rq ? `no papers linked to ${rq.toUpperCase()}.` : 'library is empty.';
+      const rows = sortRows(matrixRows(papers), 'status', 1);
+      return [
+        matrixText(rows),
+        '',
+        `${rows.length} paper(s)${rq ? ` on ${rq.toUpperCase()}` : ''} · full table with method, critique and delta: research matrix`,
+      ].join('\n');
+    },
+    complete: ({ args }) => useResearch.getState().rqs.map((q) => q.id).filter((k) => k.startsWith(args[0] ?? '')),
+  },
+  {
+    name: 'highlight',
+    summary: 'add a highlight (a sentence you would quote) to a library paper',
+    usage: 'highlight <paperId|bibkey> "<text>" [@ p. 4]',
+    category: 'research',
+    run: async ({ raw }) => {
+      await ensureSeeded();
+      const parsed = parseHighlightArgs(raw);
+      if (!parsed) return 'usage: highlight <paperId|bibkey> "<text>" [@ p. 4]';
+      const paper = findPaper(parsed.id);
+      if (!paper) return `highlight: no library paper matching '${parsed.id}' (try \`library\`)`;
+      useResearch.getState().addHighlight({ paperId: paper.id, text: parsed.text, where: parsed.where });
+      const n = useResearch.getState().highlights.filter((h) => h.paperId === paper.id).length;
+      return `highlighted in ${clip(paper.title, 60)}${parsed.where ? ` (${parsed.where})` : ''} — ${n} highlight(s). Make it a card in the GUI: research library`;
+    },
+    complete: ({ args }) =>
+      args.length <= 1 ? useResearch.getState().papers.map((p) => p.bibKey).filter((k) => k.startsWith(args[0] ?? '')) : [],
+  },
+  {
+    name: 'radar',
+    summary: 'open the AI Radar (live AI headlines) inside Research',
+    usage: 'radar',
+    category: 'research',
+    run: ({ shell }) => {
+      shell.launch('research', { arg: 'radar' });
+      return 'opening Research → Radar…';
+    },
+  },
   {
     name: 'arxiv',
     summary: 'search arXiv (newest first) for papers',
