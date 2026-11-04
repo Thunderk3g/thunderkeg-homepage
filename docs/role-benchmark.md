@@ -108,3 +108,25 @@ rejection mentioned; the employer-dependent paper is "in preparation, pending
 clearance". This follows academic CV guidance: status labels must match
 reality, in-preparation items are limited and separated, and "rejected" is
 never written.
+
+## 7. How this is tracked
+
+The Learning OS (`/learning`, or the Learning app on the desktop) has a
+**Role benchmark** tab that renders this document from
+`src/learning/benchmark.ts`; the 90-day plan is roadmap phases p4–p6 in
+`src/learning/seed.ts`. Change this document first, then those files.
+
+- Section 1's dimensions each take a self-assessment (Senior / Between /
+  Lead).
+- Section 3's gaps are cards in priority order. Each shows the mapped skills
+  with their current state, the artefact that would close the gap, and a
+  "Log evidence" button that attaches evidence to those skills.
+- Section 4's artefacts are checkboxes; section 5's programmes each carry an
+  application status, with a "verify on programme page" flag.
+- A readiness line gives, per track, the share of mapped skills at APPLIED or
+  better. A gap serving both tracks counts toward each.
+- With no LLM key, the offline coach answers "what should I do next" with
+  the highest-priority gap that still has a mapped skill below APPLIED.
+
+All of it is stored in the browser's localStorage only (schema v2), and is
+included in the Learning OS JSON export.
