@@ -44,8 +44,17 @@ export default function ResumePage() {
           ))}
         </ul>
 
-        <h2>Research</h2>
-        {[...research.inPreparation, ...research.published].map((r) => (
+        <h2>Publications</h2>
+        {research.published.map((r) => (
+          <section key={r.title} className="doc-project">
+            <h3>{r.title}</h3>
+            <p className="doc-meta">{r.venue}</p>
+            <p className="doc-para">{r.summary}</p>
+          </section>
+        ))}
+
+        <h2>Manuscripts</h2>
+        {research.inPreparation.map((r) => (
           <section key={r.title} className="doc-project">
             <h3>{r.title}</h3>
             <p className="doc-meta">{r.venue}</p>

@@ -15,20 +15,39 @@ const FILE_NAME = 'Diwakar-Adhikari-Resume.pdf';
 
 /* ───────────────────────── pdf builder ───────────────────────── */
 
-function buildResume(): jsPDF {
+/**
+ * jsPDF's built-in Helvetica is WinAnsi-encoded: characters outside it (→)
+ * render as garbage, so map them to plain equivalents before measuring.
+ */
+const pdfSafe = (text: string): string =>
+  text.replace(/→/g, '->').replace(/≥/g, '>=').replace(/≤/g, '<=');
+
+/**
+ * Section order mirrors app/resume/page.tsx: Profile, Research interests,
+ * Publications, Manuscripts, Education, Experience, projects, skills, awards.
+ * Published and in-preparation work are never merged under one heading.
+ */
+export function buildResume(): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   let y = MARGIN;
+
+  const newPage = (): void => {
+    doc.addPage();
+    y = MARGIN;
+  };
 
   /** Move the cursor down, paginating when we run past the bottom margin. */
   const advance = (amount: number): void => {
     y += amount;
-    if (y > BOTTOM) {
-      doc.addPage();
-      y = MARGIN;
-    }
+    if (y > BOTTOM) newPage();
   };
 
-  /** Render wrapped text in the given font, returning the new cursor. */
+  /** Start a new page unless `space` mm are left — keeps headings with their content. */
+  const keep = (space: number): void => {
+    if (y + space > BOTTOM) newPage();
+  };
+
+  /** Render text wrapped to the content width (minus `indent`), paginating per line. */
   const writeWrapped = (
     text: string,
     size: number,
@@ -38,15 +57,15 @@ function buildResume(): jsPDF {
   ): void => {
     doc.setFont('helvetica', style);
     doc.setFontSize(size);
-    const lines = doc.splitTextToSize(text, CONTENT_W - indent) as string[];
-    for (const line of lines) {
-      if (y > BOTTOM) {
-        doc.addPage();
-        y = MARGIN;
-      }
+    const lines = doc.splitTextToSize(pdfSafe(text), CONTENT_W - indent) as string[];
+    // short blocks move whole; longer ones never leave a single orphan or widow line
+    if (lines.length <= 3) keep((lines.length - 1) * lineHeight);
+    lines.forEach((line, i) => {
+      const widow = i > 0 && i === lines.length - 2 && y + lineHeight > BOTTOM;
+      if (y > BOTTOM || widow) newPage();
       doc.text(line, MARGIN + indent, y);
       y += lineHeight;
-    }
+    });
   };
 
   const rule = (): void => {
@@ -57,6 +76,7 @@ function buildResume(): jsPDF {
 
   const sectionHeading = (label: string): void => {
     advance(4);
+    keep(22);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(20, 20, 20);
@@ -65,6 +85,32 @@ function buildResume(): jsPDF {
     rule();
     advance(5);
     doc.setTextColor(40, 40, 40);
+  };
+
+  /** One bulleted item, wrapped and hanging-indented under its marker. */
+  const bullet = (text: string): void => {
+    keep(5);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('•', MARGIN + 1, y);
+    writeWrapped(text, 10, 'normal', 5, 5);
+    advance(1);
+  };
+
+  const subHeading = (label: string): void => {
+    advance(1.5);
+    keep(15);
+    writeWrapped(label, 10, 'bold', 5);
+  };
+
+  /** A titled entry (paper, project): title, italic meta line, body, optional italic note. */
+  const entry = (title: string, meta: string, body: string, note?: string): void => {
+    keep(20);
+    writeWrapped(title, 10, 'bold', 5);
+    if (meta) writeWrapped(meta, 9, 'italic', 4.5);
+    writeWrapped(body, 10, 'normal', 5);
+    if (note) writeWrapped(note, 9, 'italic', 4.5);
+    advance(2.5);
   };
 
   /* ── header ── */
@@ -77,10 +123,10 @@ function buildResume(): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
   doc.setTextColor(70, 70, 70);
-  doc.text(`${profile.title} @ ${profile.company}`, MARGIN, y);
+  doc.text(pdfSafe(`${profile.title} · ${profile.company}`), MARGIN, y);
   advance(6);
 
-  const contact = [profile.location, profile.email, profile.phone]
+  const contact = [profile.location, profile.email, profile.phone, `github.com/${profile.github}`]
     .filter(Boolean)
     .join('  ·  ');
   doc.setFontSize(10);
@@ -91,34 +137,34 @@ function buildResume(): jsPDF {
   advance(6);
   doc.setTextColor(40, 40, 40);
 
-  /* ── summary ── */
-  sectionHeading('Summary');
+  /* ── profile ── */
+  sectionHeading('Profile');
   for (const para of profile.summary) {
     writeWrapped(para, 10, 'normal', 5);
     advance(1.5);
   }
 
-  /** One bulleted line, hanging-indented under its marker. */
-  const bullet = (text: string): void => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    if (y > BOTTOM) {
-      doc.addPage();
-      y = MARGIN;
-    }
-    doc.text('•', MARGIN, y);
-    writeWrapped(text, 10, 'normal', 5, 5);
-    advance(1);
-  };
+  /* ── research ── */
+  sectionHeading('Research interests');
+  for (const direction of research.directions) bullet(direction);
 
-  const subHeading = (label: string): void => {
-    advance(1.5);
-    writeWrapped(label, 10, 'bold', 5);
-  };
+  sectionHeading('Publications');
+  for (const item of research.published) entry(item.title, item.venue, item.summary);
+
+  sectionHeading('Manuscripts');
+  for (const item of research.inPreparation) entry(item.title, item.venue, item.summary);
+  writeWrapped(research.track, 10, 'normal', 5);
+  advance(2);
+
+  /* ── education ── */
+  sectionHeading('Education');
+  for (const e of education) bullet(`${e.degree} — ${e.org} · ${e.period} · ${e.detail}`);
+  advance(2);
 
   /* ── experience ── */
   sectionHeading('Experience');
   for (const role of roles) {
+    keep(25);
     writeWrapped(`${role.title} · ${role.org}`, 11, 'bold', 5.5);
     writeWrapped(role.period, 9, 'italic', 4.5);
     advance(1);
@@ -134,42 +180,26 @@ function buildResume(): jsPDF {
   /* ── projects ── */
   sectionHeading('Selected independent projects');
   for (const project of projects) {
-    writeWrapped(`${project.name} — ${project.kind}`, 10, 'bold', 5);
-    writeWrapped(project.blurb, 10, 'normal', 5);
-    if (project.caveat) writeWrapped(project.caveat, 9, 'italic', 4.5);
-    advance(2.5);
+    entry(
+      `${project.name} — ${project.kind}`,
+      project.url ? project.url.replace(/^https?:\/\//, '') : '',
+      project.blurb,
+      project.caveat,
+    );
   }
-
-  /* ── research ── */
-  sectionHeading('Research');
-  for (const item of [...research.inPreparation, ...research.published]) {
-    writeWrapped(item.title, 10, 'bold', 5);
-    writeWrapped(item.venue, 9, 'italic', 4.5);
-    writeWrapped(item.summary, 10, 'normal', 5);
-    advance(2.5);
-  }
-  subHeading('Research directions');
-  for (const direction of research.directions) bullet(direction);
-  advance(1.5);
-  writeWrapped(research.track, 10, 'normal', 5);
-  advance(2);
 
   /* ── skills ── */
   sectionHeading('Technical skills');
   for (const skill of skills) {
+    keep(12);
     writeWrapped(skill.group, 10, 'bold', 5);
     writeWrapped(skill.items, 9.5, 'normal', 4.8);
     advance(2);
   }
 
-  /* ── education & awards ── */
-  sectionHeading('Education');
-  for (const e of education) bullet(`${e.degree} — ${e.org} · ${e.period} · ${e.detail}`);
-  advance(2);
-
+  /* ── awards ── */
   sectionHeading('Awards');
   for (const a of awards) bullet(a);
-  advance(2);
 
   /* ── footer on every page ── */
   const pageCount = doc.getNumberOfPages();
@@ -178,11 +208,7 @@ function buildResume(): jsPDF {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(
-      `${profile.name} — Resume`,
-      MARGIN,
-      PAGE_H - 8,
-    );
+    doc.text(`${profile.name} — Résumé`, MARGIN, PAGE_H - 8);
     doc.text(`Page ${p} / ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 8, {
       align: 'right',
     });

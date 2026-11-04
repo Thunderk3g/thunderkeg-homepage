@@ -140,6 +140,14 @@ const SEED_SKILLS: SkillSeed[] = [
   { id: 'wer-eval', name: 'WER & speech evaluation', domain: 'Speech', imp: 5, ivr: 4, state: 'APPLIED', conf: 0.7, ind: true, deps: ['eval-methodology'], obj: 'Extend to script-normalised and entity-weighted scoring.', check: 'Implement WER with script normalisation from scratch.' },
   { id: 'indic-adaptation', name: 'Indic / Hinglish adaptation', domain: 'Speech', imp: 5, ivr: 5, state: 'CONCEPTUAL', conf: 0.5, ind: null, deps: ['asr-finetuning', 'wer-eval'], obj: 'Turn existing corpus knowledge into a measured adaptation result.', check: 'Explain why canonicalisation is ill-posed for code-switched text, then measure it.' },
   { id: 'speech-model-internals', name: 'Speech model internals', domain: 'Speech', imp: 4, ivr: 4, state: 'AWARE', conf: 0.25, ind: false, deps: ['asr-architecture'], obj: 'Get below the API boundary you have been working above.', check: 'Explain Whisper decoder loops as a decoding artefact, mechanistically.' },
+
+  /* ── Role benchmark gaps (docs/role-benchmark.md): new, untested ── */
+  { id: 'llm-tracing', name: 'LLM tracing & online evals', domain: 'Evaluation', imp: 4, ivr: 4, state: 'AWARE', conf: 0.3, ind: null, deps: ['ai-observability'], obj: 'Trace the compliance reviewer end to end (Langfuse, LangSmith or Arize) and wire faithfulness and context-precision scores to those traces.', check: 'From a blank dashboard, find the slowest and the least faithful request of the day and explain both from their spans.' },
+  { id: 'error-analysis-method', name: 'Error analysis as a method', domain: 'Evaluation', imp: 4, ivr: 4, state: 'AWARE', conf: 0.35, ind: null, deps: ['eval-methodology'], obj: 'Open-code 100 reviewer failures into a failure taxonomy, then write one targeted judge per failure mode.', check: 'Given 30 unseen failure traces, build a taxonomy on paper and defend each category boundary.' },
+  { id: 'red-teaming', name: 'Red-teaming LLM applications', domain: 'Governance & safety', imp: 3, ivr: 3, state: 'AWARE', conf: 0.3, ind: null, deps: ['security-engineering', 'llm-app-arch'], obj: 'Run a documented adversarial pass on the reviewer: prompt injection, jailbreaks, disclaimer evasion.', check: 'Write five attacks that should get past the reviewer, predict which will, then run them.' },
+  { id: 'ai-governance', name: 'AI governance (EU AI Act, IRDAI, DPDP)', domain: 'Governance & safety', imp: 4, ivr: 3, state: 'AWARE', conf: 0.35, ind: null, obj: 'Map the reviewer to EU AI Act Annex III obligations, IRDAI AI guidance and DPDP duties, clause by clause.', check: 'Explain, without notes, why life and health insurance pricing is high-risk under Annex III and what that obliges.' },
+  { id: 'public-artefacts', name: 'Public artefacts & maintainership', domain: 'Product & leadership', imp: 3, ivr: 3, state: 'AWARE', conf: 0.4, ind: null, obj: 'One maintained repository (Mneme or ForgeLM) with tagged releases and answered issues, plus one talk or blog series.', check: 'Cut a release and answer an outside issue without help.' },
+  { id: 'der-eval', name: 'DER & diarization evaluation', domain: 'Speech', imp: 4, ivr: 3, state: 'UNKNOWN', conf: 0.25, ind: null, deps: ['wer-eval', 'speech-systems'], obj: 'Score pyannote 3.x against the human-adjudicated calls with DER (miss, false alarm, confusion) alongside WER.', check: 'Compute DER by hand for a two-speaker toy reference, collar included.' },
 ];
 
 export const seedSkills: Skill[] = SEED_SKILLS.map(skill);
@@ -205,6 +213,14 @@ const seedProjects: Project[] = [
 
 /* ───────────────────────── reading queue ───────────────────────── */
 
+/** Added with schema v2; the store's migration appends them to older state. */
+export const BENCHMARK_RESOURCES: Resource[] = [
+  { id: 'r-husain-shankar', title: 'Husain & Shankar — error analysis and LLM evals (course notes and FAQ)', url: 'https://hamel.dev/blog/posts/evals-faq/', reason: 'The named method behind gap 2: open coding into a failure taxonomy, then a targeted judge per failure mode.', state: 'needed-now', skillIds: ['error-analysis-method', 'eval-methodology'] },
+  { id: 'r-langfuse-rag', title: 'Langfuse — evaluation of RAG pipelines', url: 'https://langfuse.com/guides/cookbook/evaluation_of_rag_with_ragas', reason: 'Faithfulness and context precision attached to traces — the shape of the day 0–30 artefact.', state: 'supporting-build', skillIds: ['llm-tracing', 'ai-observability'] },
+  { id: 'r-vllm-docs', title: 'vLLM documentation — serving, quantization and benchmarks', url: 'https://docs.vllm.ai/', reason: 'Needed for the day 31–60 benchmark: OpenAI-compatible server, quantized weights, the benchmark scripts.', state: 'later', skillIds: ['vllm', 'model-serving', 'quantization'] },
+  { id: 'r-pyannote', title: 'pyannote.audio 3.x and DER methodology (pyannote.metrics)', url: 'https://github.com/pyannote/pyannote-audio', reason: 'Speech postings name DER, not only WER; score the diarization benchmark the way reviewers expect.', state: 'deep-dive', skillIds: ['der-eval', 'speech-systems'] },
+];
+
 const seedResources: Resource[] = [
   { id: 'r-autograd', title: 'PyTorch autograd mechanics (official)', url: 'https://pytorch.org/docs/stable/notes/autograd.html', reason: 'Blocks the training loop milestone — you cannot debug a None gradient without it.', state: 'needed-now', skillIds: ['autograd', 'pytorch'] },
   { id: 'r-annotated', title: 'The Annotated Transformer', url: 'https://nlp.seas.harvard.edu/annotated-transformer/', reason: 'Reference to diff your from-scratch attention against — read after you implement, not before.', state: 'supporting-build', skillIds: ['transformer-internals', 'attention-math'] },
@@ -214,6 +230,8 @@ const seedResources: Resource[] = [
   { id: 'r-vllm', title: 'Efficient Memory Management for LLM Serving (PagedAttention)', url: 'https://arxiv.org/abs/2309.06180', reason: 'Deferred on purpose: it only makes sense after you have implemented a KV cache and felt the fragmentation problem.', state: 'later', skillIds: ['vllm', 'kv-cache'] },
   { id: 'r-whisper', title: 'Robust Speech Recognition via Large-Scale Weak Supervision (Whisper)', url: 'https://arxiv.org/abs/2212.04356', reason: 'The model you are adapting. Read the architecture and the decoding section closely.', state: 'needed-now', skillIds: ['asr-architecture', 'speech-model-internals'] },
   { id: 'r-ctc', title: 'Sequence Modeling with CTC (distill.pub)', url: 'https://distill.pub/2017/ctc/', reason: 'The alignment problem, explained well enough to derive. Needed before ASR fine-tuning.', state: 'supporting-build', skillIds: ['ctc-seq2seq'] },
+  /* role benchmark (docs/role-benchmark.md) */
+  ...BENCHMARK_RESOURCES,
 ];
 
 /* ───────────────────────── interview domains ───────────────────────── */
@@ -288,6 +306,46 @@ const seedStories: Story[] = [
 
 /* ───────────────────────── roadmap ───────────────────────── */
 
+/**
+ * The role benchmark's 90-day plan (docs/role-benchmark.md §4). It runs
+ * alongside p1–p3, not after them: p1–p3 are the model-level learning plan,
+ * p4–p6 are the lead-level and research-track artefacts.
+ */
+export const BENCHMARK_PHASES: RoadmapPhase[] = [
+  {
+    id: 'p4',
+    window: 'Benchmark day 0–30',
+    theme: 'Observability and evals as a system',
+    track: 'both',
+    artifacts: ['Tracing on the compliance reviewer', 'Failure-mode taxonomy document', 'Regression gate in CI', 'One blog post on the method'],
+    skillIds: ['llm-tracing', 'ai-observability', 'error-analysis-method', 'eval-methodology', 'public-artefacts'],
+  },
+  {
+    id: 'p5',
+    window: 'Benchmark day 31–60',
+    theme: 'Serving and cost',
+    track: 'lead',
+    artifacts: [
+      "Self-hosted vLLM benchmark of one open model against the hosted API on the reviewer's eval set: latency, cost per request, quality delta",
+      'Write-up with declared confounds',
+    ],
+    skillIds: ['model-serving', 'vllm', 'quantization', 'cost-engineering'],
+  },
+  {
+    id: 'p6',
+    window: 'Benchmark day 61–90',
+    theme: 'Governance and the research bridge',
+    track: 'both',
+    artifacts: [
+      'Red-team report for the reviewer',
+      'Mapping of the reviewer to EU AI Act Annex III and IRDAI expectations',
+      'Resubmit the constraint-density paper',
+      'Motivation letters drafted per programme',
+    ],
+    skillIds: ['red-teaming', 'ai-governance'],
+  },
+];
+
 const seedRoadmap: RoadmapPhase[] = [
   {
     id: 'p1',
@@ -310,21 +368,32 @@ const seedRoadmap: RoadmapPhase[] = [
     artifacts: ['protected speech eval set', 'ASR baseline', 'fine-tune + error analysis', 'KV cache + inference benchmark', 'technical write-up'],
     skillIds: ['asr-finetuning', 'wer-eval', 'indic-adaptation', 'kv-cache', 'inference-internals', 'model-serving'],
   },
+  ...BENCHMARK_PHASES,
 ];
 
 /* ───────────────────────── the initial state ───────────────────────── */
 
-export const SCHEMA_VERSION = 1;
+/** v2: role benchmark (benchmark / planDone / applications, p4–p6, new reading). */
+export const SCHEMA_VERSION = 2;
+
+/** The v1 target, kept so the migration only replaces fields the user never edited. */
+export const V1_TARGET = {
+  northStar: 'Senior AI Systems / Model Engineering',
+  companies: ['Sarvam AI', 'AI4Bharat-adjacent labs', 'Indic speech / LLM infra teams'],
+  notes:
+    'Keep the existing strength — architecting and shipping AI systems inside real constraints — while closing the model-level gap. The transformation is additive, not a replacement.',
+};
 
 export function seedState(): LearningState {
   return {
     version: SCHEMA_VERSION,
     target: {
-      northStar: 'Senior AI Systems / Model Engineering',
+      northStar:
+        "AI Engineering Lead at market standard, and a research-track master's (AI & Law / speech) for 2027",
       spike: 'Indic speech + evaluation + model adaptation + inference',
-      companies: ['Sarvam AI', 'AI4Bharat-adjacent labs', 'Indic speech / LLM infra teams'],
+      companies: ['Sarvam AI', 'AI4Bharat-adjacent labs', 'Indic speech / LLM infra teams', 'BFSI AI platform teams'],
       notes:
-        'Keep the existing strength — architecting and shipping AI systems inside real constraints — while closing the model-level gap. The transformation is additive, not a replacement.',
+        'Keep the existing strength — architecting and shipping AI systems inside real constraints — while closing the model-level gap and the lead-level gaps in the role benchmark. One body of evidence serves both tracks: the same artefacts carry the lead case and the 2027 applications.',
     },
     skills: seedSkills,
     evidence: [],
@@ -341,5 +410,8 @@ export function seedState(): LearningState {
       'Explain every tensor dimension out loud before running it.',
       'Diff the output against torch.nn.functional.scaled_dot_product_attention.',
     ],
+    benchmark: {},
+    planDone: {},
+    applications: {},
   };
 }

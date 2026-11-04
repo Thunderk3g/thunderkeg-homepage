@@ -1,0 +1,100 @@
+/* Learning OS additions — the base .lrn-* styles live in app/globals.css.
+   Everything here is prefixed lrn- and scoped to the role benchmark and the
+   longer north star. */
+
+/* North star: the two-track target is a sentence, not a title */
+.lrn-northstar.long { font-size: 1.05rem; line-height: 1.4; max-width: 70ch; text-wrap: balance; }
+
+/* ── role benchmark ── */
+.lrn-bm-ready {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center;
+  border: 1px solid var(--doc-border); border-radius: 10px; background: var(--doc-panel);
+  padding: 10px 14px; margin: 0 0 0.4rem; font-size: 0.84rem;
+}
+.lrn-bm-ready-k {
+  font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--doc-dim);
+}
+.lrn-bm-ready-part { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lrn-bm-ready-part strong { color: #eef2f8; }
+.lrn-bm-bar {
+  display: inline-block; width: 90px; height: 6px; border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08); overflow: hidden;
+}
+.lrn-bm-bar > span { display: block; height: 100%; background: var(--doc-accent); }
+
+.lrn-bm .lrn-table tbody tr { cursor: default; }
+.lrn-bm .lrn-table tbody tr:hover { background: transparent; }
+.lrn-bm .lrn-table td { vertical-align: top; line-height: 1.45; }
+.lrn-bm-dims { min-width: 720px; }
+.lrn-bm-apps { min-width: 760px; }
+.lrn-bm-dim-name { font-weight: 600; color: #eef2f8; white-space: nowrap; }
+.lrn-bm-apps .lrn-bm-dim-name { white-space: normal; min-width: 14em; }
+
+.lrn-bm-seg { display: inline-flex; border: 1px solid var(--doc-border); border-radius: 6px; overflow: hidden; }
+.lrn-bm-seg-btn {
+  background: transparent; color: var(--doc-dim); border: 0; padding: 3px 9px;
+  font-size: 0.74rem; cursor: pointer; font-family: inherit;
+}
+.lrn-bm-seg-btn + .lrn-bm-seg-btn { border-left: 1px solid var(--doc-border); }
+.lrn-bm-seg-btn:hover { color: var(--doc-text); }
+.lrn-bm-seg-btn.on.senior { background: rgba(201, 139, 139, 0.18); color: #e7b0b0; }
+.lrn-bm-seg-btn.on.between { background: rgba(216, 178, 106, 0.18); color: #e9c98a; }
+.lrn-bm-seg-btn.on.lead { background: rgba(110, 231, 183, 0.16); color: #8fe6c0; }
+
+.lrn-bm-gaps {
+  list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px; margin-top: 8px; padding: 0;
+}
+.lrn-bm-gap {
+  border: 1px solid var(--doc-border); border-radius: 10px; background: var(--doc-panel);
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; min-width: 0;
+}
+.lrn-bm-gap:has(.lrn-form) { grid-column: 1 / -1; }
+.lrn-bm-gap header { display: flex; align-items: baseline; gap: 8px; }
+.lrn-bm-gap h3 { font-size: 0.92rem; margin: 0; flex: 1; color: #eef2f8; }
+.lrn-bm-prio {
+  font-family: var(--doc-mono); font-size: 0.75rem; color: var(--doc-accent);
+  border: 1px solid var(--doc-border); border-radius: 4px; padding: 0 5px;
+}
+.lrn-bm-track {
+  font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap;
+  border: 1px solid var(--doc-border); border-radius: 999px; padding: 1px 7px; color: var(--doc-dim);
+}
+.lrn-bm-track.t-lead { color: #7fb2e6; border-color: #2f4d70; }
+.lrn-bm-track.t-research { color: #d6a6e8; border-color: #59406a; }
+.lrn-bm-track.t-both { color: #8fd6b4; border-color: #2c5b47; }
+.lrn-bm-why { font-size: 0.8rem; color: var(--doc-dim); line-height: 1.5; margin: 0; }
+.lrn-bm-skills { list-style: none; display: flex; flex-direction: column; gap: 4px; padding: 0; margin: 2px 0; }
+.lrn-bm-skills li { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.8rem; }
+.lrn-bm-proof { font-size: 0.8rem; line-height: 1.5; margin: 0; }
+.lrn-bm-proof strong { color: #eef2f8; }
+.lrn-bm-gap footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; font-size: 0.74rem; }
+
+.lrn-bm-plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 8px; }
+.lrn-bm-phase { border-left: 2px solid var(--doc-accent); padding-left: 12px; min-width: 0; }
+.lrn-bm-phase header { display: flex; gap: 8px; align-items: baseline; font-size: 0.84rem; }
+.lrn-bm-phase header .lrn-dim { margin-left: auto; font-size: 0.74rem; }
+.lrn-bm-theme { font-size: 0.82rem; color: var(--doc-dim); margin: 3px 0 4px; }
+.lrn-bm-phase .lrn-milestones { padding: 0; }
+.lrn-bm-phase .lrn-ms-title { font-size: 0.8rem; line-height: 1.45; }
+
+.lrn-bm-apps select { font-size: 0.78rem; }
+.lrn-bm-verify {
+  display: block; margin-top: 3px; font-size: 0.7rem; color: #f0c274;
+}
+.lrn-bm-verify::before { content: '⚑ '; }
+
+@media (max-width: 640px) {
+  .lrn-bm-gaps { grid-template-columns: minmax(0, 1fr); }
+  .lrn-bm-ready { flex-direction: column; align-items: flex-start; }
+}
+
+/* .doc-wrap ul/ol carry a left margin for prose lists; the card grids opt out */
+.lrn-bm .lrn-bm-gaps, .lrn-bm .lrn-bm-skills, .lrn-bm .lrn-milestones { margin-left: 0; }
+.lrn-bm-apps td:nth-child(2) { white-space: nowrap; }
+.lrn-bm-apps select {
+  padding: 4px 7px; border-radius: 6px; border: 1px solid var(--doc-border);
+  background: #12151b; color: var(--doc-text); font-family: inherit; outline: none;
+}
+.lrn-bm-apps select:focus { border-color: var(--doc-accent); }
+.lrn-bm-phase input[type='checkbox'] { accent-color: var(--doc-accent); }
