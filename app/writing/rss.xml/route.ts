@@ -3,7 +3,16 @@ import { profile } from '@/data/resume';
 
 export const dynamic = 'force-static';
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://diwakar.dev';
+/**
+ * Absolute base for feed links. NEXT_PUBLIC_SITE_URL wins (set it when a custom
+ * domain is attached); otherwise Vercel's own production hostname, which it
+ * exposes at build time. (diwakar.dev is not this site.)
+ */
+const SITE =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'https://portfolio-thunderk3gs-projects.vercel.app');
 
 const escape = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
