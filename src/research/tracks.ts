@@ -7,7 +7,7 @@
  * against the arXiv API when it was added.
  */
 
-export type TrackId = 'core' | 'defense' | 'markets';
+export type TrackId = 'core' | 'defense' | 'cyber' | 'aiops' | 'markets';
 
 export interface Track {
   id: TrackId;
@@ -60,7 +60,53 @@ export const TRACKS: Track[] = [
       '1802.07228', // The Malicious Use of AI
       '2105.00990', // Hierarchical RL for air combat (AlphaDogfight)
       '2401.03408', // Escalation risks of LLMs in military decision-making
+    ],
+  },
+  {
+    id: 'cyber',
+    label: 'Cyber AI',
+    blurb:
+      'AI agents in security and hacking: autonomous pentesting and CTF agents, LLM-driven vulnerability discovery and fuzzing, exploit and malware analysis, SOC automation — and attacks on the agents themselves, from prompt injection to tool poisoning.',
+    tag: 'cyber-ai',
+    essentials: [
       '2308.06782', // PentestGPT
+      '2402.06664', // LLM agents can autonomously hack websites
+      '2404.08144', // LLM agents can autonomously exploit one-day vulnerabilities
+      '2406.01637', // Teams of LLM agents can exploit zero-day vulnerabilities
+      '2409.16165', // EnIGMA: interactive tools for LM agents in CTFs
+      '2408.08926', // Cybench
+      '2406.05590', // NYU CTF Bench
+      '2312.04724', // Purple Llama CyberSecEval
+      '2403.18624', // Vulnerability detection with code LMs: how far are we?
+      '2308.04748', // Fuzz4All
+      '2302.12173', // Indirect prompt injection in LLM-integrated apps
+      '2306.05499', // Prompt injection against LLM-integrated applications
+      '2403.02691', // InjecAgent
+      '2406.13352', // AgentDojo
+      '2405.04760', // LLMs for cyber security: systematic review
+    ],
+  },
+  {
+    id: 'aiops',
+    label: 'AI Ops & CI/CD',
+    blurb:
+      'Running large, config-heavy AI applications autonomously: coding and SWE agents, CI/CD and build repair, configuration validation and drift, infrastructure-as-code, incident root-cause analysis, and keeping LLM apps testable as prompts, models and configs change.',
+    tag: 'ai-ops',
+    essentials: [
+      '2011.09926', // Challenges in deploying ML: survey of case studies
+      '2308.10620', // LLMs for software engineering: systematic review
+      '2409.02977', // LLM-based agents for software engineering: survey
+      '2310.06770', // SWE-bench
+      '2405.15793', // SWE-agent
+      '2407.01489', // Agentless
+      '2407.16741', // OpenHands
+      '2310.09690', // Configuration validation with LLMs (Ciri)
+      '2301.03797', // Root-cause and mitigation for cloud incidents with LLMs
+      '2305.15778', // RCACopilot: automatic RCA for cloud incidents
+      '2310.03714', // DSPy: declarative LM pipelines instead of prompt strings
+      '2404.12272', // Who validates the validators? (LLM-assisted evals)
+      '2408.05002', // Challenges for LLM application developers
+      '2503.13657', // Why do multi-agent LLM systems fail?
     ],
   },
   {
@@ -99,6 +145,8 @@ export function trackFromWord(word: string): TrackId | undefined {
   if (isTrackId(w)) return w;
   if (['ml', 'ai', 'general'].includes(w)) return 'core';
   if (['military', 'defence', 'mil', 'natsec'].includes(w)) return 'defense';
+  if (['security', 'sec', 'hacking', 'infosec', 'pentest', 'cyber-ai'].includes(w)) return 'cyber';
+  if (['ops', 'devops', 'cicd', 'ci', 'mlops', 'llmops', 'sre', 'config'].includes(w)) return 'aiops';
   if (['trading', 'finance', 'quant', 'market', 'stocks'].includes(w)) return 'markets';
   return undefined;
 }

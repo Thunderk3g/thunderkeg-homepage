@@ -69,7 +69,7 @@ function corpus(): Chunk[] {
     out.push({
       source: 'Also following',
       text: d,
-      hints: 'interests defense military national security trading markets stocks finance quant llm agents',
+      hints: 'interests defense military national security cyber security hacking pentest devops ci/cd mlops config trading markets stocks finance quant llm agents',
     }),
   );
   out.push({ source: 'Research track', text: research.track, hints: 'masters phd study europe scholarship applying' });

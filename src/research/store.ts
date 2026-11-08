@@ -130,6 +130,32 @@ function paperFromEntry(e: Entry, s: ResearchState, taken: Set<string>): Paper {
   };
 }
 
+// Declared before the store: persist rehydrates from localStorage synchronously
+// while create() runs, so anything merge or onRehydrateStorage touches must
+// already be initialised.
+/** Labels a built-in topic used to have, so a stored copy can be told apart from a user's own edit. */
+const RETIRED_LABELS: Record<string, string> = { 'd-cyber': 'LLMs for cyber operations' };
+
+/**
+ * Like unionById, but a built-in topic always follows the seed's track (topics
+ * move between tracks as tracks are added), and one still carrying a retired
+ * label takes the seed's current label and query too. Edits the user made to a
+ * built-in's query or keywords otherwise survive.
+ */
+function mergeTopics(stored: Topic[], seed: Topic[]): Topic[] {
+  const bySeed = new Map(seed.map((t) => [t.id, t]));
+  const synced = stored.map((t) => {
+    const s = bySeed.get(t.id);
+    if (!s || !t.builtin) return t;
+    if (RETIRED_LABELS[t.id] === t.label) return { ...t, label: s.label, arxivQuery: s.arxivQuery, keywords: [...s.keywords], rqId: s.rqId, track: s.track };
+    return { ...t, track: s.track };
+  });
+  return unionById(synced, seed);
+}
+
+let rehydrateFailed = false;
+const failListeners = new Set<() => void>();
+
 export const useResearch = create<ResearchStore>()(
   persist(
     (set, get) => ({
@@ -272,7 +298,7 @@ export const useResearch = create<ResearchStore>()(
             ...seed,
             ...parsed,
             rqs: unionById(parsed.rqs ?? [], seed.rqs),
-            topics: unionById(parsed.topics ?? [], seed.topics),
+            topics: mergeTopics(parsed.topics ?? [], seed.topics),
             version: SCHEMA_VERSION,
           });
           return { ok: true };
@@ -292,6 +318,13 @@ export const useResearch = create<ResearchStore>()(
       version: SCHEMA_VERSION,
       // Only persist data, never the action functions.
       partialize: (s) => dataOf(s),
+      // zustand never reports a failed rehydration as finished; say why, and let the UI start from the seed
+      onRehydrateStorage: () => (_state, error) => {
+        if (!error) return;
+        console.error('[research] could not restore saved state; starting fresh for this session', error);
+        rehydrateFailed = true;
+        failListeners.forEach((f) => f());
+      },
       /**
        * Union seed topics and RQs by id, so a built-in topic added later shows
        * up for someone whose stored state predates it.
@@ -302,7 +335,7 @@ export const useResearch = create<ResearchStore>()(
           ...current,
           ...p,
           rqs: unionById(p.rqs ?? [], current.rqs),
-          topics: unionById(p.topics ?? [], current.topics),
+          topics: mergeTopics(p.topics ?? [], current.topics),
         };
       },
     },
@@ -313,6 +346,7 @@ function unionById<T extends { id: string }>(stored: T[], seed: T[]): T[] {
   const ids = new Set(stored.map((x) => x.id));
   return [...stored, ...seed.filter((x) => !ids.has(x.id))];
 }
+
 
 /**
  * First run: his published paper notes (content/*.md, kind: paper) become
@@ -344,12 +378,17 @@ export function useResearchHydrated(): boolean {
       void ensureSeeded();
     };
     const api = useResearch.persist;
-    if (!api) {
+    if (!api || rehydrateFailed) {
       done();
       return;
     }
     if (api.hasHydrated()) done();
-    return api.onFinishHydration(done);
+    failListeners.add(done);
+    const off = api.onFinishHydration(done);
+    return () => {
+      failListeners.delete(done);
+      off();
+    };
   }, []);
   return hydrated;
 }

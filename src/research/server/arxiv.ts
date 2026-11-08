@@ -76,6 +76,11 @@ export function arxivSearch(q: string, start: number, max: number) {
   );
 }
 
+/** Best match first rather than newest first — for goal search. */
+export function arxivRelevance(q: string, max: number) {
+  return get(new URLSearchParams({ search_query: q, sortBy: 'relevance', sortOrder: 'descending', max_results: String(max) }));
+}
+
 export function arxivByIds(ids: string[]) {
   return get(new URLSearchParams({ id_list: ids.join(','), max_results: String(ids.length) }));
 }

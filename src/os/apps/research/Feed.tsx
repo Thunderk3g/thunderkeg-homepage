@@ -3,15 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PaperHit, PapersResponse, Topic } from '@/research/types';
 import { useResearch } from '@/research/store';
-import { relevance, queryKeywords } from '@/research/rank';
-import { buildArxivQuery, searchPapers, type SearchParams } from '@/research/client';
+import { relevance } from '@/research/rank';
+import { searchPapers, type SearchParams } from '@/research/client';
 import { trackOf, type TrackId } from '@/research/tracks';
 
-type Sel =
-  | { kind: 'essentials' }
-  | { kind: 'topic'; id: string }
-  | { kind: 'hf-daily' }
-  | { kind: 'search'; q: string; source: 'arxiv' | 'hf-search' };
+type Sel = { kind: 'essentials' } | { kind: 'topic'; id: string } | { kind: 'hf-daily' };
 type Sort = 'default' | 'relevance';
 
 const PAGE = 25;
@@ -27,11 +23,6 @@ const inTrack = (t: Topic, track: TrackId) => (t.track ?? 'core') === track;
 function paramsFor(sel: Sel, topics: Topic[], track: TrackId): SearchParams | null {
   if (sel.kind === 'essentials') return { source: 'arxiv', ids: trackOf(track).essentials };
   if (sel.kind === 'hf-daily') return { source: 'hf-daily' };
-  if (sel.kind === 'search') {
-    if (sel.source === 'hf-search') return { source: 'hf-search', q: sel.q.slice(0, 250) };
-    const q = buildArxivQuery(sel.q);
-    return q ? { source: 'arxiv', q: q.slice(0, 400), max: PAGE } : null;
-  }
   const t = topics.find((x) => x.id === sel.id);
   return t ? { source: 'arxiv', q: t.arxivQuery, max: PAGE } : null;
 }
@@ -41,11 +32,12 @@ const authorLine = (a: string[]) => (a.length > 3 ? `${a.slice(0, 3).join(', ')}
 
 export function Feed({
   track,
-  search,
+  initialTopic,
   onOpenPaper,
 }: {
   track: TrackId;
-  search: { q: string; nonce: number } | null;
+  /** open on this topic (from a search's "matching topics") instead of the first */
+  initialTopic?: string;
   onOpenPaper: (id: string) => void;
 }) {
   const allTopics = useResearch((s) => s.topics);
@@ -55,11 +47,10 @@ export function Feed({
   const savePaper = useResearch((s) => s.savePaper);
   const markTopicSeen = useResearch((s) => s.markTopicSeen);
 
-  const [sel, setSel] = useState<Sel>(() =>
-    search ? { kind: 'search', q: search.q, source: 'arxiv' } : topics[0] ? { kind: 'topic', id: topics[0].id } : { kind: 'essentials' },
-  );
-  const [text, setText] = useState(search?.q ?? '');
-  const [source, setSource] = useState<'arxiv' | 'hf-search'>('arxiv');
+  const [sel, setSel] = useState<Sel>(() => {
+    const first = topics.find((t) => t.id === initialTopic) ?? topics[0];
+    return first ? { kind: 'topic', id: first.id } : { kind: 'essentials' };
+  });
   const [data, setData] = useState<PapersResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [more, setMore] = useState(false);
@@ -68,13 +59,6 @@ export function Feed({
   const [editing, setEditing] = useState<'new' | string | null>(null);
   const [baseline, setBaseline] = useState<string>('');
   const reqSeq = useRef(0);
-
-  // a terminal `research "<query>"` lands here as a fresh search
-  useEffect(() => {
-    if (!search) return;
-    setText(search.q);
-    setSel({ kind: 'search', q: search.q, source: 'arxiv' });
-  }, [search]);
 
   const topic = sel.kind === 'topic' ? topics.find((t) => t.id === sel.id) : undefined;
 
@@ -122,7 +106,6 @@ export function Feed({
 
   const keywords = useMemo(() => {
     if (topic) return topic.keywords;
-    if (sel.kind === 'search') return queryKeywords(sel.q);
     if (sel.kind === 'essentials') return [...new Set(topics.flatMap((t) => t.keywords))];
     // HF Daily is everyone's trending list; rank it against all of my core questions
     return [...new Set(rqs.filter((q) => (q.track ?? 'core') === 'core').flatMap((q) => q.keywords))];
@@ -147,12 +130,6 @@ export function Feed({
     memo.set(reqKey, next);
     setData(next);
     setMore(false);
-  };
-
-  const runSearch = () => {
-    const q = text.trim();
-    if (!q) return;
-    setSel({ kind: 'search', q, source });
   };
 
   const trackTag = trackOf(track).tag;
@@ -209,28 +186,6 @@ export function Feed({
         </button>
       </div>
 
-      <form
-        className="rsx-search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          runSearch();
-        }}
-      >
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={source === 'arxiv' ? 'search arXiv — words, "phrases", or raw abs:/ti:/cat: syntax' : 'search Hugging Face papers'}
-          aria-label="search papers"
-        />
-        <select value={source} onChange={(e) => setSource(e.target.value as 'arxiv' | 'hf-search')} aria-label="search source">
-          <option value="arxiv">arXiv</option>
-          <option value="hf-search">HF</option>
-        </select>
-        <button className="lrn-btn primary" type="submit" disabled={!text.trim()}>
-          Search
-        </button>
-      </form>
-
       {editing && (
         <TopicForm
           key={editing}
@@ -257,8 +212,6 @@ export function Feed({
             </>
           ) : sel.kind === 'hf-daily' ? (
             'Hugging Face Daily — community-curated'
-          ) : sel.kind === 'search' ? (
-            <>Search: “{sel.q}”</>
           ) : null}
         </span>
         {data && (
@@ -302,7 +255,6 @@ export function Feed({
               : 'No papers matched. Loosen the query, or edit the topic.'}
           </p>
         )}
-        {!loading && !params && sel.kind === 'search' && <p className="lrn-empty">Type something to search.</p>}
 
         {rows.map(({ hit, score, matched }) => {
           const isNew = !!baseline && hit.published > baseline;

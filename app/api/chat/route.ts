@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { getLlm, DEFAULT_MODEL, isLlmConfigured } from '@/os/ai/llm';
+import { isLlmConfigured, streamChatCompletion, thinkStripper } from '@/os/ai/llm';
 import { coachSystemPrompt, digestSystemPrompt, newsSystemPrompt, paperSystemPrompt, systemPrompt } from '@/os/ai/prompts';
 
 export const runtime = 'nodejs';
@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as {
     messages?: ChatMessage[];
-    model?: string;
     /** swaps the system prompt: résumé grounding, news digest, learning coach, or paper reading */
     mode?: 'resume' | 'news' | 'digest' | 'coach' | 'paper';
   };
@@ -36,19 +35,25 @@ export async function POST(req: NextRequest) {
             ? paperSystemPrompt()
             : systemPrompt();
 
-  const stream = await getLlm().chat.completions.create({
-    model: body.model ?? DEFAULT_MODEL,
-    messages: [system, ...userMessages],
-    stream: true,
-    temperature: 0.4,
-  });
+  // only user/assistant turns from the client; the system prompt is ours
+  const turns = userMessages.filter((m) => m.role === 'user' || m.role === 'assistant');
+
+  let opened: Awaited<ReturnType<typeof streamChatCompletion>>;
+  try {
+    opened = await streamChatCompletion([system, ...turns], 0.4);
+  } catch (err) {
+    // every model refused (rate limits, outage): the client falls back to its offline answer
+    return Response.json({ llm: 'unavailable', error: err instanceof Error ? err.message : String(err) });
+  }
+  const { stream, model } = opened;
+  const strip = thinkStripper();
 
   const encoder = new TextEncoder();
   const readable = new ReadableStream({
     async start(controller) {
       try {
         for await (const part of stream) {
-          const delta = part.choices?.[0]?.delta?.content ?? '';
+          const delta = strip(part.choices?.[0]?.delta?.content ?? '');
           if (delta) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta })}\n\n`));
         }
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
@@ -66,6 +71,8 @@ export async function POST(req: NextRequest) {
       'content-type': 'text/event-stream; charset=utf-8',
       'cache-control': 'no-cache, no-transform',
       'x-accel-buffering': 'no',
+      // which model answered, for debugging the fallback chain
+      'x-llm-model': model,
     },
   });
 }

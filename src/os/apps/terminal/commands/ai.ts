@@ -24,7 +24,7 @@ const news: Command['run'] = async ({ args, shell }) => {
     if (t) track = t;
     else if (l) lane = l;
     else if (a === 'open') open = true;
-    else return `usage: news [ml|defense|markets] [research|industry|community] [open]`;
+    else return `usage: news [ml|defense|cyber|ops|markets] [research|industry|community] [open]`;
   }
   if (open) {
     shell.launch('research', { arg: 'news', track });
@@ -77,8 +77,8 @@ export const aiCommands: Command[] = [
   },
   {
     name: 'news',
-    summary: 'latest headlines for a research track (AI/ML, defense, markets)',
-    usage: 'news [ml|defense|markets] [research|industry|community] [open]',
+    summary: 'latest headlines for a research track (AI/ML, defense, cyber, ops, markets)',
+    usage: 'news [ml|defense|cyber|ops|markets] [research|industry|community] [open]',
     category: 'ai',
     run: news,
     complete: ({ args }) =>

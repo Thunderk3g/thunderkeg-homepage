@@ -176,6 +176,8 @@ export const research = {
   /** Areas I read in and keep current on — tracked in the Research app, not claimed as my research. */
   following: [
     'AI in defense and national security — autonomy and counter-UAS, ISR and target recognition, LLMs for cyber operations, adversarial robustness, wargaming, and the policy around meaningful human control.',
+    'AI agents in cyber security — autonomous pentesting and CTF agents, LLM-driven vulnerability discovery and fuzzing, SOC automation, and defending agents against prompt injection and tool abuse.',
+    'Autonomous operation of large, configuration-heavy AI applications — coding and SWE agents, CI/CD and build repair, configuration validation and drift, incident root-cause analysis, and regression-testing LLM apps as prompts, models and configs change.',
     'AI and LLMs in trading and markets — financial LLMs and multi-agent trading systems, reinforcement learning for execution and portfolios, alpha mining, and the look-ahead and backtest biases that make results look better than they are.',
   ],
   /** Openly stated: this portfolio is part of a research-master's application. */

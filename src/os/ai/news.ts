@@ -1,8 +1,8 @@
 /**
  * News aggregator for the Research app's tracks — server-side only.
  *
- * The assistant runs on Groq (an inference host for open-weight models). It has
- * no web access and its weights have a training cutoff, so it cannot tell you
+ * The assistant runs on an open-weight model hosted by Groq. It has no web
+ * access and its weights have a training cutoff, so it cannot tell you
  * what shipped this week. This module does: it pulls public RSS/Atom/JSON feeds
  * for one track, normalises them, and hands back a merged timeline. No API
  * keys, no accounts.
@@ -42,6 +42,14 @@ interface Feed {
 const DEFENSE_TECH =
   /\b(ai|a\.i\.|artificial intelligence|machine learning|autonom\w*|drones?|uavs?|uas|counter-(?:uas|drone)|unmanned|swarm\w*|robot\w*|algorithm\w*|cyber\w*|software|compute|chips?|semiconductor\w*|electronic warfare|jamm\w*|sensors?|isr|jadc2|llms?|language models?|palantir|anduril|openai|anthropic|scale ai|cdao|diu|darpa|replicator|autonomy)\b/i;
 
+/** Security stories that involve AI, agents or models. */
+const CYBER_AI =
+  /\b(ai|llms?|language models?|agents?|agentic|prompt injection|jailbreak\w*|model|gpt|claude|gemini|copilot|mcp|autonomous|machine learning)\b/i;
+
+/** Ops and delivery stories that involve AI, agents or LLM applications. */
+const OPS_AI =
+  /\b(ai|llms?|llmops|mlops|aiops|agents?|agentic|copilot|language models?|model|inference|eval\w*|prompt\w*|rag|mcp|machine learning)\b/i;
+
 /** Trading, quant and markets technology. */
 const MARKETS_TECH =
   /\b(trad(?:e|es|er|ers|ing)|quant\w*|algo\w*|hedge funds?|hft|high-frequency|backtest\w*|portfolio|stocks?|equit(?:y|ies)|options|market\w*|invest\w*|fintech|broker\w*|exchange|crypto\w*|alpha|volatility)\b/i;
@@ -74,6 +82,28 @@ const FEEDS: Record<TrackId, Feed[]> = {
     { source: 'C4ISRNET', url: 'https://www.c4isrnet.com/feed/', lane: 'industry', kind: 'rss', focus: DEFENSE_TECH },
     { source: 'Hacker News', url: hnFeed('military AI'), lane: 'community', kind: 'hn', focus: DEFENSE_TECH },
     { source: 'Hacker News', url: hnFeed('drone warfare'), lane: 'community', kind: 'hn', focus: DEFENSE_TECH },
+  ],
+  cyber: [
+    { source: 'arXiv cs.CR', url: arxivFeed('cat:cs.CR AND (abs:LLM OR abs:agent OR abs:"language model")'), lane: 'research', kind: 'atom' },
+    { source: 'Project Zero', url: 'https://googleprojectzero.blogspot.com/feeds/posts/default', lane: 'research', kind: 'atom' },
+    { source: 'Schneier on Security', url: 'https://www.schneier.com/feed/atom/', lane: 'research', kind: 'atom' },
+    { source: 'The Hacker News', url: 'https://feeds.feedburner.com/TheHackersNews', lane: 'industry', kind: 'rss' },
+    { source: 'BleepingComputer', url: 'https://www.bleepingcomputer.com/feed/', lane: 'industry', kind: 'rss' },
+    { source: 'Dark Reading', url: 'https://www.darkreading.com/rss.xml', lane: 'industry', kind: 'rss' },
+    { source: 'Krebs on Security', url: 'https://krebsonsecurity.com/feed/', lane: 'community', kind: 'rss' },
+    { source: 'Hacker News', url: hnFeed('prompt injection'), lane: 'community', kind: 'hn', focus: CYBER_AI },
+    { source: 'Hacker News', url: hnFeed('AI security agent'), lane: 'community', kind: 'hn', focus: CYBER_AI },
+  ],
+  aiops: [
+    { source: 'arXiv cs.SE', url: arxivFeed('cat:cs.SE AND (abs:LLM OR abs:agent OR abs:"language model")'), lane: 'research', kind: 'atom' },
+    { source: 'Chip Huyen', url: 'https://huyenchip.com/feed.xml', lane: 'research', kind: 'rss' },
+    { source: 'Martin Fowler', url: 'https://martinfowler.com/feed.atom', lane: 'research', kind: 'atom', focus: OPS_AI },
+    { source: 'The New Stack', url: 'https://thenewstack.io/feed/', lane: 'industry', kind: 'rss', focus: OPS_AI },
+    { source: 'InfoQ', url: 'https://feed.infoq.com/', lane: 'industry', kind: 'rss', focus: OPS_AI },
+    { source: 'GitHub Blog', url: 'https://github.blog/feed/', lane: 'industry', kind: 'rss' },
+    { source: 'Latent Space', url: 'https://www.latent.space/feed', lane: 'community', kind: 'rss' },
+    { source: 'Hacker News', url: hnFeed('LLMOps'), lane: 'community', kind: 'hn', focus: OPS_AI },
+    { source: 'Hacker News', url: hnFeed('AI agents DevOps'), lane: 'community', kind: 'hn', focus: OPS_AI },
   ],
   markets: [
     { source: 'arXiv q-fin', url: arxivFeed('cat:q-fin.TR OR cat:q-fin.CP OR cat:q-fin.PM OR cat:q-fin.ST'), lane: 'research', kind: 'atom' },

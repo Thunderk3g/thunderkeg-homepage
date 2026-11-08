@@ -103,10 +103,11 @@ const README = `Welcome — my portfolio, rendered as a Kali Linux desktop.
 Everything here is interactive:
   • Terminal          try: help · resume · blog · papers · news · ai <question>
   • Whisker menu      top-left: Kali tools, the Games arcade, everything else
-  • Research          three tracks — AI/ML, Defense AI, Trading & Markets — each
-                      with a weekly Brief (what to read now, summarised on
-                      request), arXiv feeds, essentials and a live news wire
-                      (run 'research defense' or 'news markets')
+  • Research          "What do you want to study?" search, plus five tracks —
+                      AI/ML, Defense AI, Cyber AI, AI Ops & CI/CD, Trading &
+                      Markets — each with a weekly Brief, arXiv feeds,
+                      essentials and a live news wire
+                      (run 'research cyber' or 'news ops')
   • Music             open music (Audius) and commercial-free radio (SomaFM,
                       Radio Browser); keeps playing from the panel (run 'music lofi')
   • Writing           posts + the papers I'm reading (also at /writing)

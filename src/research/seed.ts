@@ -54,6 +54,34 @@ export const RQS: ResearchQuestion[] = [
     keywords: ['decision support', 'human-in-the-loop', 'human oversight', 'wargam', 'escalat', 'command', 'planning', 'agent', 'meaningful human control'],
   },
   {
+    id: 'rq-c1',
+    short: 'C1 trustworthy offense',
+    track: 'cyber',
+    question: 'When can an autonomous agent be trusted with offensive security work — how is scope enforced, and how are its findings verified?',
+    keywords: ['penetration test', 'pentest', 'exploit', 'red team', 'capture the flag', 'ctf', 'scope', 'verif', 'autonomous', 'agent'],
+  },
+  {
+    id: 'rq-c2',
+    short: 'C2 securing the agents',
+    track: 'cyber',
+    question: 'How do agents with tools resist prompt injection, tool poisoning and privilege abuse inside their own pipelines?',
+    keywords: ['prompt injection', 'indirect', 'tool', 'privilege', 'sandbox', 'jailbreak', 'guardrail', 'agent security', 'exfiltrat'],
+  },
+  {
+    id: 'rq-o1',
+    short: 'O1 self-managing apps',
+    track: 'aiops',
+    question: 'Can an agent keep a large, configuration-heavy AI application healthy — validate config, catch drift, repair CI, roll back — without a human in the loop?',
+    keywords: ['configuration', 'misconfig', 'drift', 'ci/cd', 'continuous integration', 'build', 'rollback', 'incident', 'root cause', 'self-healing'],
+  },
+  {
+    id: 'rq-o2',
+    short: 'O2 regression-proof LLM apps',
+    track: 'aiops',
+    question: 'What breaks when prompts, models and configs change in an LLM application, and how do you regression-test it?',
+    keywords: ['regression', 'evaluation', 'testing', 'prompt', 'llm application', 'monitoring', 'observability', 'maintenance', 'production'],
+  },
+  {
     id: 'rq-m1',
     short: 'M1 LLM signal after costs',
     track: 'markets',
@@ -172,15 +200,6 @@ export const TOPICS: Topic[] = [
     builtin: true,
   },
   {
-    id: 'd-cyber',
-    track: 'defense',
-    label: 'LLMs for cyber operations',
-    arxivQuery:
-      '(abs:"large language model" OR abs:LLM) AND (abs:"penetration testing" OR abs:"cyber operations" OR abs:"offensive security" OR abs:"capture the flag" OR abs:"vulnerability detection") AND cat:cs.CR',
-    keywords: ['penetration test', 'pentest', 'offensive', 'exploit', 'vulnerab', 'capture the flag', 'ctf', 'red team', 'cyber'],
-    builtin: true,
-  },
-  {
     id: 'd-adversarial',
     track: 'defense',
     label: 'Adversarial ML & model security',
@@ -208,6 +227,151 @@ export const TOPICS: Topic[] = [
     arxivQuery:
       '(abs:military OR abs:"autonomous weapon" OR abs:"national security" OR abs:warfare OR abs:"armed conflict") AND (abs:"artificial intelligence" OR abs:"machine learning" OR abs:"language model") AND (cat:cs.CY OR cat:cs.AI OR cat:cs.CL)',
     keywords: ['military', 'autonomous weapon', 'national security', 'warfare', 'governance', 'international humanitarian', 'arms control', 'escalat', 'dual-use'],
+    builtin: true,
+  },
+
+  /* ── Cyber AI ── */
+  {
+    // was the Defense track's "LLMs for cyber operations"; the id stays so saved state carries over
+    id: 'd-cyber',
+    track: 'cyber',
+    label: 'Pentest & CTF agents',
+    rqId: 'rq-c1',
+    arxivQuery:
+      '(abs:"penetration testing" OR abs:pentest OR abs:"capture the flag" OR abs:CTF OR abs:"offensive security") AND (abs:agent OR abs:LLM OR abs:"large language model")',
+    keywords: ['penetration test', 'pentest', 'capture the flag', 'ctf', 'exploit', 'red team', 'agent', 'offensive', 'privilege escalation'],
+    builtin: true,
+  },
+  {
+    id: 'c-vuln',
+    track: 'cyber',
+    label: 'Vulnerability discovery & repair',
+    arxivQuery:
+      '(abs:"vulnerability detection" OR abs:"vulnerability repair" OR abs:"secure code generation" OR abs:"vulnerable code") AND (abs:LLM OR abs:"large language model")',
+    keywords: ['vulnerab', 'cve', 'cwe', 'patch', 'repair', 'static analysis', 'secure code', 'llm'],
+    builtin: true,
+  },
+  {
+    id: 'c-fuzz',
+    track: 'cyber',
+    label: 'LLM-guided fuzzing',
+    arxivQuery: '(abs:fuzzing OR abs:fuzzer) AND (abs:LLM OR abs:"large language model")',
+    keywords: ['fuzz', 'coverage', 'seed', 'harness', 'crash', 'llm', 'protocol'],
+    builtin: true,
+  },
+  {
+    id: 'c-injection',
+    track: 'cyber',
+    label: 'Prompt injection & agent security',
+    rqId: 'rq-c2',
+    arxivQuery: '(abs:"prompt injection" OR abs:"tool poisoning" OR abs:"agent security" OR abs:"agent hijacking")',
+    keywords: ['prompt injection', 'indirect', 'tool poisoning', 'agent', 'hijack', 'exfiltrat', 'guardrail', 'defense', 'mcp'],
+    builtin: true,
+  },
+  {
+    id: 'c-malware',
+    track: 'cyber',
+    label: 'Malware & intrusion detection',
+    arxivQuery:
+      '(abs:malware OR abs:"intrusion detection" OR abs:ransomware OR abs:phishing) AND (abs:LLM OR abs:"large language model" OR abs:transformer OR abs:"deep learning") AND cat:cs.CR',
+    keywords: ['malware', 'intrusion', 'ransomware', 'phishing', 'detection', 'llm', 'adversarial', 'evasion'],
+    builtin: true,
+  },
+  {
+    id: 'c-soc',
+    track: 'cyber',
+    label: 'SOC automation & threat intel',
+    arxivQuery:
+      '(abs:"security operations" OR abs:"threat intelligence" OR abs:"incident response" OR abs:"alert triage" OR abs:"threat hunting") AND (abs:LLM OR abs:"large language model" OR abs:agent)',
+    keywords: ['soc', 'security operations', 'threat intelligence', 'incident response', 'triage', 'mitre', 'att&ck', 'agent'],
+    builtin: true,
+  },
+  {
+    id: 'c-reverse',
+    track: 'cyber',
+    label: 'Reverse engineering & binaries',
+    arxivQuery:
+      '(abs:"binary analysis" OR abs:decompilation OR abs:decompiler OR abs:"reverse engineering") AND (abs:LLM OR abs:"large language model" OR abs:"language model")',
+    keywords: ['binary', 'decompil', 'reverse engineering', 'disassembl', 'firmware', 'llm', 'function'],
+    builtin: true,
+  },
+
+  /* ── AI Ops & CI/CD ── */
+  {
+    id: 'o-swe',
+    track: 'aiops',
+    label: 'Coding & SWE agents',
+    rqId: 'rq-o1',
+    arxivQuery: '(abs:"SWE-bench" OR abs:"software engineering agent" OR abs:"coding agent" OR abs:"issue resolution")',
+    keywords: ['swe-bench', 'coding agent', 'software engineering', 'issue', 'repository', 'patch', 'agent', 'test'],
+    builtin: true,
+  },
+  {
+    id: 'o-cicd',
+    track: 'aiops',
+    label: 'CI/CD & build repair',
+    rqId: 'rq-o1',
+    arxivQuery:
+      '(abs:"continuous integration" OR abs:"CI/CD" OR abs:"build failure" OR abs:"build repair" OR abs:"flaky test" OR abs:"GitHub Actions") AND (abs:LLM OR abs:"large language model" OR abs:agent OR abs:"machine learning")',
+    keywords: ['continuous integration', 'ci/cd', 'build', 'pipeline', 'flaky', 'github actions', 'deployment', 'repair'],
+    builtin: true,
+  },
+  {
+    id: 'o-config',
+    track: 'aiops',
+    label: 'Configuration errors & validation',
+    rqId: 'rq-o1',
+    arxivQuery:
+      '(abs:misconfiguration OR abs:"configuration error" OR abs:"configuration validation" OR abs:"configuration drift" OR abs:"configuration management") AND (abs:LLM OR abs:"large language model" OR abs:agent OR abs:"machine learning")',
+    keywords: ['configuration', 'misconfig', 'config', 'drift', 'validation', 'parameter', 'yaml', 'tuning'],
+    builtin: true,
+  },
+  {
+    id: 'o-iac',
+    track: 'aiops',
+    label: 'Infrastructure as code',
+    arxivQuery:
+      '(abs:"infrastructure as code" OR abs:Terraform OR abs:Kubernetes OR abs:Ansible OR abs:Helm) AND (abs:LLM OR abs:"large language model" OR abs:agent)',
+    keywords: ['infrastructure as code', 'terraform', 'kubernetes', 'ansible', 'helm', 'cloud', 'deployment', 'llm'],
+    builtin: true,
+  },
+  {
+    id: 'o-incident',
+    track: 'aiops',
+    label: 'Incidents & root cause (AIOps)',
+    rqId: 'rq-o1',
+    arxivQuery:
+      '(abs:"root cause analysis" OR abs:"incident management" OR abs:AIOps OR abs:"log analysis" OR abs:"cloud incident") AND (abs:LLM OR abs:"large language model" OR abs:agent)',
+    keywords: ['root cause', 'incident', 'aiops', 'log', 'alert', 'microservice', 'cloud', 'mitigation', 'on-call'],
+    builtin: true,
+  },
+  {
+    id: 'o-llmapps',
+    track: 'aiops',
+    label: 'Testing & operating LLM apps',
+    rqId: 'rq-o2',
+    arxivQuery:
+      '(abs:"LLM application" OR abs:"LLM-based application" OR abs:"compound AI" OR abs:"LLM-integrated application" OR abs:LLMOps) AND (abs:testing OR abs:evaluation OR abs:monitoring OR abs:observability OR abs:maintenance OR abs:production)',
+    keywords: ['llm application', 'compound ai', 'llmops', 'evaluation', 'regression', 'monitoring', 'observability', 'prompt', 'production'],
+    builtin: true,
+  },
+  {
+    id: 'o-agentrel',
+    track: 'aiops',
+    label: 'Agent system reliability',
+    rqId: 'rq-o2',
+    arxivQuery:
+      '(abs:"agentic system" OR abs:"agentic workflow" OR abs:"LLM agent" OR abs:"multi-agent system") AND (abs:failure OR abs:"fault tolerance" OR abs:reliability) AND (cat:cs.SE OR cat:cs.AI OR cat:cs.MA)',
+    keywords: ['failure', 'reliab', 'fault', 'recovery', 'orchestrat', 'multi-agent', 'workflow', 'production'],
+    builtin: true,
+  },
+  {
+    id: 'o-mlops',
+    track: 'aiops',
+    label: 'MLOps & technical debt',
+    arxivQuery:
+      '(abs:MLOps OR abs:"technical debt" OR abs:"ML pipeline" OR abs:"machine learning pipeline") AND (abs:production OR abs:deployment OR abs:maintenance) AND (cat:cs.SE OR cat:cs.LG)',
+    keywords: ['mlops', 'technical debt', 'pipeline', 'deployment', 'maintenance', 'monitoring', 'drift', 'reproducib'],
     builtin: true,
   },
 

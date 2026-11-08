@@ -168,15 +168,16 @@ export function Brief({
     const otherTags = TRACKS.filter((t) => t.id !== track && t.tag).map((t) => t.tag!);
     const own = trackOf(track).tag;
     const rqIds = new Set(rqs.map((q) => q.id));
+    const otherRqs = new Set(allRqs.filter((q) => (q.track ?? 'core') !== track).map((q) => q.id));
     return papers
       .filter((p) => ['inbox', 'pass1', 'pass2', 'pass3'].includes(p.status))
       .filter((p) =>
         own
           ? p.tags.includes(own) || p.rqIds.some((r) => rqIds.has(r))
-          : !p.tags.some((t) => otherTags.includes(t)) && !p.rqIds.some((r) => /^rq-[dm]/.test(r)),
+          : !p.tags.some((t) => otherTags.includes(t)) && !p.rqIds.some((r) => otherRqs.has(r)),
       )
       .slice(0, 4);
-  }, [papers, track, rqs]);
+  }, [papers, track, rqs, allRqs]);
 
   const saved = useMemo(() => new Set(papers.map((p) => p.id)), [papers]);
   const toggle = (id: string) =>
