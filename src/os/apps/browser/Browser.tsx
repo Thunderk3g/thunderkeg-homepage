@@ -124,9 +124,16 @@ const PAGES: PageDef[] = [
             <li key={i}>{d}</li>
           ))}
         </ul>
+        <h3 className="kos-web-sub">Also following</h3>
+        <ul className="kos-web-list">
+          {research.following.map((d, i) => (
+            <li key={i}>{d}</li>
+          ))}
+        </ul>
         <p className="kos-web-blurb">{research.track}</p>
         <p className="kos-web-blurb">
-          Longer notes and the reading shelf live in the Writing app — or at{' '}
+          Paper feeds and live news for all three areas live in the Research app. Longer notes and the
+          reading shelf live in the Writing app — or at{' '}
           <a href="/writing" target="_blank" rel="noreferrer">
             /writing
           </a>

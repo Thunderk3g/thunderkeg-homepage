@@ -20,7 +20,7 @@ const bad = (error: string) => Response.json({ error }, { status: 400 });
  *   ?source=hf-daily[&date=YYYY-MM-DD]
  *   ?source=hf-search&q=<text>
  *
- * Same contract as /api/ai-news: an upstream failure is a 200 with `error`,
+ * Same contract as /api/news: an upstream failure is a 200 with `error`,
  * never a 5xx. 400 is reserved for parameters we refuse to forward.
  */
 export async function GET(req: NextRequest) {

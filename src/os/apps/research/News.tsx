@@ -1,17 +1,21 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AppDefinition, AppProps } from '../../types';
 import type { NewsItem, NewsPayload } from '../../ai/news';
 import { streamChat } from '../../ai/stream';
+import { trackOf, type TrackId } from '@/research/tracks';
 
 type Lane = NewsItem['lane'];
+
 const LANES: { id: Lane | 'all'; label: string }[] = [
   { id: 'all', label: 'Everything' },
-  { id: 'research', label: 'Research' },
+  { id: 'research', label: 'Research & analysis' },
   { id: 'industry', label: 'Industry' },
   { id: 'community', label: 'Community' },
 ];
+
+/** One fetch per track per session; the server caches for 30 minutes as well. */
+const memo = new Map<TrackId, NewsPayload>();
 
 function ago(iso: string): string {
   if (!iso) return '';
@@ -23,8 +27,8 @@ function ago(iso: string): string {
 }
 
 /** Deterministic digest used when no LLM key is configured. */
-function localBrief(items: NewsItem[]): string {
-  const out: string[] = ['Catch-up brief — top items per lane', ''];
+function localBrief(items: NewsItem[], label: string): string {
+  const out: string[] = [`${label} — top items per lane`, ''];
   for (const lane of ['research', 'industry', 'community'] as Lane[]) {
     const top = items.filter((i) => i.lane === lane).slice(0, 3);
     if (!top.length) continue;
@@ -36,24 +40,46 @@ function localBrief(items: NewsItem[]): string {
   return out.join('\n');
 }
 
-function AiNewsApp(_props: AppProps) {
-  const [data, setData] = useState<NewsPayload | null>(null);
+/**
+ * Live headlines for the selected research track — the "what happened this
+ * week" half of staying current; the Feed tab is the papers half.
+ */
+export function News({ track }: { track: TrackId }) {
+  const label = trackOf(track).label;
+  const [data, setData] = useState<NewsPayload | null>(() => memo.get(track) ?? null);
   const [error, setError] = useState<string | null>(null);
   const [lane, setLane] = useState<Lane | 'all'>('all');
   const [query, setQuery] = useState('');
   const [brief, setBrief] = useState('');
   const [briefing, setBriefing] = useState(false);
 
-  const load = useCallback(() => {
-    setError(null);
-    setData(null);
-    fetch('/api/ai-news')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(setData)
-      .catch((e: Error) => setError(e.message));
-  }, []);
+  const load = useCallback(
+    (force = false) => {
+      setBrief('');
+      const hit = memo.get(track);
+      if (hit && !force) {
+        setData(hit);
+        setError(null);
+        return () => {};
+      }
+      let live = true;
+      setError(null);
+      setData(null);
+      fetch(`/api/news?track=${track}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+        .then((d: NewsPayload) => {
+          if (d.items.length) memo.set(track, d);
+          if (live) setData(d);
+        })
+        .catch((e: Error) => live && setError(e.message));
+      return () => {
+        live = false;
+      };
+    },
+    [track],
+  );
 
-  useEffect(load, [load]);
+  useEffect(() => load(), [load]);
 
   const items = useMemo(() => {
     const all = data?.items ?? [];
@@ -75,18 +101,18 @@ function AiNewsApp(_props: AppProps) {
       .join('\n');
     let acc = '';
     await streamChat(
-      [{ role: 'user', content: `Here are the live headlines. Brief me.\n\n${headlines}` }],
+      [{ role: 'user', content: `Track: ${label}. Here are the live headlines. Brief me.\n\n${headlines}` }],
       (d) => {
         acc += d;
         setBrief(acc);
       },
-      { mode: 'news', offline: () => localBrief(source) },
+      { mode: 'news', offline: () => localBrief(source, label) },
     );
     setBriefing(false);
   };
 
   return (
-    <div className="kos-news">
+    <div className="kos-news rsx-news">
       <div className="kos-news-bar">
         {LANES.map((l) => (
           <button
@@ -104,7 +130,7 @@ function AiNewsApp(_props: AppProps) {
           placeholder="filter…"
           aria-label="filter headlines"
         />
-        <button className="kos-game-btn" onClick={load} title="refetch feeds">
+        <button className="kos-game-btn" onClick={() => load(true)} title="refetch feeds">
           ⟳
         </button>
         <button className="kos-game-btn primary" onClick={briefMe} disabled={!data?.items.length || briefing}>
@@ -120,7 +146,7 @@ function AiNewsApp(_props: AppProps) {
       )}
 
       <div className="kos-news-list">
-        {!data && !error && <p className="kos-news-empty">Pulling feeds…</p>}
+        {!data && !error && <p className="kos-news-empty">Pulling {label} feeds…</p>}
         {error && (
           <p className="kos-news-empty">
             Couldn&rsquo;t reach the news endpoint ({error}). It fetches public RSS/JSON feeds
@@ -152,18 +178,3 @@ function AiNewsApp(_props: AppProps) {
     </div>
   );
 }
-
-export const aiNewsApp: AppDefinition = {
-  id: 'ainews',
-  title: 'AI Radar',
-  icon: '📡',
-  category: 'Internet',
-  component: AiNewsApp,
-  description: 'Live AI research, industry and community headlines — with a one-click catch-up brief',
-  defaultSize: { width: 880, height: 640 },
-  minSize: { width: 420, height: 340 },
-  desktop: true,
-  launchCommands: ['radar', 'ainews'],
-};
-
-export default AiNewsApp;

@@ -65,6 +65,13 @@ function corpus(): Chunk[] {
   research.directions.forEach((d) =>
     out.push({ source: 'Research directions', text: d, hints: 'research interests directions open questions phd masters' }),
   );
+  research.following.forEach((d) =>
+    out.push({
+      source: 'Also following',
+      text: d,
+      hints: 'interests defense military national security trading markets stocks finance quant llm agents',
+    }),
+  );
   out.push({ source: 'Research track', text: research.track, hints: 'masters phd study europe scholarship applying' });
 
   skills.forEach((s) => out.push({ source: `Skills — ${s.group}`, text: `${s.group}: ${s.items}`, hints: 'skills stack technologies tools languages' }));

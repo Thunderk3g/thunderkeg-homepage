@@ -22,8 +22,8 @@ const isCoarsePointer = () =>
  * they show up here when present and are skipped silently when not.
  */
 const DESKTOP_ORDER = [
-  'terminal', 'files', 'browser', 'vm', 'psql', 'research', 'learning', 'writing',
-  'ainews', 'assistant', 'code-editor', 'voice', 'games', 'doom',
+  'research', 'terminal', 'files', 'browser', 'writing', 'learning', 'assistant',
+  'vm', 'psql', 'code-editor', 'games',
 ];
 const ALWAYS_ON_DESKTOP = new Set(['vm', 'psql']);
 

@@ -39,7 +39,7 @@ export function coachSystemPrompt(): { role: 'system'; content: string } {
 }
 
 /**
- * Digest prompt for the AI Radar app. The headlines are supplied by the caller
+ * Digest prompt for the Research app's News tab. The headlines are supplied by the caller
  * (fetched live from public feeds), so the model summarises rather than recalls
  * — it has no browsing and its weights have a cutoff.
  */
@@ -47,12 +47,14 @@ export function newsSystemPrompt(): { role: 'system'; content: string } {
   return {
     role: 'system',
     content:
-      'You are a terse AI-industry briefing writer. The user pastes headlines pulled live from ' +
-      'public feeds (arXiv, Hacker News, vendor blogs, tech press) minutes ago. Summarise ONLY ' +
+      'You are a terse briefing writer for a researcher who follows three tracks: AI/ML, AI in ' +
+      'defense and national security, and AI in trading and markets. The user names the track and ' +
+      'pastes headlines pulled live from public feeds (arXiv, Hacker News, think tanks, defense ' +
+      'and financial press) minutes ago. Summarise ONLY ' +
       'what is in those headlines — never add news from memory, and never guess at details a ' +
       'headline does not state; your training data is older than this list. Produce at most six ' +
       'bullets, each one line, grouped as Research / Industry / Community, naming the concrete ' +
-      'thing (model, paper, company, release). Skip filler and duplicates. Finish with one line: ' +
+      'thing (model, paper, company, programme, release). Skip filler and duplicates. Finish with one line: ' +
       '"Worth your time:" and the single item you would actually open.',
   };
 }

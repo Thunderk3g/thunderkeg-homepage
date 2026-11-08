@@ -13,7 +13,7 @@ import { SystemTray } from './SystemTray';
  * · | · pager · | · icon-only grouped tasklist · ⟷ · cpugraph · tray · clock · lock · logout.
  * In Undercover mode the same component becomes a Windows-style bottom taskbar.
  */
-const LAUNCHERS = ['editor', 'browser', 'terminal'];
+const LAUNCHERS = ['research', 'browser', 'terminal'];
 const PLACES = [
   { label: 'Home', path: '/home/kali' },
   { label: 'Desktop', path: '/home/kali/Desktop' },

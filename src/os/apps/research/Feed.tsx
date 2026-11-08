@@ -5,8 +5,13 @@ import type { PaperHit, PapersResponse, Topic } from '@/research/types';
 import { useResearch } from '@/research/store';
 import { relevance, queryKeywords } from '@/research/rank';
 import { buildArxivQuery, searchPapers, type SearchParams } from '@/research/client';
+import { trackOf, type TrackId } from '@/research/tracks';
 
-type Sel = { kind: 'topic'; id: string } | { kind: 'hf-daily' } | { kind: 'search'; q: string; source: 'arxiv' | 'hf-search' };
+type Sel =
+  | { kind: 'essentials' }
+  | { kind: 'topic'; id: string }
+  | { kind: 'hf-daily' }
+  | { kind: 'search'; q: string; source: 'arxiv' | 'hf-search' };
 type Sort = 'default' | 'relevance';
 
 const PAGE = 25;
@@ -17,7 +22,10 @@ const PAGE = 25;
  */
 const memo = new Map<string, PapersResponse>();
 
-function paramsFor(sel: Sel, topics: Topic[]): SearchParams | null {
+const inTrack = (t: Topic, track: TrackId) => (t.track ?? 'core') === track;
+
+function paramsFor(sel: Sel, topics: Topic[], track: TrackId): SearchParams | null {
+  if (sel.kind === 'essentials') return { source: 'arxiv', ids: trackOf(track).essentials };
   if (sel.kind === 'hf-daily') return { source: 'hf-daily' };
   if (sel.kind === 'search') {
     if (sel.source === 'hf-search') return { source: 'hf-search', q: sel.q.slice(0, 250) };
@@ -32,20 +40,23 @@ const fmtDate = (iso: string) => (iso ? iso.slice(0, 10) : '');
 const authorLine = (a: string[]) => (a.length > 3 ? `${a.slice(0, 3).join(', ')} et al.` : a.join(', '));
 
 export function Feed({
+  track,
   search,
   onOpenPaper,
 }: {
+  track: TrackId;
   search: { q: string; nonce: number } | null;
   onOpenPaper: (id: string) => void;
 }) {
-  const topics = useResearch((s) => s.topics);
+  const allTopics = useResearch((s) => s.topics);
+  const topics = useMemo(() => allTopics.filter((t) => inTrack(t, track)), [allTopics, track]);
   const rqs = useResearch((s) => s.rqs);
   const papers = useResearch((s) => s.papers);
   const savePaper = useResearch((s) => s.savePaper);
   const markTopicSeen = useResearch((s) => s.markTopicSeen);
 
   const [sel, setSel] = useState<Sel>(() =>
-    search ? { kind: 'search', q: search.q, source: 'arxiv' } : { kind: 'topic', id: topics[0]?.id ?? '' },
+    search ? { kind: 'search', q: search.q, source: 'arxiv' } : topics[0] ? { kind: 'topic', id: topics[0].id } : { kind: 'essentials' },
   );
   const [text, setText] = useState(search?.q ?? '');
   const [source, setSource] = useState<'arxiv' | 'hf-search'>('arxiv');
@@ -69,9 +80,9 @@ export function Feed({
 
   // a deleted topic falls back to the first one
   useEffect(() => {
-    if (sel.kind === 'topic' && !topic && topics[0]) setSel({ kind: 'topic', id: topics[0].id });
+    if (sel.kind === 'topic' && !topic) setSel(topics[0] ? { kind: 'topic', id: topics[0].id } : { kind: 'essentials' });
   }, [sel, topic, topics]);
-  const params = useMemo(() => paramsFor(sel, topics), [sel, topics]);
+  const params = useMemo(() => paramsFor(sel, topics, track), [sel, topics, track]);
   const reqKey = params ? JSON.stringify(params) : '';
   const seenKey = sel.kind === 'topic' ? sel.id : sel.kind === 'hf-daily' ? 'hf-daily' : '';
   const isArxiv = params?.source === 'arxiv';
@@ -112,17 +123,20 @@ export function Feed({
   const keywords = useMemo(() => {
     if (topic) return topic.keywords;
     if (sel.kind === 'search') return queryKeywords(sel.q);
-    // HF Daily is everyone's trending list; rank it against all of my questions
-    return [...new Set(rqs.flatMap((q) => q.keywords))];
-  }, [topic, sel, rqs]);
+    if (sel.kind === 'essentials') return [...new Set(topics.flatMap((t) => t.keywords))];
+    // HF Daily is everyone's trending list; rank it against all of my core questions
+    return [...new Set(rqs.filter((q) => (q.track ?? 'core') === 'core').flatMap((q) => q.keywords))];
+  }, [topic, sel, rqs, topics]);
 
   const saved = useMemo(() => new Set(papers.map((p) => p.id)), [papers]);
 
   const rows = useMemo(() => {
     const items = (data?.items ?? []).map((hit, i) => ({ hit, i, ...relevance(hit, keywords) }));
     if (sort === 'relevance') items.sort((a, b) => b.score - a.score || a.i - b.i);
+    // essentials read best in the order they were written: foundations first
+    else if (sel.kind === 'essentials') items.sort((a, b) => a.hit.published.localeCompare(b.hit.published));
     return items;
-  }, [data, keywords, sort]);
+  }, [data, keywords, sort, sel.kind]);
 
   const loadMore = async () => {
     if (!params || params.source !== 'arxiv' || !('q' in params) || !data) return;
@@ -141,7 +155,9 @@ export function Feed({
     setSel({ kind: 'search', q, source });
   };
 
-  const save = (hit: PaperHit) => savePaper(hit, { rqIds: topic?.rqId ? [topic.rqId] : [] });
+  const trackTag = trackOf(track).tag;
+  const save = (hit: PaperHit) =>
+    savePaper(hit, { rqIds: topic?.rqId ? [topic.rqId] : [], tags: trackTag ? [trackTag] : [] });
 
   const toggle = (id: string) =>
     setOpen((s) => {
@@ -154,6 +170,16 @@ export function Feed({
   return (
     <div className="rsx-feed">
       <div className="rsx-chips" role="group" aria-label="Topics">
+        <button
+          className={'lrn-chip essentials' + (sel.kind === 'essentials' ? ' on' : '')}
+          onClick={() => {
+            setSel({ kind: 'essentials' });
+            setEditing(null);
+          }}
+          title="The papers to have read before the weekly feed makes sense"
+        >
+          ★ Essentials
+        </button>
         {topics.map((t) => (
           <button
             key={t.id}
@@ -167,15 +193,17 @@ export function Feed({
             {t.label}
           </button>
         ))}
-        <button
-          className={'lrn-chip' + (sel.kind === 'hf-daily' ? ' on' : '')}
-          onClick={() => {
-            setSel({ kind: 'hf-daily' });
-            setEditing(null);
-          }}
-        >
-          HF Daily
-        </button>
+        {track === 'core' && (
+          <button
+            className={'lrn-chip' + (sel.kind === 'hf-daily' ? ' on' : '')}
+            onClick={() => {
+              setSel({ kind: 'hf-daily' });
+              setEditing(null);
+            }}
+          >
+            HF Daily
+          </button>
+        )}
         <button className="lrn-chip" onClick={() => setEditing('new')} title="Add a topic">
           + Topic
         </button>
@@ -206,6 +234,7 @@ export function Feed({
       {editing && (
         <TopicForm
           key={editing}
+          track={track}
           topic={editing === 'new' ? undefined : topics.find((t) => t.id === editing)}
           onDone={(id) => {
             setEditing(null);
@@ -219,7 +248,9 @@ export function Feed({
 
       <div className="rsx-feed-head">
         <span className="rsx-feed-title">
-          {sel.kind === 'topic' && topic ? (
+          {sel.kind === 'essentials' ? (
+            <>Essentials — {trackOf(track).label}</>
+          ) : sel.kind === 'topic' && topic ? (
             <>
               {topic.label}
               {topic.rqId && <span className="lrn-tag">{topic.rqId.toUpperCase()}</span>}
@@ -246,7 +277,9 @@ export function Feed({
         <label className="rsx-sort">
           <span>Sort</span>
           <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-            <option value="default">{sel.kind === 'hf-daily' ? 'Upvotes' : 'Newest'}</option>
+            <option value="default">
+              {sel.kind === 'hf-daily' ? 'Upvotes' : sel.kind === 'essentials' ? 'Reading order' : 'Newest'}
+            </option>
             <option value="relevance">Relevance</option>
           </select>
         </label>
@@ -276,7 +309,7 @@ export function Feed({
           const expanded = open.has(hit.id);
           const inLib = saved.has(hit.id);
           return (
-            <article key={hit.id} className={'rsx-row' + (score === 0 ? ' dim' : '')}>
+            <article key={hit.id} className={'rsx-row' + (score === 0 && sel.kind !== 'essentials' ? ' dim' : '')}>
               <div className="rsx-row-head">
                 <h3 className="rsx-row-title">
                   {isNew && <span className="rsx-new">NEW</span>}
@@ -341,7 +374,7 @@ export function Feed({
           );
         })}
 
-        {!loading && isArxiv && data && data.total !== undefined && data.items.length < data.total && data.items.length > 0 && (
+        {!loading && isArxiv && sel.kind !== 'essentials' && data && data.total !== undefined && data.items.length < data.total && data.items.length > 0 && (
           <button className="lrn-btn rsx-more" onClick={loadMore} disabled={more}>
             {more ? 'Querying arXiv…' : `Load ${PAGE} more`}
           </button>
@@ -353,7 +386,7 @@ export function Feed({
   );
 }
 
-function TopicForm({ topic, onDone }: { topic?: Topic; onDone: (id?: string) => void }) {
+function TopicForm({ track, topic, onDone }: { track: TrackId; topic?: Topic; onDone: (id?: string) => void }) {
   const addTopic = useResearch((s) => s.addTopic);
   const patchTopic = useResearch((s) => s.patchTopic);
   const removeTopic = useResearch((s) => s.removeTopic);
@@ -365,7 +398,7 @@ function TopicForm({ topic, onDone }: { topic?: Topic; onDone: (id?: string) => 
 
   const submit = () => {
     const keywords = kw.split(',').map((k) => k.trim().toLowerCase()).filter(Boolean);
-    const body = { label: label.trim(), arxivQuery: query.trim(), keywords, rqId: rqId || undefined };
+    const body = { label: label.trim(), arxivQuery: query.trim(), keywords, rqId: rqId || undefined, track: topic?.track ?? track };
     if (!body.label || !body.arxivQuery) return;
     if (topic) {
       patchTopic(topic.id, body);
@@ -390,7 +423,7 @@ function TopicForm({ topic, onDone }: { topic?: Topic; onDone: (id?: string) => 
           Research question
           <select value={rqId} onChange={(e) => setRqId(e.target.value)}>
             <option value="">— none —</option>
-            {rqs.map((q) => (
+            {rqs.filter((q) => (q.track ?? 'core') === track).map((q) => (
               <option key={q.id} value={q.id}>
                 {q.short}
               </option>

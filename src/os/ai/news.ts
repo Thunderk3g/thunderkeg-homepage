@@ -1,14 +1,16 @@
 /**
- * AI news aggregator — server-side only.
+ * News aggregator for the Research app's tracks — server-side only.
  *
  * The assistant runs on Groq (an inference host for open-weight models). It has
  * no web access and its weights have a training cutoff, so it cannot tell you
- * what shipped this week. This module does: it pulls public RSS/Atom/JSON feeds,
- * normalises them, and hands back a merged timeline. No API keys, no accounts.
+ * what shipped this week. This module does: it pulls public RSS/Atom/JSON feeds
+ * for one track, normalises them, and hands back a merged timeline. No API
+ * keys, no accounts.
  */
 
 import { atomLink, entries, iso, tag } from '@/research/server/xml';
 import { UPSTREAM_UA, arxivGate } from '@/research/server/cache';
+import type { TrackId } from '@/research/tracks';
 
 export interface NewsItem {
   title: string;
@@ -26,19 +28,64 @@ interface Feed {
   url: string;
   lane: NewsItem['lane'];
   kind: 'rss' | 'atom' | 'hn';
+  /**
+   * Keep only items whose title or summary match. General defense press and
+   * Hacker News search (which prefix-matches "AI" against "aid") need it;
+   * specialist feeds don't.
+   */
+  focus?: RegExp;
+  /** match `focus` against the headline only — for feeds whose blurbs are boilerplate */
+  titleOnly?: boolean;
 }
 
-const FEEDS: Feed[] = [
-  { source: 'arXiv cs.CL', url: 'https://export.arxiv.org/api/query?search_query=cat:cs.CL&sortBy=submittedDate&sortOrder=descending&max_results=10', lane: 'research', kind: 'atom' },
-  { source: 'arXiv cs.AI', url: 'https://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submittedDate&sortOrder=descending&max_results=10', lane: 'research', kind: 'atom' },
-  { source: 'Hugging Face', url: 'https://huggingface.co/blog/feed.xml', lane: 'community', kind: 'atom' },
-  { source: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/', lane: 'community', kind: 'atom' },
-  { source: 'Hacker News', url: 'https://hn.algolia.com/api/v1/search?tags=story&query=AI%20OR%20LLM%20OR%20OpenAI%20OR%20Anthropic&hitsPerPage=20', lane: 'community', kind: 'hn' },
-  { source: 'TechCrunch AI', url: 'https://techcrunch.com/category/artificial-intelligence/feed/', lane: 'industry', kind: 'rss' },
-  { source: 'The Verge AI', url: 'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml', lane: 'industry', kind: 'rss' },
-  { source: 'MIT Tech Review', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed/', lane: 'industry', kind: 'rss' },
-  { source: 'Google Research', url: 'https://research.google/blog/rss/', lane: 'research', kind: 'rss' },
-];
+/** AI and the technology around it, as defense press writes about it. */
+const DEFENSE_TECH =
+  /\b(ai|a\.i\.|artificial intelligence|machine learning|autonom\w*|drones?|uavs?|uas|counter-(?:uas|drone)|unmanned|swarm\w*|robot\w*|algorithm\w*|cyber\w*|software|compute|chips?|semiconductor\w*|electronic warfare|jamm\w*|sensors?|isr|jadc2|llms?|language models?|palantir|anduril|openai|anthropic|scale ai|cdao|diu|darpa|replicator|autonomy)\b/i;
+
+/** Trading, quant and markets technology. */
+const MARKETS_TECH =
+  /\b(trad(?:e|es|er|ers|ing)|quant\w*|algo\w*|hedge funds?|hft|high-frequency|backtest\w*|portfolio|stocks?|equit(?:y|ies)|options|market\w*|invest\w*|fintech|broker\w*|exchange|crypto\w*|alpha|volatility)\b/i;
+
+const arxivFeed = (q: string) =>
+  `https://export.arxiv.org/api/query?search_query=${encodeURIComponent(q)}&sortBy=submittedDate&sortOrder=descending&max_results=10`;
+/** newest HN stories for a query, with a small points floor to skip spam */
+const hnFeed = (q: string) =>
+  `https://hn.algolia.com/api/v1/search_by_date?tags=story&query=${encodeURIComponent(q)}&numericFilters=points%3E3&hitsPerPage=15`;
+
+/** Every URL here answered with a parseable feed when it was added. */
+const FEEDS: Record<TrackId, Feed[]> = {
+  core: [
+    { source: 'arXiv cs.CL', url: arxivFeed('cat:cs.CL'), lane: 'research', kind: 'atom' },
+    { source: 'arXiv cs.AI', url: arxivFeed('cat:cs.AI'), lane: 'research', kind: 'atom' },
+    { source: 'Google Research', url: 'https://research.google/blog/rss/', lane: 'research', kind: 'rss' },
+    { source: 'Hugging Face', url: 'https://huggingface.co/blog/feed.xml', lane: 'community', kind: 'atom' },
+    { source: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/', lane: 'community', kind: 'atom' },
+    { source: 'Hacker News', url: 'https://hn.algolia.com/api/v1/search?tags=story&query=AI%20OR%20LLM%20OR%20OpenAI%20OR%20Anthropic&hitsPerPage=20', lane: 'community', kind: 'hn' },
+    { source: 'TechCrunch AI', url: 'https://techcrunch.com/category/artificial-intelligence/feed/', lane: 'industry', kind: 'rss' },
+    { source: 'The Verge AI', url: 'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml', lane: 'industry', kind: 'rss' },
+    { source: 'MIT Tech Review', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed/', lane: 'industry', kind: 'rss' },
+  ],
+  defense: [
+    { source: 'War on the Rocks', url: 'https://warontherocks.com/feed/', lane: 'research', kind: 'rss', focus: DEFENSE_TECH },
+    { source: 'CSET Georgetown', url: 'https://cset.georgetown.edu/feed/', lane: 'research', kind: 'rss' },
+    { source: 'DefenseScoop', url: 'https://defensescoop.com/feed/', lane: 'industry', kind: 'rss' },
+    { source: 'Defense One', url: 'https://www.defenseone.com/rss/all/', lane: 'industry', kind: 'rss', focus: DEFENSE_TECH },
+    { source: 'Breaking Defense', url: 'https://breakingdefense.com/feed/', lane: 'industry', kind: 'rss', focus: DEFENSE_TECH },
+    { source: 'C4ISRNET', url: 'https://www.c4isrnet.com/feed/', lane: 'industry', kind: 'rss', focus: DEFENSE_TECH },
+    { source: 'Hacker News', url: hnFeed('military AI'), lane: 'community', kind: 'hn', focus: DEFENSE_TECH },
+    { source: 'Hacker News', url: hnFeed('drone warfare'), lane: 'community', kind: 'hn', focus: DEFENSE_TECH },
+  ],
+  markets: [
+    { source: 'arXiv q-fin', url: arxivFeed('cat:q-fin.TR OR cat:q-fin.CP OR cat:q-fin.PM OR cat:q-fin.ST'), lane: 'research', kind: 'atom' },
+    { source: 'Quantocracy', url: 'https://quantocracy.com/feed/', lane: 'research', kind: 'rss' },
+    { source: 'Alpha Architect', url: 'https://alphaarchitect.com/feed/', lane: 'research', kind: 'rss' },
+    { source: 'QuantInsti', url: 'https://blog.quantinsti.com/rss/', lane: 'research', kind: 'rss' },
+    { source: 'Bloomberg Markets', url: 'https://feeds.bloomberg.com/markets/news.rss', lane: 'industry', kind: 'rss', focus: MARKETS_TECH, titleOnly: true },
+    { source: 'Hacker News', url: hnFeed('algorithmic trading'), lane: 'community', kind: 'hn', focus: MARKETS_TECH },
+    { source: 'Hacker News', url: hnFeed('quant trading'), lane: 'community', kind: 'hn', focus: MARKETS_TECH },
+    { source: 'Hacker News', url: hnFeed('LLM trading'), lane: 'community', kind: 'hn', focus: MARKETS_TECH },
+  ],
+};
 
 /* XML helpers are shared with the Research app's arXiv client. */
 
@@ -89,25 +136,30 @@ async function pull(feed: Feed): Promise<NewsItem[]> {
   // arXiv counts every request from this machine, so its feeds queue behind the
   // Research app's gate instead of firing alongside it
   const text = feed.url.includes('export.arxiv.org') ? await arxivGate(go) : await go();
-  return parse(feed, text).slice(0, 12);
+  const items = parse(feed, text);
+  const { focus } = feed;
+  const kept = focus ? items.filter((i) => focus.test(feed.titleOnly ? i.title : `${i.title} ${i.summary ?? ''}`)) : items;
+  return kept.slice(0, 12);
 }
 
 export interface NewsPayload {
+  track: TrackId;
   items: NewsItem[];
   /** feeds that failed this fetch — surfaced rather than hidden */
   unreachable: string[];
   fetchedAt: string;
 }
 
-/** Merge every feed. A dead feed is reported, never fatal. */
-export async function fetchAiNews(): Promise<NewsPayload> {
-  const settled = await Promise.allSettled(FEEDS.map(pull));
+/** Merge every feed of one track. A dead feed is reported, never fatal. */
+export async function fetchNews(track: TrackId): Promise<NewsPayload> {
+  const feeds = FEEDS[track];
+  const settled = await Promise.allSettled(feeds.map(pull));
 
   const items: NewsItem[] = [];
   const unreachable: string[] = [];
   settled.forEach((r, i) => {
     if (r.status === 'fulfilled') items.push(...r.value);
-    else unreachable.push(FEEDS[i].source);
+    else unreachable.push(feeds[i].source);
   });
 
   // de-duplicate by URL, then by normalised title (the same story gets syndicated)
@@ -120,5 +172,5 @@ export async function fetchAiNews(): Promise<NewsPayload> {
   });
 
   deduped.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  return { items: deduped.slice(0, 90), unreachable, fetchedAt: new Date().toISOString() };
+  return { track, items: deduped.slice(0, 90), unreachable: [...new Set(unreachable)], fetchedAt: new Date().toISOString() };
 }

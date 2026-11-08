@@ -5,20 +5,12 @@ import { browserApp } from './apps/browser/Browser';
 import { fileManagerApp } from './apps/files/FileManager';
 import { textEditorApp } from './apps/editor/TextEditor';
 import { settingsApp } from './apps/settings/Settings';
-import { calculatorApp } from './apps/calculator/Calculator';
 import { gamesApp } from './apps/games/GamesApp';
-import { chatApp } from './apps/chat/Chat';
-import { whiteboardApp } from './apps/whiteboard/Whiteboard';
 import { assistantApp } from './apps/assistant/Assistant';
 import { codeEditorApp } from './apps/codeeditor/CodeEditor';
-import { voiceApp } from './apps/voice/Voice';
 import { writingApp } from './apps/writing/Writing';
-import { aiNewsApp } from './apps/news/AiNews';
 import { researchApp } from './apps/research/Research';
 import { learningApp } from './apps/learning/LearningApp';
-import { mp3App } from './apps/media/Mp3';
-import { vlcApp } from './apps/media/Vlc';
-import { doomApp } from './apps/games/Doom';
 import { toolApps } from './apps/tools';
 import { psqlApp } from './apps/psql/Psql';
 
@@ -27,23 +19,15 @@ export const apps: AppDefinition[] = [
   terminalApp,
   vmApp,
   browserApp,
-  aiNewsApp,
   researchApp,
   writingApp,
   learningApp,
   fileManagerApp,
   textEditorApp,
   settingsApp,
-  calculatorApp,
   gamesApp,
-  chatApp,
-  whiteboardApp,
   assistantApp,
   codeEditorApp,
-  voiceApp,
-  mp3App,
-  vlcApp,
-  doomApp,
   psqlApp,
   ...toolApps,
 ];

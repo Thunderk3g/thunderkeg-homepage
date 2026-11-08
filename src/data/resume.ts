@@ -173,6 +173,11 @@ export const research = {
     'When consensus pseudo-labelling fails for code-switched low-resource ASR — orthographic divergence, same-family correlated error, and hypothesis-granularity mismatch, measured at two scales.',
     'Evaluation instruments for romanized code-switched speech — WER scores spelling variants of one word (theek / thik / teek) as errors, and script canonicalisation is ill-posed when English tokens legitimately stay Latin; a script-aware, entity-weighted, human-validated metric for Indian financial speech does not yet exist.',
   ],
+  /** Areas I read in and keep current on — tracked in the Research app, not claimed as my research. */
+  following: [
+    'AI in defense and national security — autonomy and counter-UAS, ISR and target recognition, LLMs for cyber operations, adversarial robustness, wargaming, and the policy around meaningful human control.',
+    'AI and LLMs in trading and markets — financial LLMs and multi-agent trading systems, reinforcement learning for execution and portfolios, alpha mining, and the look-ahead and backtest biases that make results look better than they are.',
+  ],
   /** Openly stated: this portfolio is part of a research-master's application. */
   track:
     'Applying for a research-track master’s in AI & Law and speech technology in Europe (Erasmus Mundus joint masters and Dutch programmes), for the 2027 intake.',
@@ -237,6 +242,7 @@ export function resumeText(): string {
   out.push(`${profile.email} · ${profile.phone} · github.com/${profile.github}`, '');
   out.push('## Summary', ...profile.summary.map((s) => '- ' + s), '');
   out.push('## Research interests', ...research.directions.map((d) => '- ' + d));
+  out.push('', '## Also following', ...research.following.map((d) => '- ' + d));
   out.push('', '## Research');
   for (const r of [...research.inPreparation, ...research.published]) {
     out.push('', `### ${r.title}`, r.venue, r.summary);

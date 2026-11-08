@@ -1,5 +1,5 @@
 /* ───────────────────────── tiny XML helpers ─────────────────────────
-   Shared by the AI Radar feeds (src/os/ai/news.ts) and the arXiv client.
+   Shared by the research news feeds (src/os/ai/news.ts) and the arXiv client.
    ponytail: regex, not a DOM parser. These are well-formed public feeds and we
    only ever read a handful of fields out of them. If a feed ever needs
    namespaces or CDATA-in-attributes, install fast-xml-parser instead of
@@ -18,6 +18,11 @@ export const decode = (s: string) =>
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&amp;/g, '&')
+    // double-escaped feeds (&amp;#x27;) only become real entities after &amp;
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
+    // some feeds escape their HTML (&lt;p&gt;) — strip it once it is real markup
+    .replace(/<\/?[a-z][^>]*>/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

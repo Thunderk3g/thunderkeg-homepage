@@ -103,8 +103,10 @@ const README = `Welcome — my portfolio, rendered as a Kali Linux desktop.
 Everything here is interactive:
   • Terminal          try: help · resume · blog · papers · news · ai <question>
   • Whisker menu      top-left: Kali tools, the Games arcade, everything else
+  • Research          three tracks — AI/ML, Defense AI, Trading & Markets — each
+                      with arXiv feeds, an essentials list and a live news wire
+                      (run 'research defense' or 'news markets')
   • Writing           posts + the papers I'm reading (also at /writing)
-  • AI Radar          live AI headlines from public feeds, with a catch-up brief
   • Learning OS       my skill-state model — evidence, dependencies, AI-free checks
                       (run 'learn'; state stays in your browser, never on a server)
   • Multiplayer       arcade games sync live — open two tabs and play

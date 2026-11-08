@@ -156,16 +156,6 @@ const GLYPHS: Record<string, Plate> = {
       </>
     ),
   },
-  calculator: {
-    from: '#5f6b80', to: '#2c3240',
-    glyph: (
-      <>
-        <rect {...S} x="6" y="3.8" width="12" height="16.4" rx="2" />
-        <path {...S} d="M8.8 7.4 H15.2" />
-        <path {...S} strokeWidth="2.4" d="M9 12 h0.01 M12 12 h0.01 M15 12 h0.01 M9 15.5 h0.01 M12 15.5 h0.01 M15 15.5 h0.01" />
-      </>
-    ),
-  },
   games: {
     from: '#ff5c8a', to: '#8e2bd1',
     glyph: (
@@ -174,26 +164,6 @@ const GLYPHS: Record<string, Plate> = {
         <path {...S} d="M8 10.5 V13.5 M6.5 12 H9.5" />
         <circle {...F} cx="15.4" cy="11.2" r="1" />
         <circle {...F} cx="17" cy="13.2" r="1" />
-      </>
-    ),
-  },
-  chat: {
-    from: '#3fd0a0', to: '#1878b8',
-    glyph: (
-      <>
-        <path {...S} d="M5 6.5 A1.5 1.5 0 0 1 6.5 5 H17.5 A1.5 1.5 0 0 1 19 6.5 V14.5 A1.5 1.5 0 0 1 17.5 16 H10 L6.5 19 V16 H6.5 A1.5 1.5 0 0 1 5 14.5 Z" />
-        <circle {...F} cx="9" cy="10.6" r="1" />
-        <circle {...F} cx="12" cy="10.6" r="1" />
-        <circle {...F} cx="15" cy="10.6" r="1" />
-      </>
-    ),
-  },
-  whiteboard: {
-    from: '#ffcf5c', to: '#e2794a',
-    glyph: (
-      <>
-        <rect {...S} x="4" y="5" width="16" height="11" rx="1.5" />
-        <path {...S} d="M7 12.5 C8.5 9 10 9 11 11 S13.5 13 15 9.5 M9 20 L12 16 L15 20" />
       </>
     ),
   },
@@ -209,43 +179,6 @@ const GLYPHS: Record<string, Plate> = {
   code: {
     from: '#2f9bff', to: '#1c3fa8',
     glyph: <path {...S} d="M8.5 8 L4.5 12 L8.5 16 M15.5 8 L19.5 12 L15.5 16 M13.4 5.5 L10.6 18.5" />,
-  },
-  voice: {
-    from: '#ff6b6b', to: '#b8326a',
-    glyph: (
-      <>
-        <rect {...S} x="9.2" y="3.8" width="5.6" height="10" rx="2.8" />
-        <path {...S} d="M6 11.5 A6 6 0 0 0 18 11.5 M12 17.5 V20.5 M9 20.5 H15" />
-      </>
-    ),
-  },
-  mp3: {
-    from: '#ff7ab6', to: '#e0427a',
-    glyph: (
-      <>
-        <path {...S} d="M9.5 17 V6 L18 4.5 V15.5" />
-        <circle {...S} cx="7.5" cy="17" r="2.2" />
-        <circle {...S} cx="16" cy="15.5" r="2.2" />
-      </>
-    ),
-  },
-  vlc: {
-    from: '#ff9b42', to: '#dd5a1c',
-    glyph: (
-      <>
-        <rect {...S} x="4" y="5.5" width="16" height="13" rx="2" />
-        <path {...F} d="M10.2 9 L15.4 12 L10.2 15 Z" />
-      </>
-    ),
-  },
-  doom: {
-    from: '#b3261e', to: '#3b0b0b',
-    glyph: (
-      <>
-        <path {...S} d="M12 4 C7.2 4 5 7.2 5 10.6 C5 13 6.2 14.4 7.6 15.2 V18 H9.6 V19.8 H14.4 V18 H16.4 V15.2 C17.8 14.4 19 13 19 10.6 C19 7.2 16.8 4 12 4 Z" />
-        <path {...F} d="M7.8 10.2 L10.8 11 L10.2 13.2 L8 12.6 Z M16.2 10.2 L13.2 11 L13.8 13.2 L16 12.6 Z" />
-      </>
-    ),
   },
   penguin: {
     from: '#4a5568', to: '#171a21',
@@ -426,7 +359,6 @@ const GLYPHS: Record<string, Plate> = {
 
 /** registry ids and aliases → plate key */
 const ALIAS: Record<string, string> = {
-  ainews: 'news',
   'code-editor': 'code',
   reconng: 'recon',
   files: 'dolphin',

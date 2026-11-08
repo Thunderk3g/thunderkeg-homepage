@@ -6,6 +6,8 @@
  * cards) is fed back into the Learning OS as evidence rather than duplicated.
  */
 
+import type { TrackId } from './tracks';
+
 export type PaperSource = 'arxiv' | 'hf' | 'note' | 'manual';
 
 /** A search result, normalised across arXiv, Hugging Face and imported notes. */
@@ -91,12 +93,16 @@ export interface ResearchQuestion {
   short: string;
   question: string;
   keywords: string[];
+  /** which track the question belongs to; absent = core */
+  track?: TrackId;
 }
 
 export interface Topic {
   id: string;
   label: string;
   rqId?: string;
+  /** which track's feed the topic appears in; absent = core */
+  track?: TrackId;
   arxivQuery: string;
   keywords: string[];
   builtin?: boolean;
