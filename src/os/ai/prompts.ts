@@ -60,6 +60,30 @@ export function newsSystemPrompt(): { role: 'system'; content: string } {
 }
 
 /**
+ * Weekly reading brief for the Research app's Brief tab. The client sends the
+ * track, its research questions, a ranked shortlist of new papers (title,
+ * topic, short abstract) and the freshest headlines — the model only orders,
+ * explains and connects them.
+ */
+export function digestSystemPrompt(): { role: 'system'; content: string } {
+  return {
+    role: 'system',
+    content:
+      'You write a weekly reading brief for a researcher keeping current in one area. The user ' +
+      'message names the area and its research questions, then lists new papers (already ' +
+      'shortlisted and ranked) and live headlines fetched minutes ago. Use ONLY that material: ' +
+      'never add papers, results or news from memory, and never invent numbers an abstract does ' +
+      'not state. Plain text, no markdown headings or bold, using exactly these sections:\n' +
+      'THIS WEEK — 2 to 4 one-line bullets on what moved, naming concrete methods, systems or events.\n' +
+      'READ FIRST — exactly 3 papers from the list, by exact title, each followed by one line: why ' +
+      'it matters for the research questions and what to look for while reading.\n' +
+      'SKIM — up to 3 more paper titles, one short clause each.\n' +
+      'ON THE WIRE — up to 3 headlines worth opening, one clause each.\n' +
+      'End with one line: "If you only read one thing:" and the single title.',
+  };
+}
+
+/**
  * Reading partner for the Research app's "First pass" and "Suggest cards".
  * The client sends the title, abstract and research questions; the model must
  * not pretend to have read the full paper.

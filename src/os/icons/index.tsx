@@ -21,7 +21,7 @@ import {
   Accessibility, AppWindow, ArrowLeft, ArrowRight, ArrowUp, BatteryCharging, BatteryFull, BatteryLow,
   BatteryMedium, Bell, Calendar, ChevronRight, Clipboard, Columns2, Copy, Cpu, EyeOff, FolderOpen, FolderPlus,
   Globe, Grid3x3, History, Image, Info, Keyboard, LayoutGrid, List, Lock, LogOut, Minus, Monitor, MonitorUp,
-  Network, PanelTop, Power, RotateCcw, Search, Settings, Shield, Square, SquareTerminal, Star, Users, Volume2,
+  Music2, Network, PanelTop, Power, RotateCcw, Search, Settings, Shield, Square, SquareTerminal, Star, Users, Volume2,
   VolumeX, Wifi, X, type LucideIcon,
 } from 'lucide-react';
 
@@ -82,6 +82,16 @@ const GLYPHS: Record<string, Plate> = {
         <path {...S} d="M12 8 A4 4 0 1 0 16 12" />
         <path {...S} d="M12 12 L18.5 5.5" />
         <circle {...F} cx="12" cy="12" r="1.6" />
+      </>
+    ),
+  },
+  music: {
+    from: '#1fd6a0', to: '#0b6b8f',
+    glyph: (
+      <>
+        <path {...S} d="M4.5 13 V12 A7.5 7.5 0 0 1 19.5 12 V13" />
+        <rect {...S} x="3.8" y="13" width="3.6" height="6" rx="1.4" />
+        <rect {...S} x="16.6" y="13" width="3.6" height="6" rx="1.4" />
       </>
     ),
   },
@@ -443,6 +453,7 @@ export function KaliMark({
 /* ───────────────────────── symbolic icons ───────────────────────── */
 
 const SYS: Record<string, LucideIcon> = {
+  music: Music2,
   network: Network,
   wifi: Wifi,
   volume: Volume2,

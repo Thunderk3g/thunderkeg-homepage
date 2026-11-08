@@ -1,12 +1,9 @@
 import type { NextRequest } from 'next/server';
-import { fetchNews, type NewsPayload } from '@/os/ai/news';
-import { cached } from '@/research/server/cache';
+import { cachedNews, type NewsPayload } from '@/os/ai/news';
 import { isTrackId } from '@/research/tracks';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const HALF_HOUR = 30 * 60 * 1000;
 
 /**
  * Live headlines for one research track: ?track=core|defense|markets.
@@ -18,8 +15,7 @@ export async function GET(req: NextRequest) {
   if (!isTrackId(raw)) return Response.json({ error: 'track must be one of core, defense, markets' }, { status: 400 });
 
   try {
-    // a payload where every feed failed is not worth caching
-    const r = await cached(`news:${raw}`, HALF_HOUR, () => fetchNews(raw), { label: 'news feeds', keep: (d) => d.items.length > 0 });
+    const r = await cachedNews(raw);
     return Response.json(r.error ? { ...r.data, error: r.error } : r.data, {
       headers: { 'cache-control': 'public, s-maxage=1800, stale-while-revalidate=3600' },
     });

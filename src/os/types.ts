@@ -19,6 +19,7 @@ export type AppCategory =
   | 'Development'
   | 'Accessories'
   | 'Games'
+  | 'Multimedia'
   | 'System';
 
 export interface AppProps {

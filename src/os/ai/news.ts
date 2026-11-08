@@ -9,7 +9,7 @@
  */
 
 import { atomLink, entries, iso, tag } from '@/research/server/xml';
-import { UPSTREAM_UA, arxivGate } from '@/research/server/cache';
+import { UPSTREAM_UA, arxivGate, cached } from '@/research/server/cache';
 import type { TrackId } from '@/research/tracks';
 
 export interface NewsItem {
@@ -173,4 +173,16 @@ export async function fetchNews(track: TrackId): Promise<NewsPayload> {
 
   deduped.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   return { track, items: deduped.slice(0, 90), unreachable: [...new Set(unreachable)], fetchedAt: new Date().toISOString() };
+}
+
+/**
+ * One track's merged timeline, shared by /api/news and the research brief so
+ * both hit upstream at most twice an hour. A payload where every feed failed
+ * is not worth caching.
+ */
+export function cachedNews(track: TrackId) {
+  return cached(`news:${track}`, 30 * 60 * 1000, () => fetchNews(track), {
+    label: 'news feeds',
+    keep: (d) => d.items.length > 0,
+  });
 }

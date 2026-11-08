@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
 import { counts, useResearch, useResearchHydrated } from '@/research/store';
 import { TRACKS, isTrackId, trackFromWord, trackOf, type TrackId } from '@/research/tracks';
+import { Brief } from './Brief';
 import { Feed } from './Feed';
 import { News } from './News';
 import { Library } from './Library';
 import { ReviewDeck } from './ReviewDeck';
 
-type Tab = 'feed' | 'news' | 'library' | 'review';
+type Tab = 'brief' | 'feed' | 'news' | 'library' | 'review';
 
 const TRACK_KEY = 'kos:research:track';
 
@@ -31,13 +32,14 @@ function rememberTrack(t: TrackId) {
 }
 
 /**
- * Research — three tracks (AI/ML, Defense AI, Trading & Markets), each with
- * arXiv topic feeds, an essentials reading list and a live news wire; plus
+ * Research — three tracks (AI/ML, Defense AI, Trading & Markets), each with a
+ * weekly brief (what to read now, optionally summarised by the model), arXiv
+ * topic feeds, an essentials reading list and a live news wire; plus
  * one shared library with three-pass notes and spaced recall.
  *
  * Launch args:
- *   arg 'review' | 'library' | 'news' → that tab;
- *   arg naming a track ('defense', 'markets', 'trading', 'ml'…) → that track's papers;
+ *   arg 'brief' | 'review' | 'library' | 'news' → that tab;
+ *   arg naming a track ('defense', 'markets', 'trading', 'ml'…) → that track's brief;
  *   any other arg → Feed search; paperId → that paper's detail view;
  *   track → that track (combines with tab: 'news').
  */
@@ -48,7 +50,7 @@ function ResearchApp({ args }: AppProps) {
   const c = useMemo(() => counts({ papers, cards }), [papers, cards]);
 
   const [track, setTrackState] = useState<TrackId>('core');
-  const [tab, setTab] = useState<Tab>('feed');
+  const [tab, setTab] = useState<Tab>('brief');
   const [openId, setOpenId] = useState<string | null>(null);
   const [search, setSearch] = useState<{ q: string; nonce: number } | null>(null);
 
@@ -71,15 +73,15 @@ function ResearchApp({ args }: AppProps) {
     if (typeof args.paperId === 'string') {
       setOpenId(args.paperId);
       setTab('library');
-    } else if (arg === 'review' || arg === 'library' || arg === 'news') setTab(arg);
+    } else if (arg === 'review' || arg === 'library' || arg === 'news' || arg === 'brief') setTab(arg);
     else if (named) {
       setSearch(null);
-      setTab('feed');
+      setTab('brief');
     }
     else if (arg) {
       setSearch({ q: arg, nonce: Date.now() });
       setTab('feed');
-    } else if (args.tab === 'news') setTab('news');
+    } else if (args.tab === 'news' || args.tab === 'brief') setTab(args.tab);
   }, [args]);
 
   const openPaper = (id: string) => {
@@ -88,14 +90,15 @@ function ResearchApp({ args }: AppProps) {
   };
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: 'brief', label: '✦ Brief' },
     { id: 'feed', label: 'Papers' },
     { id: 'news', label: 'News' },
     { id: 'library', label: `Library (${c.papers})` },
     { id: 'review', label: `Review (${c.due})` },
   ];
 
-  // the library and recall deck are shared; the track bar scopes papers and news
-  const scoped = tab === 'feed' || tab === 'news';
+  // the library and recall deck are shared; the track bar scopes brief, papers and news
+  const scoped = tab === 'brief' || tab === 'feed' || tab === 'news';
 
   return (
     <div className="rsx">
@@ -108,7 +111,7 @@ function ResearchApp({ args }: AppProps) {
             onClick={() => {
               setTrack(t.id);
               setSearch(null);
-              if (!scoped) setTab('feed');
+              if (!scoped) setTab('brief');
             }}
           >
             {t.label}
@@ -133,11 +136,13 @@ function ResearchApp({ args }: AppProps) {
         </span>
       </nav>
 
-      {scoped && <p className="rsx-track-blurb">{trackOf(track).blurb}</p>}
+      {(tab === 'feed' || tab === 'news') && <p className="rsx-track-blurb">{trackOf(track).blurb}</p>}
 
       <div className={'rsx-body' + (tab === 'library' || tab === 'news' ? ' flush' : '')}>
         {!hydrated ? (
           <p className="lrn-empty">Loading your library…</p>
+        ) : tab === 'brief' ? (
+          <Brief key={track} track={track} onOpenPaper={openPaper} onShowNews={() => setTab('news')} />
         ) : tab === 'feed' ? (
           <Feed key={track} track={track} search={search} onOpenPaper={openPaper} />
         ) : tab === 'news' ? (

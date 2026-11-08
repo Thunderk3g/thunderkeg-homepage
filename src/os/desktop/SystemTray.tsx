@@ -7,8 +7,9 @@ import { SysIcon } from '../icons';
 import { useClock } from './useClock';
 import { Calendar } from './Calendar';
 import { CpuGraph } from './CpuGraph';
+import { current, usePlayer } from '@/music/player';
 
-type Pop = 'net' | 'vol' | 'bell' | 'bat' | 'cal' | null;
+type Pop = 'music' | 'net' | 'vol' | 'bell' | 'bat' | 'cal' | null;
 
 interface BatteryLike {
   level: number;
@@ -55,6 +56,10 @@ export function SystemTray() {
   const [volume, setVolume] = useState(64);
   const [muted, setMuted] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const launch = useOS((s) => s.launch);
+  const track = usePlayer(current);
+  const playing = usePlayer((s) => s.playing);
+  const player = usePlayer.getState;
 
   useEffect(() => {
     if (!pop) return;
@@ -88,6 +93,52 @@ export function SystemTray() {
         <SysIcon name="users" size={15} />
         <span className="n">{users.length}</span>
       </span>
+
+      {track && (
+        <span className="kos-tray-pop">
+          <button
+            className={'kos-tray-item kos-tray-music' + (playing ? ' on' : '') + (pop === 'music' ? ' open' : '')}
+            onClick={() => toggle('music')}
+            aria-label={`Now playing: ${track.title}`}
+            title={`${track.title} — ${track.artist}`}
+          >
+            <SysIcon name="music" size={15} />
+          </button>
+          {pop === 'music' && (
+            <div className="kos-popover right kos-pop-music" role="dialog" aria-label="Now playing">
+              <div className="kos-pop-title">{playing ? 'Now playing' : 'Paused'}</div>
+              <div className="kos-pop-music-title">{track.title}</div>
+              <div className="kos-pop-music-sub">{track.artist}</div>
+              <div className="kos-pop-music-btns">
+                <button onClick={() => player().prev()} aria-label="Previous">⏮</button>
+                <button className="main" onClick={() => player().toggle()} aria-label={playing ? 'Pause' : 'Play'}>
+                  {playing ? '❚❚' : '▶'}
+                </button>
+                <button onClick={() => player().next()} aria-label="Next">⏭</button>
+              </div>
+              <div className="kos-pop-sep" />
+              <button
+                className="kos-pop-row kos-pop-link"
+                onClick={() => {
+                  setPop(null);
+                  launch('music');
+                }}
+              >
+                Open Music
+              </button>
+              <button
+                className="kos-pop-row kos-pop-link"
+                onClick={() => {
+                  setPop(null);
+                  player().stop();
+                }}
+              >
+                Stop
+              </button>
+            </div>
+          )}
+        </span>
+      )}
 
       <span className="kos-tray-pop">
         <button className={'kos-tray-item' + (pop === 'net' ? ' open' : '')} onClick={() => toggle('net')} aria-label="Network">

@@ -7,6 +7,11 @@ import type { OSSettings } from '../store';
  */
 export const WALLPAPERS: { id: string; label: string }[] = [
   { id: 'kali-dragon', label: 'Data Dragon' },
+  { id: 'sweep', label: 'Sweep' },
+  { id: 'ticker', label: 'Ticker' },
+  { id: 'synapse', label: 'Synapse' },
+  { id: 'horizon', label: 'Horizon' },
+  { id: 'contours', label: 'Contours' },
   { id: 'kali-2025', label: 'Facets' },
   { id: 'kali-mono', label: 'Mono' },
   { id: 'kali-blue', label: 'Kali Blue' },

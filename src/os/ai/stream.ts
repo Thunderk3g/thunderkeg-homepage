@@ -9,7 +9,7 @@ export interface ChatMsg {
 
 export interface ChatOptions {
   /** which system prompt the server should use */
-  mode?: 'resume' | 'news' | 'coach' | 'paper';
+  mode?: 'resume' | 'news' | 'digest' | 'coach' | 'paper';
   /** what to answer with when no model is configured; defaults to the résumé retriever */
   offline?: (question: string) => string;
 }

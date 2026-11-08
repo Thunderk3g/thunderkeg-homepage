@@ -104,8 +104,11 @@ Everything here is interactive:
   • Terminal          try: help · resume · blog · papers · news · ai <question>
   • Whisker menu      top-left: Kali tools, the Games arcade, everything else
   • Research          three tracks — AI/ML, Defense AI, Trading & Markets — each
-                      with arXiv feeds, an essentials list and a live news wire
+                      with a weekly Brief (what to read now, summarised on
+                      request), arXiv feeds, essentials and a live news wire
                       (run 'research defense' or 'news markets')
+  • Music             open music (Audius) and commercial-free radio (SomaFM,
+                      Radio Browser); keeps playing from the panel (run 'music lofi')
   • Writing           posts + the papers I'm reading (also at /writing)
   • Learning OS       my skill-state model — evidence, dependencies, AI-free checks
                       (run 'learn'; state stays in your browser, never on a server)

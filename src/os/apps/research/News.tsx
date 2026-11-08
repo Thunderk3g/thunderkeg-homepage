@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NewsItem, NewsPayload } from '../../ai/news';
-import { streamChat } from '../../ai/stream';
 import { trackOf, type TrackId } from '@/research/tracks';
 
 type Lane = NewsItem['lane'];
@@ -26,23 +25,9 @@ function ago(iso: string): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-/** Deterministic digest used when no LLM key is configured. */
-function localBrief(items: NewsItem[], label: string): string {
-  const out: string[] = [`${label} — top items per lane`, ''];
-  for (const lane of ['research', 'industry', 'community'] as Lane[]) {
-    const top = items.filter((i) => i.lane === lane).slice(0, 3);
-    if (!top.length) continue;
-    out.push(lane.toUpperCase());
-    top.forEach((i) => out.push(`• ${i.title}  (${i.source}${i.date ? `, ${ago(i.date)}` : ''})`));
-    out.push('');
-  }
-  out.push('(No LLM_API_KEY set — this is the raw top-of-feed, not a model summary.)');
-  return out.join('\n');
-}
-
 /**
- * Live headlines for the selected research track — the "what happened this
- * week" half of staying current; the Feed tab is the papers half.
+ * Every live headline for the selected research track. The Brief tab keeps
+ * the freshest few and summarises them with the week's papers.
  */
 export function News({ track }: { track: TrackId }) {
   const label = trackOf(track).label;
@@ -50,12 +35,9 @@ export function News({ track }: { track: TrackId }) {
   const [error, setError] = useState<string | null>(null);
   const [lane, setLane] = useState<Lane | 'all'>('all');
   const [query, setQuery] = useState('');
-  const [brief, setBrief] = useState('');
-  const [briefing, setBriefing] = useState(false);
 
   const load = useCallback(
     (force = false) => {
-      setBrief('');
       const hit = memo.get(track);
       if (hit && !force) {
         setData(hit);
@@ -91,26 +73,6 @@ export function News({ track }: { track: TrackId }) {
     );
   }, [data, lane, query]);
 
-  const briefMe = async () => {
-    const source = (data?.items ?? []).slice(0, 40);
-    if (!source.length || briefing) return;
-    setBriefing(true);
-    setBrief('');
-    const headlines = source
-      .map((i) => `- [${i.lane}] ${i.title} (${i.source}${i.date ? `, ${ago(i.date)}` : ''})`)
-      .join('\n');
-    let acc = '';
-    await streamChat(
-      [{ role: 'user', content: `Track: ${label}. Here are the live headlines. Brief me.\n\n${headlines}` }],
-      (d) => {
-        acc += d;
-        setBrief(acc);
-      },
-      { mode: 'news', offline: () => localBrief(source, label) },
-    );
-    setBriefing(false);
-  };
-
   return (
     <div className="kos-news rsx-news">
       <div className="kos-news-bar">
@@ -133,17 +95,7 @@ export function News({ track }: { track: TrackId }) {
         <button className="kos-game-btn" onClick={() => load(true)} title="refetch feeds">
           ⟳
         </button>
-        <button className="kos-game-btn primary" onClick={briefMe} disabled={!data?.items.length || briefing}>
-          {briefing ? 'Briefing…' : 'Brief me'}
-        </button>
       </div>
-
-      {brief && (
-        <pre className="kos-news-brief">
-          {brief}
-          {briefing && <span className="kos-assistant-caret">▋</span>}
-        </pre>
-      )}
 
       <div className="kos-news-list">
         {!data && !error && <p className="kos-news-empty">Pulling {label} feeds…</p>}

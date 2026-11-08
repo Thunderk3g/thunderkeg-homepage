@@ -13,6 +13,7 @@ import { researchApp } from './apps/research/Research';
 import { learningApp } from './apps/learning/LearningApp';
 import { toolApps } from './apps/tools';
 import { psqlApp } from './apps/psql/Psql';
+import { musicApp } from './apps/music/Music';
 
 /** Every registered application. */
 export const apps: AppDefinition[] = [
@@ -29,6 +30,7 @@ export const apps: AppDefinition[] = [
   assistantApp,
   codeEditorApp,
   psqlApp,
+  musicApp,
   ...toolApps,
 ];
 
