@@ -185,6 +185,12 @@ const PAGES: PageDef[] = [
       <Section title="Get in touch">
         <ul className="kos-web-list">
           <li>
+            Projects and roles —{' '}
+            <a href="/hire" target="_blank" rel="noreferrer">
+              send a brief
+            </a>
+          </li>
+          <li>
             Email — <a href={`mailto:${profile.email}`}>{profile.email}</a>
           </li>
           <li>Phone — {profile.phone}</li>

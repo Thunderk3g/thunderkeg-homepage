@@ -3,9 +3,12 @@ import type { OSSettings } from '../store';
 /**
  * Wallpaper catalogue. Ids are stable (they are persisted settings and CSS
  * class names: `.wall-<id>`); the artwork behind `kali-dragon` is now the
- * original isometric "data-dragon" cubes in /public/wallpapers.
+ * original isometric "data-dragon" cubes in /public/wallpapers. `stacks` is
+ * the live one: a canvas drawn from the research and learning stores
+ * (src/os/desktop/stacks).
  */
 export const WALLPAPERS: { id: string; label: string }[] = [
+  { id: 'stacks', label: 'Stacks (live)' },
   { id: 'kali-dragon', label: 'Data Dragon' },
   { id: 'sweep', label: 'Sweep' },
   { id: 'ticker', label: 'Ticker' },

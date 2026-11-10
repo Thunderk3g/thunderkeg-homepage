@@ -235,6 +235,131 @@ export const awards = [
   'Esteemed Contributor to Financial Innovation Award',
 ];
 
+/* ───────────────────────── Working together ───────────────────────── */
+
+/**
+ * Everything the Hire app, the /hire page and the desktop's "work with me"
+ * prompts say. Edit here and every surface follows.
+ *
+ * Each service names the work it is drawn from (`proof`), so nothing is
+ * offered that is not already on this résumé. No rates are published; set
+ * `open` to false to take the prompts down without removing the page.
+ */
+export interface Service {
+  id: string;
+  name: string;
+  /** what the client ends up with */
+  outcome: string;
+  /** where on this site the same work is described */
+  proof: string;
+  /** a post or project that shows it, if one is public */
+  link?: { label: string; href: string };
+}
+
+export const hire = {
+  open: true,
+  status: 'Open to freelance projects and new roles',
+  /** shown beside the status; facts only */
+  facts: ['Based in Pune, India', 'IST, UTC+5:30', 'Replies by email'],
+  engagements: [
+    { id: 'project', label: 'A freelance project', blurb: 'A scoped build or audit with a fixed outcome.' },
+    { id: 'consult', label: 'Consulting or a review', blurb: 'A second pair of eyes on a system, a metric or a plan.' },
+    { id: 'role', label: 'A full-time or contract role', blurb: 'AI engineering, applied research or a technical lead seat.' },
+    { id: 'research', label: 'A research collaboration', blurb: 'AI & Law, retrieval evaluation or code-switched speech.' },
+  ],
+  services: [
+    {
+      id: 'grounded-llm',
+      name: 'Retrieval-grounded LLM systems',
+      outcome:
+        'An assistant or reviewer that cites its evidence or declines to answer: hybrid dense and BM25 retrieval, a verification step that drops unsupported claims, and a fail-closed path to a human.',
+      proof: 'Built in production for regulatory compliance review at an IRDAI-regulated insurer.',
+      link: { label: 'A permissive default is a claim', href: '/writing/a-permissive-default-is-a-claim' },
+    },
+    {
+      id: 'evaluation',
+      name: 'Evaluation and audits of AI systems',
+      outcome:
+        'A written answer to “does this actually work?”: leakage-safe splits, declared confounds, sample sizes with every figure, and the failure cases your current metric hides.',
+      proof: 'Found and reported speaker leakage, a saturating metric and a headline result that did not survive the full corpus.',
+      link: { label: 'Falsifying my own headline result', href: '/writing/falsifying-my-own-result' },
+    },
+    {
+      id: 'speech',
+      name: 'Speech and ASR pipelines for Indian languages',
+      outcome:
+        'Transcription, speaker attribution and scoring for code-switched Hinglish and Indian English audio, with a corpus pipeline and a test split you can trust.',
+      proof: 'Built call intelligence and an ASR corpus pipeline over Indian insurance telephony.',
+    },
+    {
+      id: 'document-ai',
+      name: 'Document AI and validation gates',
+      outcome:
+        'A document intake that classifies, reads and cross-checks, then returns a decision with a reason code instead of a confidence score nobody can act on.',
+      proof: 'Built a KYC document-validation gate with dual-engine OCR and four decision states.',
+    },
+    {
+      id: 'agents',
+      name: 'Agent safety and governance',
+      outcome:
+        'Agents that cannot do the irreversible thing without sign-off: a tool gateway, approval tokens, an audit trail and layered prompt-injection defence.',
+      proof: 'Designed Arbor, an agent-governance architecture with 10 ADRs and 219 passing tests.',
+      link: { label: 'Arbor on GitHub', href: 'https://github.com/Thunderk3g/Arbor' },
+    },
+    {
+      id: 'backend',
+      name: 'AI backends and APIs',
+      outcome:
+        'The service around the model: FastAPI, PostgreSQL and pgvector, queues, cost guards for paid model APIs, and tests.',
+      proof: 'Led a 10-person team shipping insurance purchase journeys; owns API design and releases.',
+    },
+  ] satisfies Service[] as Service[],
+  /** how a first conversation goes */
+  process: [
+    'You send a short brief: what you need, by when, and what “done” looks like.',
+    'I reply by email with questions, or with a clear no if it is not a fit.',
+    'We agree scope, timeline and terms in writing before any work starts.',
+  ],
+};
+
+export const TIMELINES = ['As soon as possible', 'Within a month', 'In 1–3 months', 'Flexible'] as const;
+
+export interface Brief {
+  engagement: string;
+  name: string;
+  company: string;
+  services: string[];
+  timeline: string;
+  budget: string;
+  details: string;
+}
+
+/** The brief as plain text, used for the email body and the copy button. */
+export function briefText(b: Brief): string {
+  const kind = hire.engagements.find((e) => e.id === b.engagement)?.label ?? 'An enquiry';
+  const picked = hire.services.filter((s) => b.services.includes(s.id)).map((s) => s.name);
+  const lines = [
+    `Hi Diwakar,`,
+    '',
+    `I am getting in touch about ${kind.charAt(0).toLowerCase() + kind.slice(1)}.`,
+    '',
+    picked.length ? `Area: ${picked.join('; ')}` : '',
+    b.timeline ? `Timeline: ${b.timeline}` : '',
+    b.budget ? `Budget or compensation: ${b.budget}` : '',
+    '',
+    b.details || '(details)',
+    '',
+    b.name ? `${b.name}${b.company ? `, ${b.company}` : ''}` : '',
+  ];
+  return lines.filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n').trim();
+}
+
+export function briefMailto(b: Brief): string {
+  const kind = hire.engagements.find((e) => e.id === b.engagement)?.label ?? 'Enquiry';
+  const subject = `${kind}${b.company ? ` — ${b.company}` : ''}`;
+  return `mailto:${profile.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(briefText(b))}`;
+}
+
 /* ───────────────────────── Derived helpers ───────────────────────── */
 
 /** Flat plain-text résumé — used by the fake filesystem and the AI context. */
@@ -266,5 +391,10 @@ export function resumeText(): string {
   }
   out.push('', '## Skills', ...skills.map((s) => `${s.group}: ${s.items}`));
   out.push('', '## Awards', ...awards.map((a) => '- ' + a));
+  if (hire.open) {
+    out.push('', '## Working together', `${hire.status}. ${hire.facts.join('. ')}.`);
+    out.push(...hire.services.map((s) => `- ${s.name}: ${s.outcome}`));
+    out.push(`To start: send a brief from the “Work with me” app or /hire, or email ${profile.email}.`);
+  }
   return out.join('\n');
 }

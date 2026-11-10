@@ -52,7 +52,7 @@ function kaliSection(a: AppDefinition): string[] {
   return out.length ? [...new Set(out)] : [USUAL];
 }
 
-const FAVORITE_IDS = ['research', 'terminal', 'root-terminal', 'files', 'editor', 'browser', 'vm', 'psql'];
+const FAVORITE_IDS = ['hire', 'research', 'terminal', 'root-terminal', 'files', 'editor', 'browser', 'vm', 'psql'];
 const WEB_LINKS = [
   { key: 'link-kali', title: 'Kali Linux', description: 'kali.org', url: 'https://www.kali.org/' },
   { key: 'link-tools', title: 'Kali Tools', description: 'Tool documentation', url: 'https://www.kali.org/tools/' },

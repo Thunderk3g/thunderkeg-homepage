@@ -111,7 +111,7 @@ interface OSStore {
 }
 
 const DEFAULT_SETTINGS: OSSettings = {
-  wallpaper: 'kali-dragon',
+  wallpaper: 'stacks',
   accent: '#2777ff',
   reducedMotion: false,
   terminalOpacity: 0.95,
@@ -126,6 +126,22 @@ const undercoverOn = (s: { settings: OSSettings }) => s.settings.theme === UNDER
 const wsOf = (w: WindowState) => w.workspace ?? 0;
 const animationsOff = (s: { settings: OSSettings }) => s.settings.reducedMotion || prefersReducedMotion();
 
+const SETTINGS_KEY = 'kos:settings';
+
+/** Settings survive a reload; everything else about a session starts fresh. */
+function storedSettings(): OSSettings {
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(SETTINGS_KEY) : null;
+    const saved = raw ? (JSON.parse(raw) as Partial<OSSettings>) : {};
+    const merged = { ...DEFAULT_SETTINGS, ...saved };
+    // Undercover is a mode you switch into, not a place to wake up in
+    if (merged.theme === UNDERCOVER_THEME) merged.theme = DEFAULT_SETTINGS.theme;
+    return merged;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
 export const useOS = create<OSStore>((set, get) => ({
   phase: 'boot',
   user: 'kali',
@@ -139,7 +155,7 @@ export const useOS = create<OSStore>((set, get) => ({
   nextZ: 10,
   seq: 1,
 
-  settings: DEFAULT_SETTINGS,
+  settings: storedSettings(),
 
   bootNonce: 0,
   activeWorkspace: 0,
@@ -448,4 +464,15 @@ if (typeof window !== 'undefined') {
   // test/debug handle (mirrors the old window.__game)
   (window as unknown as { __os: typeof useOS }).__os = useOS;
   (window as unknown as { __osApps: string[] }).__osApps = apps.map((a) => a.id);
+}
+
+if (typeof window !== 'undefined') {
+  useOS.subscribe((s, prev) => {
+    if (s.settings === prev.settings) return;
+    try {
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(s.settings));
+    } catch {
+      /* storage blocked: settings just last for this visit */
+    }
+  });
 }

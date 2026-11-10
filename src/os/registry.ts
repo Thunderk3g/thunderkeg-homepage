@@ -14,9 +14,11 @@ import { learningApp } from './apps/learning/LearningApp';
 import { toolApps } from './apps/tools';
 import { psqlApp } from './apps/psql/Psql';
 import { musicApp } from './apps/music/Music';
+import { hireApp } from './apps/hire/Hire';
 
 /** Every registered application. */
 export const apps: AppDefinition[] = [
+  hireApp,
   terminalApp,
   vmApp,
   browserApp,

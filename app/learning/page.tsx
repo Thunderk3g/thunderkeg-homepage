@@ -17,6 +17,7 @@ export default function LearningPage() {
           <a href="/">desktop</a>
           <a href="/resume">résumé</a>
           <a href="/writing">writing</a>
+          <a href="/hire">hire</a>
           <span aria-current="page">learning os</span>
         </nav>
 

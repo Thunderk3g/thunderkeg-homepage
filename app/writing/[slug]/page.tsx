@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { allEntries, getEntry } from '@/content/writing';
 import { Markdown } from '@/content/Markdown';
-import { profile } from '@/data/resume';
+import { ManPage } from '@/content/ManPage';
+import { fmtDate, readingMinutes } from '@/content/site';
+import { hire } from '@/data/resume';
 
 export function generateStaticParams() {
   return allEntries().map((e) => ({ slug: e.slug }));
@@ -19,82 +22,100 @@ export async function generateMetadata({
   return {
     title: `${entry.title} — Diwakar Adhikari`,
     description: entry.summary,
+    alternates: { canonical: `/writing/${entry.slug}` },
+    openGraph: { type: 'article', title: entry.title, description: entry.summary, publishedTime: entry.date },
   };
 }
-
-const fmt = (iso: string) =>
-  iso
-    ? new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-      })
-    : '';
 
 export default async function EntryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const entry = getEntry(slug);
   if (!entry) notFound();
 
+  // neighbours of the same kind, newest first
+  const same = allEntries().filter((e) => e.kind === entry.kind);
+  const at = same.findIndex((e) => e.slug === entry.slug);
+  const newer = same[at - 1];
+  const older = same[at + 1];
+
   return (
-    <div className="doc-page">
-      <main className="doc-wrap">
-        <nav className="doc-nav">
-          <a href="/">desktop</a>
-          <a href="/resume">résumé</a>
-          <a href="/writing">writing</a>
-        </nav>
-
-        <h1>{entry.title}</h1>
-        <div className="w-entry-meta">
-          <time dateTime={entry.date}>{fmt(entry.date)}</time>
-          {entry.kind === 'paper' && <span className="w-badge">paper note</span>}
-          {entry.status && <span className="w-badge">{entry.status}</span>}
-        </div>
-
-        {entry.kind === 'paper' && (
-          <dl className="w-cite">
-            {entry.authors && (
-              <>
-                <dt>Authors</dt>
-                <dd>{entry.authors}</dd>
-              </>
-            )}
-            {entry.venue && (
-              <>
-                <dt>Venue</dt>
-                <dd>{entry.venue}</dd>
-              </>
-            )}
-            {entry.link && (
-              <>
-                <dt>Link</dt>
-                <dd>
-                  <a href={entry.link} target="_blank" rel="noreferrer">
-                    {entry.link}
-                  </a>
-                </dd>
-              </>
-            )}
-          </dl>
-        )}
+    <ManPage name="WRITING" section={7}>
+      <div className="man-progress" aria-hidden="true" />
+      <article className="man-article">
+        <header>
+          <p className="man-meta">
+            <time dateTime={entry.date}>{fmtDate(entry.date, 'long')}</time>
+            <span> / {readingMinutes(entry.body)} min read</span>
+            {entry.kind === 'paper' && <span> / paper note{entry.status ? `, ${entry.status}` : ''}</span>}
+          </p>
+          <h1>{entry.title}</h1>
+          <p className="man-lede">{entry.summary}</p>
+          {entry.kind === 'paper' && (
+            <dl className="man-cite">
+              {entry.authors && (
+                <div>
+                  <dt>Authors</dt>
+                  <dd>{entry.authors}</dd>
+                </div>
+              )}
+              {entry.venue && (
+                <div>
+                  <dt>Venue</dt>
+                  <dd>{entry.venue}</dd>
+                </div>
+              )}
+              {entry.link && (
+                <div>
+                  <dt>Source</dt>
+                  <dd>
+                    <a href={entry.link} target="_blank" rel="noreferrer">
+                      {entry.link.replace(/^https?:\/\//, '')}
+                    </a>
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
+        </header>
 
         <Markdown source={entry.body} />
 
-        {entry.tags.length > 0 && (
-          <div className="w-tags w-tags-foot">
-            {entry.tags.map((t) => (
-              <span key={t}>#{t}</span>
-            ))}
-          </div>
+        {entry.tags.length > 0 && <p className="man-meta man-tags">Filed under {entry.tags.join(', ')}</p>}
+
+        {hire.open && entry.kind === 'post' && (
+          <aside className="man-cta">
+            <p>
+              I take on this kind of work for other teams: grounded LLM systems, evaluation audits and speech
+              pipelines.
+            </p>
+            <a className="man-btn primary" href="/hire">
+              Work with me
+            </a>
+          </aside>
         )}
 
-        <footer className="doc-foot">
-          <a href="/writing">← all writing</a> ·{' '}
-          <a href={`mailto:${profile.email}`}>{profile.email}</a>
-        </footer>
-      </main>
-    </div>
+        <nav className="man-pager" aria-label="More writing">
+          {older ? (
+            <Link href={`/writing/${older.slug}`}>
+              <span>Earlier</span>
+              {older.title}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {newer ? (
+            <Link href={`/writing/${newer.slug}`} className="next">
+              <span>Later</span>
+              {newer.title}
+            </Link>
+          ) : (
+            <Link href="/writing" className="next">
+              <span>Index</span>
+              All writing
+            </Link>
+          )}
+        </nav>
+      </article>
+    </ManPage>
   );
 }

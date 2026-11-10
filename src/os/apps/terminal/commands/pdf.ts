@@ -193,6 +193,11 @@ function buildResume(): jsPDF {
 
 /* ───────────────────────── command ───────────────────────── */
 
+/** Build and download the résumé PDF; also used by the Hire app. */
+export function downloadResumePdf(): void {
+  buildResume().save(FILE_NAME);
+}
+
 const generate: Command['run'] = () => {
   if (typeof window === 'undefined') {
     return 'pdf generation is only available in the browser.';

@@ -12,6 +12,7 @@ import { WelcomeCard } from './WelcomeCard';
 import { WhiskerMenu } from './WhiskerMenu';
 import { SessionDialog } from './SessionDialog';
 import { wallpaperFor } from './wallpapers';
+import { Stacks } from './stacks/Stacks';
 
 /** Touch screens have no comfortable double-click, so a single tap opens. */
 const isCoarsePointer = () =>
@@ -22,7 +23,7 @@ const isCoarsePointer = () =>
  * they show up here when present and are skipped silently when not.
  */
 const DESKTOP_ORDER = [
-  'research', 'music', 'terminal', 'files', 'browser', 'writing', 'learning',
+  'hire', 'research', 'music', 'terminal', 'files', 'browser', 'writing', 'learning',
   'assistant', 'vm', 'psql', 'code-editor', 'games',
 ];
 const ALWAYS_ON_DESKTOP = new Set(['vm', 'psql']);
@@ -105,6 +106,7 @@ export function Desktop() {
   return (
     <div className="kos-desktop" onContextMenu={onContext}>
       <div className={'kos-wall wall-' + wallpaper} aria-hidden="true" />
+      {wallpaper === 'stacks' && <Stacks />}
       <Panel />
 
       <div

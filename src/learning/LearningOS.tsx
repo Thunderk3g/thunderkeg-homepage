@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useHydrated, useLearning } from './store';
 import { bottleneck, lanes, rank, weekPlan } from './priority';
 import { SkillsPanel } from './panels/Skills';
@@ -223,9 +223,14 @@ function Dashboard({ go }: { go: (t: Tab) => void }) {
   );
 }
 
-export function LearningOS({ embedded }: { embedded?: boolean }) {
+export function LearningOS({ embedded, skillId }: { embedded?: boolean; skillId?: string }) {
   const [tab, setTab] = useState<Tab>('dashboard');
   const hydrated = useHydrated();
+
+  // opened on a specific skill (from the desktop wallpaper or the command palette)
+  useEffect(() => {
+    if (skillId) setTab('skills');
+  }, [skillId]);
 
   if (!hydrated) {
     return (
@@ -254,7 +259,7 @@ export function LearningOS({ embedded }: { embedded?: boolean }) {
 
       <div className="lrn-body">
         {tab === 'dashboard' && <Dashboard go={setTab} />}
-        {tab === 'skills' && <SkillsPanel />}
+        {tab === 'skills' && <SkillsPanel focusId={skillId} />}
         {tab === 'build' && <BuildPanel />}
         {tab === 'prep' && <PrepPanel />}
         {tab === 'coach' && <CoachPanel />}

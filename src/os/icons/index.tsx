@@ -95,6 +95,15 @@ const GLYPHS: Record<string, Plate> = {
       </>
     ),
   },
+  hire: {
+    from: '#ff9a62', to: '#d8423f',
+    glyph: (
+      <>
+        <path {...S} d="M4 11.2 L20 4.2 L14.6 20 L11.4 13 Z" />
+        <path {...S} d="M11.4 13 L20 4.2" />
+      </>
+    ),
+  },
   research: {
     from: '#7c6cff', to: '#3b2fa8',
     glyph: (

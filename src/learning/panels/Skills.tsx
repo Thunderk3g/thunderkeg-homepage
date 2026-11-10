@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLearning } from '../store';
 import { evidenceFor, impliedState, lanes, overclaimed, rank, stateIndex } from '../priority';
 import { STATE_ORDER, type Domain, type KnowledgeState, type QueueLane, type Skill } from '../types';
@@ -38,11 +38,15 @@ const LANE_BLURB: Record<QueueLane, string> = {
   IGNORE: 'Interesting, poor ROI right now. Leaving it here is the decision.',
 };
 
-export function SkillsPanel() {
+export function SkillsPanel({ focusId }: { focusId?: string }) {
   const state = useLearning();
   const { patchSkill, setCurrentSkill, recordCheck } = state;
   const [openId, setOpenId] = useState<string | null>(state.currentSkillId);
   const [domainFilter, setDomainFilter] = useState<Domain | 'all'>('all');
+
+  useEffect(() => {
+    if (focusId) setOpenId(focusId);
+  }, [focusId]);
 
   const ranked = useMemo(() => rank(state), [state]);
   const queue = useMemo(() => lanes(state), [state]);

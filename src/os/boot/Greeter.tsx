@@ -100,8 +100,15 @@ export function Greeter({ mode }: { mode: 'login' | 'lock' }) {
             <SysIcon name="forward" size={16} />
           </button>
         </div>
-        <div className="kos-greeter-hint">any password works</div>
+        <div className="kos-greeter-hint">Any password works. Press Enter.</div>
       </form>
+
+      {mode === 'login' && (
+        <p className="kos-greeter-skip">
+          Here to hire, not to explore? <a href="/hire">Work with me</a>
+          <a href="/resume">Résumé</a>
+        </p>
+      )}
 
       <div className="kos-greeter-foot">
         Kali-inspired web desktop · KALI LINUX ™ is a trademark of OffSec

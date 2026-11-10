@@ -6,6 +6,7 @@ import { getApp } from '../registry';
 import type { WindowState } from '../types';
 import { AppIcon, KaliMark, SysIcon } from '../icons';
 import { SystemTray } from './SystemTray';
+import { hire } from '@/data/resume';
 
 /**
  * The Kali Xfce top panel (kali-defaults 2026.x), left → right:
@@ -117,6 +118,12 @@ export function Panel() {
       )}
 
       <TaskList />
+      {hire.open && !undercover && (
+        <button className="kos-panel-hire kos-hide-sm" onClick={() => launch('hire')} title="Work with me">
+          <span className="hire-dot" aria-hidden="true" />
+          Open to work
+        </button>
+      )}
       <SystemTray />
     </div>
   );

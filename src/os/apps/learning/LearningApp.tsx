@@ -4,8 +4,8 @@ import type { AppDefinition, AppProps } from '../../types';
 import { LearningOS } from '@/learning/LearningOS';
 
 /** Same component as /learning — one implementation, two mount points. */
-function LearningAppView(_props: AppProps) {
-  return <LearningOS embedded />;
+function LearningAppView({ args }: AppProps) {
+  return <LearningOS embedded skillId={typeof args?.skillId === 'string' ? args.skillId : undefined} />;
 }
 
 export const learningApp: AppDefinition = {

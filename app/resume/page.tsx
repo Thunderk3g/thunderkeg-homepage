@@ -1,79 +1,81 @@
 import type { Metadata } from 'next';
-import { awards, education, profile, projects, research, roles, skills } from '@/data/resume';
+import { awards, education, hire, profile, projects, research, roles, skills } from '@/data/resume';
+import { ManPage, Sec } from '@/content/ManPage';
+import { PrintButton } from '@/content/PrintButton';
+import { SITE } from '@/content/site';
 
 export const metadata: Metadata = {
   title: 'Résumé — Diwakar Adhikari',
   description:
-    'Diwakar Adhikari — research-track CV: AI & Law (retrieval-grounded compliance, legal knowledge representation) and code-switched speech evaluation.',
+    'Diwakar Adhikari — Technical Lead, AI Engineering. Retrieval-grounded LLM systems, evaluation, and code-switched speech; research in AI & Law.',
+  alternates: { canonical: '/resume' },
+};
+
+const displayName = 'Diwakar Adhikari';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: displayName,
+  jobTitle: profile.title,
+  worksFor: { '@type': 'Organization', name: profile.company },
+  address: { '@type': 'PostalAddress', addressLocality: 'Pune', addressCountry: 'IN' },
+  email: `mailto:${profile.email}`,
+  url: SITE,
+  sameAs: [profile.githubUrl],
+  alumniOf: education.map((e) => ({ '@type': 'CollegeOrUniversity', name: e.org })),
+  knowsAbout: hire.services.map((s) => s.name),
 };
 
 export default function ResumePage() {
   return (
-    <div className="doc-page">
-      <main className="doc-wrap">
-        <nav className="doc-nav">
-          <a href="/">desktop</a>
-          <span aria-current="page">résumé</span>
-          <a href="/writing">writing</a>
-          <a href="/learning">learning os</a>
-        </nav>
+    <ManPage name="DIWAKAR" section={1} current="/resume">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        <h1>{profile.name}</h1>
-        <p className="doc-role">
-          {profile.title} · {profile.company}
+      <Sec title="NAME">
+        <h1>{displayName}</h1>
+        <p className="man-role">
+          {profile.title}, {profile.company}
         </p>
-        <p className="doc-contact">
-          {profile.location} · <a href={`mailto:${profile.email}`}>{profile.email}</a> ·{' '}
-          {profile.phone} ·{' '}
+      </Sec>
+
+      <Sec title="SYNOPSIS">
+        <p className="man-synopsis">
+          <b>diwakar</b> [<span>--email</span> <a href={`mailto:${profile.email}`}>{profile.email}</a>] [
+          <span>--phone</span> <a href={`tel:${profile.phone.replace(/\s/g, '')}`}>{profile.phone}</a>] [
+          <span>--github</span>{' '}
           <a href={profile.githubUrl} target="_blank" rel="noreferrer">
-            github.com/{profile.github}
+            {profile.github}
           </a>
+          ] [<span>--location</span> {profile.location}]
         </p>
+        <p className="man-actions">
+          {hire.open && (
+            <a className="man-btn primary" href="/hire">
+              Work with me
+            </a>
+          )}
+          <PrintButton>Print or save as PDF</PrintButton>
+        </p>
+        {hire.open && <p className="man-aside">{hire.status}.</p>}
+      </Sec>
 
-        <h2>Profile</h2>
+      <Sec title="DESCRIPTION">
         {profile.summary.map((s, i) => (
-          <p key={i} className="doc-para">
-            {s}
-          </p>
+          <p key={i}>{s}</p>
         ))}
+      </Sec>
 
-        <h2>Research interests</h2>
-        <ul>
-          {research.directions.map((d, i) => (
-            <li key={i}>{d}</li>
-          ))}
-        </ul>
-
-        <h2>Research</h2>
-        {[...research.inPreparation, ...research.published].map((r) => (
-          <section key={r.title} className="doc-project">
-            <h3>{r.title}</h3>
-            <p className="doc-meta">{r.venue}</p>
-            <p className="doc-para">{r.summary}</p>
-          </section>
-        ))}
-        <p className="doc-para">{research.track}</p>
-        <p className="doc-para">
-          Longer notes and a reading shelf live in <a href="/writing">/writing</a>.
-        </p>
-
-        <h2>Education</h2>
-        <ul>
-          {education.map((e) => (
-            <li key={e.degree}>
-              <strong>{e.degree}</strong> — {e.org} · {e.period} · {e.detail}
-            </li>
-          ))}
-        </ul>
-
-        <h2>Experience</h2>
+      <Sec title="EXPERIENCE" id="experience">
         {roles.map((r) => (
-          <section key={r.id} className="doc-role-block">
-            <h3>
-              {r.title} · {r.org}
-            </h3>
-            <p className="doc-meta">{r.period}</p>
-            <p className="doc-para">{r.blurb}</p>
+          <article key={r.id} className="man-entry">
+            <header>
+              <h3>
+                {r.title}, {r.org}
+              </h3>
+              <time>{r.period}</time>
+            </header>
+            <p>{r.blurb}</p>
             {r.groups.map((g, gi) => (
               <div key={gi}>
                 {g.heading && <h4>{g.heading}</h4>}
@@ -84,56 +86,95 @@ export default function ResumePage() {
                 </ul>
               </div>
             ))}
-          </section>
+          </article>
         ))}
+      </Sec>
 
-        <h2>Selected independent projects</h2>
+      <Sec title="PROJECTS">
         {projects.map((p) => (
-          <section key={p.name} className="doc-project">
-            <h3>
-              {p.url ? (
-                <a href={p.url} target="_blank" rel="noreferrer">
-                  {p.name}
-                </a>
-              ) : (
-                p.name
-              )}{' '}
-              <span className="doc-kind">— {p.kind}</span>
-            </h3>
-            <p className="doc-para">{p.blurb}</p>
-            {p.caveat && <p className="doc-caveat">{p.caveat}</p>}
-          </section>
+          <article key={p.name} className="man-entry">
+            <header>
+              <h3>
+                {p.url ? (
+                  <a href={p.url} target="_blank" rel="noreferrer">
+                    {p.name}
+                  </a>
+                ) : (
+                  p.name
+                )}
+              </h3>
+              <span>{p.kind}</span>
+            </header>
+            <p>{p.blurb}</p>
+            {p.caveat && <p className="man-aside">{p.caveat}</p>}
+          </article>
         ))}
+      </Sec>
 
-        <h2>Technical skills</h2>
-        <dl className="doc-skills">
+      <Sec title="RESEARCH">
+        {[...research.inPreparation, ...research.published].map((r) => (
+          <article key={r.title} className="man-entry">
+            <h3>{r.title}</h3>
+            <p className="man-aside">{r.venue}</p>
+            <p>{r.summary}</p>
+          </article>
+        ))}
+        <h4>Open questions</h4>
+        <ul>
+          {research.directions.map((d, i) => (
+            <li key={i}>{d}</li>
+          ))}
+        </ul>
+        <p>{research.track}</p>
+      </Sec>
+
+      <Sec title="SKILLS">
+        <dl className="man-options">
           {skills.map((s) => (
             <div key={s.group}>
               <dt>{s.group}</dt>
-              <dd>{s.items}</dd>
+              <dd>{s.items.split(' · ').join(', ')}</dd>
             </div>
           ))}
         </dl>
+      </Sec>
 
-        <h2>Awards</h2>
+      <Sec title="EDUCATION">
+        {education.map((e) => (
+          <article key={e.degree} className="man-entry">
+            <header>
+              <h3>
+                {e.degree}, {e.org}
+              </h3>
+              <time>{e.period}</time>
+            </header>
+            <p>{e.detail}</p>
+          </article>
+        ))}
+      </Sec>
+
+      <Sec title="AWARDS">
         <ul>
           {awards.map((a) => (
             <li key={a}>{a}</li>
           ))}
         </ul>
+      </Sec>
 
-        <p className="doc-note">
-          Employer-internal production metrics are deliberately not published on this page. Figures
-          that appear here come from public corpora or personal repositories; the rest are available
-          on request, subject to clearance.
+      <Sec title="CAVEATS">
+        <p>
+          Employer-internal production metrics are deliberately not published on this page. Figures that appear
+          here come from public corpora or personal repositories; the rest are available on request, subject to
+          clearance.
         </p>
+      </Sec>
 
-        <footer className="doc-foot">
-          <a className="doc-cta" href="/">
-            ▸ Boot the interactive desktop
-          </a>
-        </footer>
-      </main>
-    </div>
+      <Sec title="SEE ALSO">
+        <p className="man-seealso">
+          <a href="/hire">hire(1)</a>, <a href="/writing">writing(7)</a>, <a href="/">desktop(1)</a>,{' '}
+          <a href="/learning">learning(7)</a>
+        </p>
+      </Sec>
+    </ManPage>
   );
 }

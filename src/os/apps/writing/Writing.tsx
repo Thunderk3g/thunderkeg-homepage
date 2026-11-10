@@ -161,11 +161,22 @@ function Composer() {
 
 /* ───────────────────────── reader ───────────────────────── */
 
-function WritingApp(_props: AppProps) {
+function WritingApp({ args }: AppProps) {
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('post');
   const [openSlug, setOpenSlug] = useState<string | null>(null);
+
+  // launched with a slug (from the wallpaper or the command palette): open that entry
+  const argSlug = typeof args?.slug === 'string' ? args.slug : null;
+  useEffect(() => {
+    if (!argSlug || !entries) return;
+    const e = entries.find((x) => x.slug === argSlug);
+    if (e) {
+      setTab(e.kind);
+      setOpenSlug(e.slug);
+    }
+  }, [argSlug, entries]);
 
   useEffect(() => {
     let alive = true;

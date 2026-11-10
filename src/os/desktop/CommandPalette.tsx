@@ -8,6 +8,11 @@ import { apps } from '../registry';
 import { THEMES } from '../themes';
 import { AppIcon, SysIcon } from '../icons';
 import { WALLPAPERS } from './wallpapers';
+import { useEntries } from '../content';
+import { useLearning } from '@/learning/store';
+import { useResearch } from '@/research/store';
+import { STATUS_SHORT } from '@/research/types';
+import { hire } from '@/data/resume';
 
 const APP_KEYS: Record<string, string> = {
   terminal: 'Ctrl+Alt+T',
@@ -38,6 +43,10 @@ export function CommandPalette() {
   const reduced = useOS((s) => s.settings.reducedMotion);
   const undercover = useOS(isUndercover);
   const s = useOS.getState;
+  // the work itself is searchable, not just the apps that hold it
+  const entries = useEntries();
+  const papers = useResearch((st) => st.papers);
+  const skills = useLearning((st) => st.skills);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -85,6 +94,7 @@ export function CommandPalette() {
       },
     },
     { id: 'resume', label: 'Open plain résumé', icon: 'globe', run: () => window.open('/resume', '_blank') },
+    { id: 'hire-page', label: 'Open the plain “Work with me” page', icon: 'globe', run: () => window.open('/hire', '_blank') },
   ];
 
   return (
@@ -93,7 +103,7 @@ export function CommandPalette() {
         <Command label="Command palette" loop>
           <div className="kos-cmdk-head">
             <SysIcon name="search" size={16} />
-            <Command.Input autoFocus placeholder="Type a command or search…" className="kos-cmdk-input" />
+            <Command.Input autoFocus placeholder="Search apps, papers, posts, skills and commands" className="kos-cmdk-input" />
             <kbd className="kos-cmdk-esc">Esc</kbd>
           </div>
           <Command.List className="kos-cmdk-list">
@@ -115,6 +125,70 @@ export function CommandPalette() {
                     <Kbd k={APP_KEYS[a.id]} />
                   </Command.Item>
                 ))}
+            </Command.Group>
+
+            {hire.open && (
+              <Command.Group heading="Work with me" className="kos-cmdk-group">
+                {hire.engagements.map((e) => (
+                  <Command.Item
+                    key={e.id}
+                    value={`hire contact work gig ${e.label} ${e.blurb}`}
+                    onSelect={() => run(() => launch('hire', { engagement: e.id }))}
+                    className="kos-cmdk-item"
+                  >
+                    <AppIcon id="hire" size={22} className="kos-cmdk-icon" />
+                    <span className="kos-cmdk-label">{e.label}</span>
+                    <span className="kos-cmdk-meta">send a brief</span>
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
+
+            <Command.Group heading="Writing" className="kos-cmdk-group">
+              {entries
+                .filter((e) => e.kind === 'post')
+                .map((e) => (
+                  <Command.Item
+                    key={e.slug}
+                    value={`post ${e.title} ${e.tags.join(' ')}`}
+                    onSelect={() => run(() => launch('writing', { slug: e.slug }))}
+                    className="kos-cmdk-item"
+                  >
+                    <AppIcon id="writing" size={22} className="kos-cmdk-icon" />
+                    <span className="kos-cmdk-label">{e.title}</span>
+                    <span className="kos-cmdk-meta">{e.date}</span>
+                  </Command.Item>
+                ))}
+            </Command.Group>
+
+            <Command.Group heading="Papers" className="kos-cmdk-group">
+              {papers.map((pp) => (
+                <Command.Item
+                  key={pp.id}
+                  value={`paper ${pp.title} ${pp.authors.slice(0, 3).join(' ')} ${pp.tags.join(' ')}`}
+                  onSelect={() => run(() => launch('research', { paperId: pp.id }))}
+                  className="kos-cmdk-item"
+                >
+                  <AppIcon id="research" size={22} className="kos-cmdk-icon" />
+                  <span className="kos-cmdk-label">{pp.title}</span>
+                  <span className="kos-cmdk-meta">{STATUS_SHORT[pp.status]}</span>
+                </Command.Item>
+              ))}
+            </Command.Group>
+
+            <Command.Group heading="Skills" className="kos-cmdk-group">
+              {skills.map((k) => (
+                <Command.Item
+                  key={k.id}
+                  value={`skill ${k.name} ${k.domain}`}
+                  onSelect={() => run(() => launch('learning', { skillId: k.id }))}
+                  className="kos-cmdk-item"
+                >
+                  <AppIcon id="learning" size={22} className="kos-cmdk-icon" />
+                  <span className="kos-cmdk-label">{k.name}</span>
+                  <span className="kos-cmdk-meta">{k.state.toLowerCase()}</span>
+                </Command.Item>
+              ))}
             </Command.Group>
 
             <Command.Group heading="System" className="kos-cmdk-group">
