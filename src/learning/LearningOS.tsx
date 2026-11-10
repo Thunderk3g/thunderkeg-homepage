@@ -9,25 +9,29 @@ import { PrepPanel } from './panels/Prep';
 import { CoachPanel } from './panels/Coach';
 import { ReviewPanel } from './panels/Review';
 import { BenchmarkPanel } from './panels/Benchmark';
+import { TodayPanel } from './panels/Today';
+import { todayQueue } from './schedule';
 import './learning.css';
 import { Card, Independence, StateBadge, fmtDate } from './ui';
 
-type Tab = 'dashboard' | 'benchmark' | 'skills' | 'build' | 'prep' | 'coach' | 'review';
+type Tab = 'today' | 'dashboard' | 'benchmark' | 'skills' | 'build' | 'prep' | 'coach' | 'review';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'today', label: 'Today' },
+  { id: 'dashboard', label: 'Overview' },
   { id: 'benchmark', label: 'Role benchmark' },
   { id: 'skills', label: 'Skills & queue' },
   { id: 'build', label: 'Projects & evidence' },
   { id: 'prep', label: 'Interview & reading' },
-  { id: 'coach', label: 'Coach & session' },
+  { id: 'coach', label: 'Coach' },
   { id: 'review', label: 'Review & data' },
 ];
 
 function Dashboard({ go }: { go: (t: Tab) => void }) {
   const state = useLearning();
   const setTodayFocus = useLearning((s) => s.setTodayFocus);
-  const startSession = useLearning((s) => s.startSession);
+  const startRun = useLearning((s) => s.startRun);
+  const running = useLearning((s) => !!s.activeRun);
 
   const ranked = useMemo(() => rank(state), [state]);
   const queue = useMemo(() => lanes(state), [state]);
@@ -91,8 +95,14 @@ function Dashboard({ go }: { go: (t: Tab) => void }) {
               <strong>Next milestone:</strong>{' '}
               {project?.milestones.find((m) => !m.done)?.title ?? 'project complete'}
             </p>
-            <button className="lrn-btn primary" onClick={() => { startSession(current.id); go('coach'); }}>
-              START LEARNING SESSION
+            <button
+              className="lrn-btn primary"
+              onClick={() => {
+                if (!running) startRun(current.id, 'session');
+                go('today');
+              }}
+            >
+              {running ? 'Back to the session in progress' : 'Start the session'}
             </button>
           </>
         ) : (
@@ -232,8 +242,9 @@ function Dashboard({ go }: { go: (t: Tab) => void }) {
 }
 
 export function LearningOS({ embedded, skillId }: { embedded?: boolean; skillId?: string }) {
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] = useState<Tab>('today');
   const hydrated = useHydrated();
+  const todo = useLearning((s) => (hydrated ? todayQueue(s).items.length : 0));
 
   // opened on a specific skill (from the desktop wallpaper or the command palette)
   useEffect(() => {
@@ -258,6 +269,7 @@ export function LearningOS({ embedded, skillId }: { embedded?: boolean; skillId?
             onClick={() => setTab(t.id)}
           >
             {t.label}
+            {t.id === 'today' && todo > 0 && <span className="lrn-tab-count">{todo}</span>}
           </button>
         ))}
         <span className="lrn-private" title="Nothing here is sent to a server or committed to git.">
@@ -266,11 +278,13 @@ export function LearningOS({ embedded, skillId }: { embedded?: boolean; skillId?
       </nav>
 
       <div className="lrn-body">
+        {tab === 'today' && <TodayPanel go={setTab} embedded={embedded} />}
         {tab === 'dashboard' && <Dashboard go={setTab} />}
+        {tab === 'benchmark' && <BenchmarkPanel />}
         {tab === 'skills' && <SkillsPanel focusId={skillId} />}
         {tab === 'build' && <BuildPanel />}
         {tab === 'prep' && <PrepPanel />}
-        {tab === 'coach' && <CoachPanel />}
+        {tab === 'coach' && <CoachPanel onToday={() => setTab('today')} />}
         {tab === 'review' && <ReviewPanel />}
       </div>
     </div>

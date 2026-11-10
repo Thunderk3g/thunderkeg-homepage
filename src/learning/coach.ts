@@ -1,5 +1,6 @@
 import { bottleneck, evidenceFor, impliedState, lanes, overclaimed, rank, weekPlan } from './priority';
 import { nextGap } from './benchmark';
+import { calibration, todayQueue } from './schedule';
 import type { LearningState } from './types';
 
 /**
@@ -20,7 +21,8 @@ export const COACH_PROMPTS = [
   'What project milestone would prove this skill?',
   'Am I spreading myself too thin?',
   'Where is AI dependence masking a skill gap?',
-  'Give me a 60-minute learning session.',
+  'What did my last failed check tell me?',
+  'Are my predictions about myself any good?',
   'Interview me on transformer inference.',
   'Challenge my architecture for the ASR lab.',
 ];
@@ -74,6 +76,21 @@ export function coachContext(state: LearningState): string {
           .map((e) => `  ${e.date} ${e.kind} "${e.artifact}" assistance=${e.assistance}${e.negative ? ' [negative result]' : ''} → ${e.whatLearned.slice(0, 90)}`)
       : ['  none yet — every skill estimate is currently an unverified self-assessment.']),
     '',
+    `CHECK HISTORY (${state.reviews.length} recorded; predicted = chance of passing stated before the attempt):`,
+    ...(state.reviews.length
+      ? state.reviews.slice(0, 8).map((r) => {
+          const name = state.skills.find((s) => s.id === r.skillId)?.name ?? r.skillId;
+          return `  ${r.date} ${name}: ${r.outcome}${r.assisted ? ' (with AI, not proof)' : ''}${r.predicted !== null ? `, predicted ${Math.round(r.predicted * 100)}%` : ''}${r.note ? ` — "${r.note.slice(0, 100)}"` : ''}`;
+        })
+      : ['  none yet — no unaided check has been run.']),
+    `CALIBRATION: ${(() => {
+      const c = calibration(state.reviews);
+      if (c.n === 0) return 'no predictions yet';
+      const bins = c.bins.filter((b) => b.n).map((b) => `${b.label}: passed ${b.passed}/${b.n}`).join('; ');
+      return `${bins}${c.overconfidence !== null ? `; mean prediction minus pass rate = ${c.overconfidence.toFixed(2)}` : ` (only ${c.n} predictions: too few for a verdict)`}${c.illusions ? `; ${c.illusions} confident prediction(s) failed` : ''}`;
+    })()}`,
+    `TODAY'S QUEUE: ${todayQueue(state).items.map((i) => `${i.reason}:${i.skill.name}`).join(', ') || 'empty'}`,
+    '',
     `ROLE BENCHMARK NEXT GAP: ${(() => {
       const n = nextGap(state);
       return n ? `${n.gap.title} — skills below APPLIED: ${n.below.map((s) => s.name).join(', ')}; proof: ${n.gap.proof}` : 'all mapped skills at APPLIED or better';
@@ -99,6 +116,55 @@ export function offlineCoach(question: string, state: LearningState): string {
   const out: string[] = [];
 
   const footer = '\n— computed locally from your skill graph. Set LLM_API_KEY for a conversational coach.';
+
+  if (/failed check|last check|got wrong/.test(q)) {
+    const fail = state.reviews.find((r) => r.outcome === 'fail');
+    if (!fail) {
+      out.push(
+        state.reviews.length
+          ? 'No failed check on record. Either the checks are too easy or the predictions are too safe: pick the skill you would least like to be tested on and run that one.'
+          : 'No check has been run yet. Open Today and start the first one; a failure there is the most useful thing this system can record.',
+      );
+      return out.join('\n') + footer;
+    }
+    const skill = state.skills.find((k) => k.id === fail.skillId);
+    out.push(
+      `Last failed check: ${skill?.name ?? fail.skillId}, ${fail.date}.`,
+      fail.predicted !== null ? `  you predicted ${Math.round(fail.predicted * 100)}% before starting` : '  no prediction was recorded',
+      fail.note ? `  where it broke: ${fail.note}` : '  no note on where it broke — write one next time, it is the part worth keeping',
+      '',
+      fail.predicted !== null && fail.predicted >= 0.8
+        ? 'It felt known and was not. That usually means you recognise the material when you see it but have not produced it from nothing. Reading more will not fix that; another unaided attempt will.'
+        : 'Study only the step that broke, then attempt the whole check again from an empty file within two days.',
+      skill ? `  the check: ${skill.aiFreeCheck}` : '',
+    );
+    return out.join('\n') + footer;
+  }
+
+  if (/predict|calibrat/.test(q)) {
+    const c = calibration(state.reviews);
+    if (c.n === 0) {
+      out.push('No predictions yet. Each check in Today asks for one before it starts.');
+      return out.join('\n') + footer;
+    }
+    out.push(`Predictions recorded: ${c.n}.`, '');
+    for (const b of c.bins) if (b.n) out.push(`  ${b.label}: passed ${b.passed} of ${b.n}`);
+    out.push('');
+    if (c.overconfidence === null) {
+      out.push(`Too few for a verdict (it takes 10). The counts are all that can honestly be said.`);
+    } else {
+      const d = Math.round(c.overconfidence * 100);
+      out.push(
+        Math.abs(d) < 8
+          ? 'Mean prediction and pass rate agree within a few points: your sense of what you know is usable.'
+          : d > 0
+            ? `You predict about ${d} points higher than you perform. Discount "I know this" accordingly, and check the skills you feel surest about first.`
+            : `You predict about ${-d} points lower than you perform. You can move faster through the skills you are passing.`,
+      );
+    }
+    if (c.illusions) out.push(`${c.illusions} confident prediction(s) failed — those skills are familiar, not internalized.`);
+    return out.join('\n') + footer;
+  }
 
   if (/do next|benchmark|\brole\b|\blead\b/.test(q)) {
     const n = nextGap(state);

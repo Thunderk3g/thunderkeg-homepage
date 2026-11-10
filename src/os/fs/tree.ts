@@ -102,7 +102,7 @@ const README = `Welcome — my portfolio, rendered as a Kali Linux desktop.
 
 Everything here is interactive:
   • Terminal          try: help · resume · blog · papers · news · ai <question>
-  • Whisker menu      top-left: Kali tools, the Games arcade, everything else
+  • Whisker menu      top-left: every app, by category
   • Research          "What do you want to study?" search, plus five tracks —
                       AI/ML, Defense AI, Cyber AI, AI Ops & CI/CD, Trading &
                       Markets — each with a weekly Brief, arXiv feeds,
@@ -111,9 +111,9 @@ Everything here is interactive:
   • Music             open music (Audius) and commercial-free radio (SomaFM,
                       Radio Browser); keeps playing from the panel (run 'music lofi')
   • Writing           posts + the papers I'm reading (also at /writing)
-  • Learning OS       my skill-state model — evidence, dependencies, AI-free checks
+  • Learning OS       what to practise today: timed AI-free checks on a spaced schedule,
+                      a prediction before each one, and the skill model behind them
                       (run 'learn'; state stays in your browser, never on a server)
-  • Writing           posts + the papers I'm reading (also at /writing)
   • Linux VM          a real Linux kernel booting in your browser (v86), with this
                       portfolio mounted over 9p at /mnt/portfolio
   • psql              PostgreSQL 18 compiled to WebAssembly (PGlite), in-tab

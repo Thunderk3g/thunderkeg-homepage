@@ -154,19 +154,8 @@ export function overclaimed(skill: Skill, items: Evidence[]): boolean {
 }
 
 /* ───────────────────────── spaced revision ─────────────────────────
-   Engineering retrieval, not flashcards: intervals stretch with demonstrated
-   independence and shrink when a check fails. */
-
-const INTERVALS = [2, 5, 12, 25, 45, 90];
-
-export function nextReviewDate(skill: Skill, passed: boolean, from = new Date()): string {
-  const base = stateIndex(skill.state);
-  const step = passed ? Math.min(INTERVALS.length - 1, base) : 0;
-  const days = INTERVALS[step] * (skill.independent === true ? 1.5 : 1);
-  const d = new Date(from);
-  d.setDate(d.getDate() + Math.round(days));
-  return d.toISOString().slice(0, 10);
-}
+   Engineering retrieval, not flashcards. The intervals themselves are set
+   in schedule.ts from each recorded check; this only reads what is due. */
 
 export function dueForReview(state: LearningState, today = new Date()): Skill[] {
   const iso = today.toISOString().slice(0, 10);

@@ -3,17 +3,21 @@
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { BENCHMARK_PHASES, BENCHMARK_RESOURCES, SCHEMA_VERSION, V1_TARGET, seedState } from './seed';
-import { buildSession, nextReviewDate } from './priority';
+import { BENCHMARK_PHASES, BENCHMARK_RESOURCES, DEFAULT_PLAN, SCHEMA_VERSION, V1_TARGET, seedState } from './seed';
+import { buildSession } from './priority';
+import { ASSISTED_RETRY_DAYS, addDays, nextState, phasesFor, schedule, type Scheduled } from './schedule';
 import type {
   ApplicationStatus,
   DimensionLevel,
   Evidence,
   InterviewDomain,
   LearningState,
+  Outcome,
+  Plan,
   ProjectStage,
   Reassessment,
   Resource,
+  Review,
   Skill,
   Story,
 } from './types';
@@ -40,8 +44,19 @@ const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 interface Actions {
   setCurrentSkill: (id: string) => void;
   patchSkill: (id: string, patch: Partial<Skill>) => void;
-  /** record an AI-free check attempt; reschedules the next retrieval */
+  /** record an AI-free check attempt without the runner (no prediction); reschedules the next one */
   recordCheck: (id: string, passed: boolean) => void;
+
+  /** begin a check or a full session; nothing is shown until a prediction is made */
+  startRun: (skillId: string, kind: 'check' | 'session') => void;
+  predictRun: (p: number) => void;
+  advanceRun: () => void;
+  cancelRun: () => void;
+  /** record the outcome of the run in progress, reschedule the skill, and return what changed */
+  finishRun: (r: { outcome: Outcome; assisted: boolean; note: string }) => (Scheduled & { review: Review }) | null;
+  /** move a skill up one state after enough unaided passes */
+  promote: (id: string) => void;
+  setPlan: (patch: Partial<Plan>) => void;
   setTodayFocus: (items: string[]) => void;
 
   addEvidence: (e: Omit<Evidence, 'id'>) => void;
@@ -80,20 +95,59 @@ export const useLearning = create<LearningStore>()(
       patchSkill: (id, patch) =>
         set((s) => ({ skills: s.skills.map((k) => (k.id === id ? { ...k, ...patch } : k)) })),
 
-      recordCheck: (id, passed) =>
+      recordCheck: (id, passed) => {
+        if (!get().skills.some((k) => k.id === id)) return;
+        set((s) => applyReview(s, { skillId: id, kind: 'check', predicted: null, outcome: passed ? 'pass' : 'fail', assisted: false }).state);
+      },
+
+      startRun: (skillId, kind) => {
+        if (!get().skills.some((k) => k.id === skillId)) return;
+        const now = Date.now();
+        set({ activeRun: { skillId, kind, startedAt: now, predicted: null, phase: 0, phaseStartedAt: now } });
+      },
+
+      predictRun: (p) =>
+        set((s) => {
+          if (!s.activeRun) return {};
+          const now = Date.now();
+          // the clock starts when the prediction is made, not when the card was opened
+          return { activeRun: { ...s.activeRun, predicted: p, startedAt: now, phaseStartedAt: now } };
+        }),
+
+      advanceRun: () =>
+        set((s) => {
+          const run = s.activeRun;
+          const skill = run && s.skills.find((k) => k.id === run.skillId);
+          if (!run || !skill) return {};
+          const last = phasesFor(skill, run.kind).length;
+          return { activeRun: { ...run, phase: Math.min(last, run.phase + 1), phaseStartedAt: Date.now() } };
+        }),
+
+      cancelRun: () => set({ activeRun: null }),
+
+      finishRun: ({ outcome, assisted, note }) => {
+        const s = get();
+        const run = s.activeRun;
+        if (!run || !s.skills.some((k) => k.id === run.skillId)) return null;
+        const res = applyReview(s, {
+          skillId: run.skillId,
+          kind: run.kind,
+          predicted: run.predicted,
+          outcome,
+          assisted,
+          note: note.trim() || undefined,
+          minutes: Math.max(1, Math.round((Date.now() - run.startedAt) / 60000)),
+        });
+        set({ ...res.state, activeRun: null });
+        return { ...res.scheduled, review: res.review };
+      },
+
+      promote: (id) =>
         set((s) => ({
-          skills: s.skills.map((k) => {
-            if (k.id !== id) return k;
-            return {
-              ...k,
-              // passing the AI-free check is the only thing that sets independence
-              independent: passed ? true : false,
-              lastPracticed: today(),
-              nextReview: nextReviewDate(k, passed),
-              confidence: passed ? Math.min(1, k.confidence + 0.15) : Math.max(0.05, k.confidence - 0.2),
-            };
-          }),
+          skills: s.skills.map((k) => (k.id === id ? { ...k, state: nextState(k.state), stateChangedAt: today() } : k)),
         })),
+
+      setPlan: (patch) => set((s) => ({ plan: { ...s.plan, ...patch } })),
 
       setTodayFocus: (items) => set({ todayFocus: items.slice(0, 3) }),
 
@@ -188,6 +242,9 @@ export const useLearning = create<LearningStore>()(
           benchmark: s.benchmark,
           planDone: s.planDone,
           applications: s.applications,
+          reviews: s.reviews,
+          activeRun: null,
+          plan: s.plan,
         };
         return JSON.stringify(data, null, 2);
       },
@@ -199,7 +256,7 @@ export const useLearning = create<LearningStore>()(
             return { ok: false, error: 'Not a Learning OS export (missing skills/target).' };
           }
           const upgraded = migrateState(parsed, typeof parsed.version === 'number' ? parsed.version : 1);
-          set({ ...seedState(), ...upgraded, version: SCHEMA_VERSION });
+          set({ ...seedState(), ...upgraded, activeRun: null, version: SCHEMA_VERSION });
           return { ok: true };
         } catch (err) {
           return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -231,6 +288,9 @@ export const useLearning = create<LearningStore>()(
         benchmark: s.benchmark,
         planDone: s.planDone,
         applications: s.applications,
+        reviews: s.reviews,
+        activeRun: s.activeRun,
+        plan: s.plan,
       }),
       migrate: (persisted, version) => migrateState(persisted as Partial<LearningState>, version) as LearningStore,
       /**
@@ -251,6 +311,9 @@ export const useLearning = create<LearningStore>()(
           benchmark: p.benchmark ?? {},
           planDone: p.planDone ?? {},
           applications: p.applications ?? {},
+          reviews: p.reviews ?? [],
+          activeRun: p.activeRun ?? null,
+          plan: { ...DEFAULT_PLAN, ...(p.plan ?? {}) },
         };
       },
     },
@@ -266,6 +329,10 @@ export const useLearning = create<LearningStore>()(
  * appends roadmap phases p4–p6 and the benchmark reading items by id; and
  * replaces the target only field by field where it still equals the v1 seed,
  * so an edited north star survives. New skills arrive through `merge`.
+ *
+ * v2 → v3 (daily loop): adds `reviews`, `activeRun` and `plan`. Skills keep
+ * whatever `nextReview` they had; their `sched` starts when they are next
+ * checked.
  */
 export function migrateState(p: Partial<LearningState>, fromVersion: number): Partial<LearningState> {
   let out: Partial<LearningState> = { ...p };
@@ -293,7 +360,50 @@ export function migrateState(p: Partial<LearningState>, fromVersion: number): Pa
         : seed.target,
     };
   }
+  if (fromVersion < 3) {
+    out = {
+      ...out,
+      reviews: out.reviews ?? [],
+      activeRun: null,
+      plan: { ...DEFAULT_PLAN, ...(out.plan ?? {}) },
+    };
+  }
   return { ...out, version: SCHEMA_VERSION };
+}
+
+/**
+ * The one place a recorded attempt changes a skill: its schedule, its next
+ * review date, whether it counts as proven without AI, and the confidence the
+ * priority model reads. An assisted pass is logged as practice and changes
+ * none of the claims.
+ */
+function applyReview(
+  s: LearningState,
+  r: Omit<Review, 'id' | 'date' | 'intervalAfter'>,
+): { state: Pick<LearningState, 'skills' | 'reviews'>; scheduled: Scheduled; review: Review } {
+  const skill = s.skills.find((k) => k.id === r.skillId)!;
+  const date = today();
+  const scheduled = schedule(skill.sched, r, Math.random() * 2 - 1);
+  const proof = !r.assisted;
+  const passed = r.outcome !== 'fail';
+  const review: Review = { ...r, id: uid('rv'), date, intervalAfter: scheduled.days };
+  const skills = s.skills.map((k) => {
+    if (k.id !== r.skillId) return k;
+    return {
+      ...k,
+      sched: scheduled.sched,
+      lastPracticed: date,
+      nextReview: addDays(date, passed && r.assisted ? ASSISTED_RETRY_DAYS : scheduled.days),
+      // only an unaided attempt says anything about independence
+      independent: passed ? (proof ? true : k.independent) : false,
+      confidence: !passed
+        ? Math.max(0.05, k.confidence - 0.2)
+        : proof
+          ? Math.min(1, k.confidence + (r.outcome === 'hard' ? 0.08 : 0.15))
+          : k.confidence,
+    };
+  });
+  return { state: { skills, reviews: [review, ...s.reviews] }, scheduled, review };
 }
 
 /**

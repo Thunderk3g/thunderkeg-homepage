@@ -374,7 +374,9 @@ const seedRoadmap: RoadmapPhase[] = [
 /* ───────────────────────── the initial state ───────────────────────── */
 
 /** v2: role benchmark (benchmark / planDone / applications, p4–p6, new reading). */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
+
+export const DEFAULT_PLAN = { ifThen: '', perWeek: 4 };
 
 /** The v1 target, kept so the migration only replaces fields the user never edited. */
 export const V1_TARGET = {
@@ -413,5 +415,8 @@ export function seedState(): LearningState {
     benchmark: {},
     planDone: {},
     applications: {},
+    reviews: [],
+    activeRun: null,
+    plan: { ...DEFAULT_PLAN },
   };
 }

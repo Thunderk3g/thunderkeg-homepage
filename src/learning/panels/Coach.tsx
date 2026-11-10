@@ -3,24 +3,29 @@
 import { useRef, useState } from 'react';
 import { useLearning } from '../store';
 import { COACH_PROMPTS, coachContext, offlineCoach } from '../coach';
+import { phasesFor } from '../schedule';
 import { streamChat, type ChatMsg } from '@/os/ai/stream';
-import { fmtDate } from '../ui';
 
-export function CoachPanel() {
+export function CoachPanel({ onToday }: { onToday?: () => void }) {
   const state = useLearning();
-  const { startSession, completeSession } = state;
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draft, setDraft] = useState('');
   const [streaming, setStreaming] = useState('');
   const [busy, setBusy] = useState(false);
   const logRef = useRef<HTMLDivElement | null>(null);
 
-  const currentSkill = state.skills.find((s) => s.id === state.currentSkillId);
-  const openSession = state.sessions.find((s) => !s.completed);
+  // The unaided steps of a check are unaided by definition, so the coach is
+  // shut for them and until the outcome is in. It stays open for the
+  // "understand" step, where asking why is the kind of AI use that helps.
+  const run = state.activeRun;
+  const runSkill = run ? state.skills.find((s) => s.id === run.skillId) : undefined;
+  const runPhases = run && runSkill ? phasesFor(runSkill, run.kind) : [];
+  const locked = !!run && !!runSkill && (run.phase >= runPhases.length || !!runPhases[run.phase].unaided);
+  const lockedSkill = locked ? runSkill : undefined;
 
   const ask = async (question: string) => {
     const q = question.trim();
-    if (!q || busy) return;
+    if (!q || busy || locked) return;
     setBusy(true);
     setDraft('');
     const next: ChatMsg[] = [...messages, { role: 'user', content: q }];
@@ -48,62 +53,24 @@ export function CoachPanel() {
 
   return (
     <div className="lrn-coach">
-      <h2>Daily session</h2>
-      {openSession ? (
-        <article className="lrn-session">
-          <header>
-            <strong>{state.skills.find((s) => s.id === openSession.skillId)?.name}</strong>
-            <span>{fmtDate(openSession.date)}</span>
-          </header>
-          <p className="lrn-session-goal">{openSession.goal}</p>
-          <ol className="lrn-session-steps">
-            {openSession.steps.map((s, i) => (
-              <li key={i}>
-                <span className="lrn-session-min">{s.minutes} min</span>
-                <span>
-                  <strong>{s.label}</strong>
-                  <em>{s.detail}</em>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p className="lrn-session-ev">
-            <strong>Evidence produced:</strong> {openSession.evidenceTarget}
-          </p>
-          <button className="lrn-btn primary" onClick={() => completeSession(openSession.id)}>
-            Session done — now record the evidence
-          </button>
-        </article>
-      ) : (
-        <div className="lrn-session-start">
-          <p className="lrn-note">
-            60 minutes, weighted the way the loop is: understand → implement unaided → verify →
-            explain. It always ends in an artifact, so there is nothing to plan.
-          </p>
-          <button
-            className="lrn-btn primary big"
-            onClick={() => currentSkill && startSession(currentSkill.id)}
-            disabled={!currentSkill}
-          >
-            START LEARNING SESSION
-            {currentSkill && <span> — {currentSkill.name}</span>}
-          </button>
-        </div>
-      )}
-
-      {state.sessions.filter((s) => s.completed).length > 0 && (
-        <p className="lrn-note">
-          {state.sessions.filter((s) => s.completed).length} completed session
-          {state.sessions.filter((s) => s.completed).length === 1 ? '' : 's'} on record.
-        </p>
-      )}
-
       <h2>Coach</h2>
       <p className="lrn-note">
         It reads your skill graph, evidence log and project state — and it is instructed not to
         flatter you. With no model key configured it still answers, computing from the same priority
         model this dashboard renders.
       </p>
+
+      {locked && (
+        <p className="lrn-td-locked" role="status">
+          Locked while you work on <strong>{lockedSkill?.name ?? 'the check'}</strong> without AI. It opens again for
+          the reading step and once the outcome is recorded; ask it then what you got wrong.{' '}
+          {onToday && (
+            <button className="lrn-btn tiny" onClick={onToday}>
+              Back to the check
+            </button>
+          )}
+        </p>
+      )}
 
       <div className="lrn-coach-log" ref={logRef}>
         {messages.length === 0 && !streaming && (
@@ -128,7 +95,7 @@ export function CoachPanel() {
 
       <div className="lrn-coach-suggest">
         {COACH_PROMPTS.map((p) => (
-          <button key={p} onClick={() => void ask(p)} disabled={busy}>
+          <button key={p} onClick={() => void ask(p)} disabled={busy || locked}>
             {p}
           </button>
         ))}
@@ -144,11 +111,11 @@ export function CoachPanel() {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={busy ? 'Thinking…' : 'Ask the coach…'}
-          disabled={busy}
+          placeholder={locked ? 'Locked during the attempt' : busy ? 'Thinking…' : 'Ask the coach…'}
+          disabled={busy || locked}
           aria-label="coach prompt"
         />
-        <button className="lrn-btn primary" type="submit" disabled={busy || !draft.trim()}>
+        <button className="lrn-btn primary" type="submit" disabled={busy || locked || !draft.trim()}>
           Ask
         </button>
       </form>

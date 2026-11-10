@@ -77,6 +77,68 @@ export interface Skill {
   lane?: QueueLane;
   projectId?: string;
   notes?: string;
+  /** review schedule, moved only by recorded checks (schema v3) */
+  sched?: Sched;
+  /** when `state` last changed; promotion counts passes after this (schema v3) */
+  stateChangedAt?: string;
+}
+
+/**
+ * Per-skill review schedule. An expanding interval with an ease factor, in
+ * the SM-2 family, adapted to coarse pass / hard / fail checks that take
+ * 10–30 minutes rather than seconds (see schedule.ts).
+ */
+export interface Sched {
+  /** days until the next check */
+  interval: number;
+  /** growth factor applied on a clean pass, 1.3–2.8 */
+  ease: number;
+  lapses: number;
+  /** the interval before the current lapse; set while a retry is owed */
+  preLapse?: number;
+  /** clean passes still owed before the interval may grow again (after a confident failure) */
+  hold?: number;
+}
+
+export type Outcome = 'pass' | 'hard' | 'fail';
+
+/** One recorded attempt at a skill's AI-free check. The raw material for scheduling and calibration. */
+export interface Review {
+  id: string;
+  date: string;
+  skillId: string;
+  /** a short retrieval check, or the check at the end of a full session */
+  kind: 'check' | 'session';
+  /** probability of passing, stated before starting; null when recorded without a prediction */
+  predicted: number | null;
+  outcome: Outcome;
+  /** an AI assistant was used during the attempt: it counts as practice, never as proof */
+  assisted: boolean;
+  minutes?: number;
+  /** where it broke or where I hesitated */
+  note?: string;
+  /** days to the next check that this review scheduled */
+  intervalAfter: number;
+}
+
+/** The check or session in progress. Persisted, so a reload does not lose the clock. */
+export interface Run {
+  skillId: string;
+  kind: 'check' | 'session';
+  startedAt: number;
+  /** null until the prediction is made; nothing else is shown before it */
+  predicted: number | null;
+  /** index into the run's phases; equal to their count once only the outcome is left */
+  phase: number;
+  phaseStartedAt: number;
+}
+
+/** The standing plan: when and where practice happens, and how often. */
+export interface Plan {
+  /** an if-then sentence: the cue and the place */
+  ifThen: string;
+  /** practice days planned per week */
+  perWeek: number;
 }
 
 export type AiAssistance = 'none' | 'light' | 'heavy' | 'generated';
@@ -300,4 +362,8 @@ export interface LearningState {
   planDone: Record<string, boolean>;
   /** role benchmark: programme id → application status (schema v2) */
   applications: Record<string, ApplicationStatus>;
+  /** every recorded check, newest first (schema v3) */
+  reviews: Review[];
+  activeRun: Run | null;
+  plan: Plan;
 }
