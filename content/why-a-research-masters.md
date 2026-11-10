@@ -4,6 +4,7 @@ title: Why I'm applying for a research master's, and what I'd work on
 date: 2026-08-24
 summary: Four years of production engineering left me with five questions I cannot answer from inside a company. Stating them publicly, along with the track I'm applying to.
 tags: research, AI-and-law, speech, career
+stack: research-practice
 ---
 
 I am applying for a research-track master's in Europe — AI & Law and speech technology,

@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2606.02548
 status: reading
 summary: Transliterate reference and hypothesis into one canonical script before computing WER. 67% attenuation of romanization-induced WER inflation, token collision under 0.1%.
 tags: speech, ASR, evaluation, Indic
+stack: speech-eval
 ---
 
 Training-free, evaluation-only, and the closest published work to my script finding —

@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2607.09349
 status: reading
 summary: Names and quantifies the failure where RAG cites a real document about the wrong entity — passing every hallucination and faithfulness check. 8–87% rate across 13 models.
 tags: RAG, retrieval, grounding, evaluation
+stack: grounding
 ---
 
 The closest published work to the applicability problem I hit in production, and the paper

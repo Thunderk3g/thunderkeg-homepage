@@ -11,7 +11,7 @@ import type { Card, Grade } from './types';
 export const LADDER = [1, 3, 7, 16, 35, 80, 180]; // days
 const LAST = LADDER.length - 1;
 
-/** UTC calendar date, matching the Learning OS's `today()`. */
+/** UTC calendar date. */
 export const isoDay = (d: Date = new Date()) => d.toISOString().slice(0, 10);
 
 export function addDays(day: string, n: number): string {

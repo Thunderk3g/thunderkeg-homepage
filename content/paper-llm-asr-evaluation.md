@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2604.21928
 status: reading
 summary: Three LLM-based ASR evaluation protocols benchmarked against human error annotations. Best LLMs reach 92–94% agreement with human annotators, against 63% for WER.
 tags: speech, evaluation, LLM-as-judge
+stack: speech-eval
 ---
 
 The number that makes the whole "beyond WER" line fundable: **92–94% agreement with human

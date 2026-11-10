@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2412.11567
 status: read
 summary: Naively concatenating retrieved obligations scores near the top on RePASs, the RegNLP shared task's own metric. A negative result about a compliance metric, published at the venue that defined it.
 tags: compliance, RegNLP, evaluation, negative-results
+stack: compliance-review
 ---
 
 Short, sharp, and the precedent I point at whenever someone tells me a negative result

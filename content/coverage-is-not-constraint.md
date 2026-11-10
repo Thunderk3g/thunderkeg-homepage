@@ -4,6 +4,7 @@ title: Coverage is not constraint
 date: 2026-08-31
 summary: A rule base can pass every coverage audit and still be, structurally, mostly non-discriminating. Measured over the DAPRECO GDPR knowledge base — 962 rules, mean constraint density 0.462.
 tags: legal-informatics, compliance, measurement, JURIX
+stack: rule-bases
 ---
 
 Every compliance system I have worked on eventually gets asked the same question by

@@ -122,12 +122,13 @@ const GLYPHS: Record<string, Plate> = {
       </>
     ),
   },
-  learning: {
-    from: '#3ddc97', to: '#118a6b',
+  stacks: {
+    from: '#5b8cff', to: '#2b3fa8',
     glyph: (
       <>
-        <circle {...S} cx="12" cy="12" r="8" />
-        <path {...F} d="M15.5 8.5 L13.2 13.2 L8.5 15.5 L10.8 10.8 Z" />
+        <path {...S} d="M12 4.5 L18 7.5 L12 10.5 L6 7.5 Z" />
+        <path {...S} d="M6 7.5 V16.5 L12 19.5 L18 16.5 V7.5 M12 10.5 V19.5" />
+        <path {...S} d="M6 12 L12 15 L18 12" />
       </>
     ),
   },

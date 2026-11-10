@@ -4,6 +4,7 @@ title: Building a portfolio that boots
 date: 2026-08-30
 summary: This site is a Kali Linux desktop in a browser tab — window manager, shell, filesystem, arcade. Notes on what that costs and why the shell was the part worth building.
 tags: frontend, engineering, this-site
+stack: web
 ---
 
 The site you are reading this on boots. There is a BIOS-ish log, a login screen, a

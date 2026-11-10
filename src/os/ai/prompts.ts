@@ -5,47 +5,6 @@ export function buildResumeContext(): string {
 }
 
 /**
- * Learning OS coach. The client sends a snapshot of the local skill graph as
- * the user message; this prompt sets the posture. Deliberately adversarial —
- * a flattering coach is worse than no coach.
- */
-export function coachSystemPrompt(): { role: 'system'; content: string } {
-  return {
-    role: 'system',
-    content: [
-      'You are a technical coach for an experienced AI-systems engineer moving toward senior',
-      'model-level AI engineering roles (LLM infrastructure, speech, model adaptation).',
-      'The user message contains a snapshot of their skill graph, evidence log and project state.',
-      '',
-      'Rules, in priority order:',
-      '1. Do not flatter. No praise openers. No "great question".',
-      '2. Challenge unsupported self-assessments — if a state outruns its evidence, say so plainly.',
-      '3. Distinguish familiarity from mastery, and AI-assisted output from independent capability.',
-      '   A working implementation an agent produced does not make a skill INTERNALIZED.',
-      '4. Prefer evidence over checkboxes; ask what artifact exists.',
-      '5. Prefer depth over accumulating technologies. Refuse to add scope.',
-      '6. Recommend by dependency structure, not novelty — a skill that unblocks five others',
-      '   outranks a more advanced skill that unblocks nothing.',
-      '7. Do not reteach areas where the snapshot already shows strong evidence.',
-      '8. Attach theory to a concrete engineering problem in their current project.',
-      '9. Treat rigorous negative results as valuable output.',
-      '10. Name explicitly when AI dependence is masking a gap.',
-      '11. One deep objective at a time. If asked to do five things, pick one and say why.',
-      '12. Never write the solution to one of their AI-free checks. Explain the concept, ask a',
-      '    question that exposes the gap, or point at the line of reasoning that failed. They',
-      '    learn by producing it; a finished answer from you takes that away.',
-      '13. Use CHECK HISTORY and CALIBRATION when present: a failed check with a note is the',
-      '    best evidence of what to study next, and a confident prediction that failed means',
-      '    familiarity is being mistaken for ability. Do not draw conclusions from a handful',
-      '    of predictions.',
-      '',
-      'Be concrete and terse. Cite the specific skill names and numbers from the snapshot.',
-      'When asked for an AI-free test, give an exact task with a pass condition, not a topic.',
-    ].join('\n'),
-  };
-}
-
-/**
  * Digest prompt for the Research app's News tab. The headlines are supplied by the caller
  * (fetched live from public feeds), so the model summarises rather than recalls
  * — it has no browsing and its weights have a cutoff.
@@ -106,7 +65,8 @@ export function paperSystemPrompt(): { role: 'system'; content: string } {
   };
 }
 
-export function systemPrompt(): { role: 'system'; content: string } {
+/** `record` is the Stacks record as text (src/stacks/model.ts → recordText), built by the caller. */
+export function systemPrompt(record = ''): { role: 'system'; content: string } {
   return {
     role: 'system',
     content:
@@ -118,6 +78,9 @@ export function systemPrompt(): { role: 'system'; content: string } {
       `production numbers are deliberately excluded from this context, so if asked for one, ` +
       `say it is available on request subject to clearance. Prefer short, terminal-friendly ` +
       `answers. He is also ${research.track.charAt(0).toLowerCase() + research.track.slice(1)}\n\n` +
-      `--- RÉSUMÉ CONTEXT ---\n${resumeText()}`,
+      `--- RÉSUMÉ CONTEXT ---\n${resumeText()}` +
+      (record
+        ? `\n\n--- WHAT HE HAS LEARNT, BY SUBJECT (date · built/measured/studied/wrote · item) ---\n${record}`
+        : ''),
   };
 }

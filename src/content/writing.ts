@@ -29,6 +29,8 @@ export interface Entry {
   status?: string;
   /** posts only: hide from the index while drafting */
   draft?: boolean;
+  /** the subject on the Stacks board this belongs under (an id from src/data/record.ts) */
+  stack?: string;
 }
 
 const CONTENT_DIR = join(process.cwd(), 'content');
@@ -69,6 +71,7 @@ function toEntry(file: string): Entry | null {
     link: meta.link || undefined,
     status: meta.status || undefined,
     draft: meta.draft === 'true',
+    stack: meta.stack || undefined,
   };
 }
 

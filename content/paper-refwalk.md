@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2605.29742
 status: reading
 summary: Cross-document citation-closure traversal with explicit per-rule attribution, plus a new benchmark. The single most dangerous paper for my compliance manuscript's novelty claims.
 tags: compliance, RegNLP, attribution, retrieval
+stack: grounding
 ---
 
 Per-rule attribution — every finding traced to the specific provision that produced it — is

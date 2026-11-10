@@ -4,6 +4,7 @@ title: Falsifying my own headline result
 date: 2026-08-18
 summary: A third ASR hypothesis lifted auto-accept 5.6× at pilot scale. At full corpus scale, with the coverage confound removed, almost all of it disappeared. Three separable mechanisms explain why.
 tags: speech, ASR, code-switching, negative-results
+stack: pseudo-labelling
 ---
 
 The best week I had this year was the week I proved myself wrong on the record.

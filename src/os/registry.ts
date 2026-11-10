@@ -8,7 +8,7 @@ import { assistantApp } from './apps/assistant/Assistant';
 import { codeEditorApp } from './apps/codeeditor/CodeEditor';
 import { writingApp } from './apps/writing/Writing';
 import { researchApp } from './apps/research/Research';
-import { learningApp } from './apps/learning/LearningApp';
+import { stacksApp } from './apps/stacks/StacksApp';
 import { psqlApp } from './apps/psql/Psql';
 import { musicApp } from './apps/music/Music';
 import { hireApp } from './apps/hire/Hire';
@@ -19,7 +19,6 @@ import { hireApp } from './apps/hire/Hire';
  */
 const OVERRIDES: Record<string, Partial<Pick<AppDefinition, 'category' | 'desktop'>>> = {
   research: { category: 'Research' },
-  learning: { category: 'Research' },
   writing: { category: 'Research' },
   psql: { category: 'Research' },
   // reachable from Dolphin, the menu and `nano`; keeps the desktop to one column
@@ -37,7 +36,7 @@ export const apps: AppDefinition[] = [
   terminalApp,
   browserApp,
   researchApp,
-  learningApp,
+  stacksApp,
   writingApp,
   fileManagerApp,
   vmApp,

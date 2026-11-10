@@ -14,14 +14,13 @@ import {
   type RelatedResponse,
 } from '@/research/types';
 import { emptyNote, useResearch } from '@/research/store';
-import { isoDay } from '@/research/schedule';
 import { toBibtex } from '@/research/bibtex';
 import { contentSlug, toContentMarkdown } from '@/research/markdown';
 import { cardsPrompt, firstPassPrompt, offlineCards, offlineFirstPass, parseCardLines, parseFiveCs, type CardDraft } from '@/research/offline';
 import { copyText, download, fetchGraph, fetchRelated, searchPapers, type FacetLevel } from '@/research/client';
 import { streamChat } from '@/os/ai/stream';
-import { useLearning } from '@/learning/store';
-import { ASSISTANCE_LABEL, type AiAssistance } from '@/learning/types';
+import { useOS } from '@/os/store';
+import { useBoard } from '@/stacks/useBoard';
 import { HighlightAdd, HighlightList } from './Highlights';
 import { ReaderPane, useReaderSources, type Source } from './Reader';
 
@@ -58,15 +57,6 @@ const PASS_GROUP: Record<ReadStatus, 'p1' | 'p2' | 'p3'> = {
   pass3: 'p3',
   done: 'p3',
   dropped: 'p3',
-};
-
-/** RQ → the Learning OS skills that paper study on it most plausibly exercises. */
-const RQ_SKILLS: Record<string, string[]> = {
-  rq1: ['retrieval-design', 'rag'],
-  rq2: ['eval-methodology'],
-  rq3: ['speech-systems', 'eval-methodology'],
-  rq4: ['eval-methodology', 'indic-speech-ecosystem'],
-  rq5: ['llm-app-arch'],
 };
 
 const s2Link = (p: Paper) =>
@@ -365,7 +355,7 @@ export function PaperDetail({
       <Cards paper={paper} />
 
       <h3 className="rsx-h">Tools</h3>
-      <Tools paper={paper} cardCount={cards.length} />
+      <Tools paper={paper} />
 
       <Connections paper={paper} onOpenPaper={onOpenPaper} />
 
@@ -659,43 +649,23 @@ function Cards({ paper }: { paper: Paper }) {
 
 /* ───────────────────────── tools ───────────────────────── */
 
-function Tools({ paper, cardCount }: { paper: Paper; cardCount: number }) {
-  const markEvidenceLogged = useResearch((s) => s.markEvidenceLogged);
+function Tools({ paper }: { paper: Paper }) {
   const allHighlights = useResearch((s) => s.highlights);
   const allCards = useResearch((s) => s.cards);
-  const skills = useLearning((s) => s.skills);
-  const addEvidence = useLearning((s) => s.addEvidence);
-  const [logging, setLogging] = useState(false);
-  const [skillIds, setSkillIds] = useState<string[]>(() => {
-    const have = new Set(skills.map((s) => s.id));
-    return [...new Set(paper.rqIds.flatMap((r) => RQ_SKILLS[r] ?? []))].filter((id) => have.has(id));
-  });
-  const [assistance, setAssistance] = useState<AiAssistance>('light');
-  const [learned, setLearned] = useState(paper.note.delta || paper.note.fiveCs.contributions);
+  const launch = useOS((s) => s.launch);
+  const { board } = useBoard();
 
-  const canLog = ['pass2', 'pass3', 'done'].includes(paper.status);
+  // where this paper sits on the Stacks board
+  const mine = (c: { id: string; open?: { args: Record<string, unknown> } }) =>
+    c.id === 'paper:' + paper.id || c.open?.args.paperId === paper.id;
+  const stack = board.stacks.find((st) => st.cubes.some(mine) || st.queued.some(mine));
+  const queued = !!stack?.queued.some(mine);
+
   const md = () =>
     toContentMarkdown(paper, {
       highlights: allHighlights.filter((h) => h.paperId === paper.id),
       cards: allCards.filter((c) => c.paperId === paper.id),
     });
-
-  const logEvidence = () => {
-    addEvidence({
-      date: isoDay(),
-      skillIds,
-      kind: 'paper-notes',
-      artifact: `Notes: ${paper.title}`,
-      url: paper.absUrl,
-      didMyself: `Structured notes + ${cardCount} recall cards`,
-      assistance,
-      whatLearned: learned.trim() || paper.note.delta || paper.note.fiveCs.contributions || '—',
-      confidence: 0.5,
-    });
-    markEvidenceLogged(paper.id);
-    setLogging(false);
-    toast.success('Logged in the Learning OS evidence log');
-  };
 
   return (
     <div className="rsx-tools">
@@ -723,61 +693,15 @@ function Tools({ paper, cardCount }: { paper: Paper; cardCount: number }) {
         <button className="lrn-btn tiny" onClick={() => download(`${contentSlug(paper)}.md`, md(), 'text/markdown')}>
           .md ↓
         </button>
-        <button
-          className="lrn-btn"
-          disabled={!canLog}
-          title={canLog ? 'Add to the Learning OS evidence log' : 'Available from Pass 2 on'}
-          onClick={() => setLogging((v) => !v)}
-        >
-          Log as evidence
-        </button>
       </div>
-      {paper.evidenceLoggedAt && (
-        <p className="lrn-dim">Logged as evidence on {paper.evidenceLoggedAt.slice(0, 10)}.</p>
-      )}
-      {!canLog && <p className="lrn-dim">Evidence logging unlocks at Pass 2 — a skim is not evidence.</p>}
-
-      {logging && canLog && (
-        <div className="lrn-form">
-          <div className="rsx-form-row">
-            <label className="lrn-field">
-              Skills this exercised
-              <select
-                multiple
-                size={6}
-                value={skillIds}
-                onChange={(e) => setSkillIds([...e.target.selectedOptions].map((o) => o.value))}
-              >
-                {skills.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div>
-              <label className="lrn-field">
-                AI assistance
-                <select value={assistance} onChange={(e) => setAssistance(e.target.value as AiAssistance)}>
-                  {(Object.keys(ASSISTANCE_LABEL) as AiAssistance[]).map((a) => (
-                    <option key={a} value={a}>
-                      {ASSISTANCE_LABEL[a]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Field label="What I learned" value={learned} onChange={setLearned} rows={3} />
-            </div>
-          </div>
-          <div className="lrn-btn-row">
-            <button className="lrn-btn primary" onClick={logEvidence} disabled={skillIds.length === 0}>
-              Add evidence ({skillIds.length} skill{skillIds.length === 1 ? '' : 's'})
-            </button>
-            <button className="lrn-btn" onClick={() => setLogging(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+      {stack && (
+        <p className="lrn-dim">
+          {queued ? 'Waiting as an outline on the ' : 'A cube on the '}
+          <button className="rsx-linklike" onClick={() => launch('stacks', { subjectId: stack.subject.id })}>
+            {stack.subject.name}
+          </button>{' '}
+          stack ({stack.field.name}) on the desktop{queued ? '. It becomes a cube at Pass 1.' : '.'}
+        </p>
       )}
     </div>
   );

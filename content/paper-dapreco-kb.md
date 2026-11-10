@@ -8,6 +8,7 @@ link: https://github.com/dapreco/daprecokb
 status: reference corpus
 summary: The GDPR formalised in reified I/O logic over the PrOnto ontology. The largest freely available LegalRuleML knowledge base, and the corpus my JURIX measurement runs on.
 tags: legal-informatics, LegalRuleML, GDPR
+stack: rule-bases
 ---
 
 The reference artefact for anyone who wants to make a quantitative claim about formalised

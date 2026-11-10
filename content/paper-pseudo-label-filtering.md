@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2506.03681
 status: read
 summary: Multi-ASR pseudo-labels filtered by WER-prediction, NER and CER analysis over three systems. 7,500h of call-centre data fine-tunes to 12.3% WER — and filtering to 100h (1.4%) matches it.
 tags: speech, ASR, pseudo-labelling, call-centre
+stack: pseudo-labelling
 ---
 
 The paper that retired my pipeline as a contribution, and I am glad I read it before

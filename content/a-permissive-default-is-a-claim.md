@@ -4,6 +4,7 @@ title: A permissive default is an unverified claim about a distribution
 date: 2026-08-06
 summary: The applicability filter was correct. It reported itself healthy the entire time. Most of the corpus never reached it.
 tags: retrieval, RAG, compliance, architecture
+stack: constrained-retrieval
 ---
 
 Retrieval scores are relevance scores. They are not applicability scores, and the

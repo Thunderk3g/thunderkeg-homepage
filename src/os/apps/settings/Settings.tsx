@@ -162,8 +162,8 @@ function SettingsApp({ args }: AppProps) {
             <Toggle
               checked={settings.stacks !== false}
               onChange={(v) => setSetting('stacks', v)}
-              label="Stacks skyline"
-              hint="Draws my skills, papers and posts as a live skyline over any wallpaper. Hover a column to read it, click to open it."
+              label="Stacks board"
+              hint="Draws what I have learnt over any wallpaper: a stack per subject, a cube per thing built, measured, studied or written. Hover a cube to read it, click to open it."
             />
             <div className="kos-settings-walls">
               {WALLPAPERS.map((w) => (

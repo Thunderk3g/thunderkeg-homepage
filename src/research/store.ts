@@ -25,7 +25,7 @@ import type {
 } from './types';
 
 /**
- * Persistence — same local-first pattern as the Learning OS (src/learning/store.ts):
+ * Persistence — local-first:
  * zustand persist over localStorage, data only, export/import for portability.
  *
  * Only saved papers, cards and the review log are stored. Feed results, HF
@@ -486,7 +486,7 @@ export function ensureSeeded(): Promise<void> {
 }
 
 /**
- * Same as the Learning OS's useHydrated(): gate render on rehydration so the
+ * Gate render on rehydration so the
  * client markup matches the server's "loading" pass. Also kicks off the
  * one-time import of published paper notes.
  */

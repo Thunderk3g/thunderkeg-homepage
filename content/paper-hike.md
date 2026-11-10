@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2509.24613
 status: read
 summary: A non-synthetic code-switching benchmark with word/phrase/sentence-level CS hierarchy and explicit loanword labels. Proof that a CS *evaluation framework* is a publishable contribution at a top venue.
 tags: speech, code-switching, evaluation, benchmark
+stack: speech-eval
 ---
 
 The template. Not for its results, but for its shape.

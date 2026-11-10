@@ -8,6 +8,7 @@ link: https://arxiv.org/abs/2510.26309
 status: reading
 summary: Regulations become a policy graph, runtime context becomes a context graph, and graph alignment does the structural work so the LLM only judges the semantic residue. +4.1–7.2pp micro-F1 over LLM-only.
 tags: compliance, knowledge-graphs, GDPR
+stack: compliance-review
 ---
 
 The strongest structural alternative to what I built, and the question I expect first from

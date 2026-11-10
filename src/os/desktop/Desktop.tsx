@@ -13,6 +13,7 @@ import { WhiskerMenu } from './WhiskerMenu';
 import { SessionDialog } from './SessionDialog';
 import { stacksOn, wallpaperFor } from './wallpapers';
 import { Stacks } from './stacks/Stacks';
+import { StacksTimeline } from './stacks/Timeline';
 
 /** Touch screens have no comfortable double-click, so a single tap opens. */
 const isCoarsePointer = () =>
@@ -23,7 +24,7 @@ const isCoarsePointer = () =>
  * they show up here when present and are skipped silently when not.
  */
 const DESKTOP_ORDER = [
-  'hire', 'research', 'music', 'terminal', 'files', 'browser', 'writing', 'learning',
+  'hire', 'research', 'music', 'terminal', 'files', 'browser', 'writing', 'stacks',
   'assistant', 'vm', 'psql', 'code-editor', 'games',
 ];
 const ALWAYS_ON_DESKTOP = new Set(['vm', 'psql']);
@@ -128,6 +129,7 @@ export function Desktop() {
           ))}
         </div>
 
+        {stacks && !hasOpenWindow && <StacksTimeline veil={wallpaper !== 'stacks'} />}
         <WelcomeCard />
       </div>
 

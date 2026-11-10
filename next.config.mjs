@@ -4,6 +4,8 @@ const nextConfig = {
   outputFileTracingRoot: process.cwd(),
   // PGlite is client-only (dynamic import in src/os/db/workspace.ts); keep the server bundle from parsing it
   serverExternalPackages: ['@electric-sql/pglite'],
+  // the Learning OS became the Stacks record
+  redirects: async () => [{ source: '/learning', destination: '/stacks', permanent: true }],
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
       // PGlite's Node-only branch does `import("node:module")` etc. Strip the `node:` scheme so

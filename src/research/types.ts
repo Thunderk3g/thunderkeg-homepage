@@ -1,9 +1,9 @@
 /**
  * Research study system — data model.
  *
- * Papers and recall cards are a different object type from the Learning OS's
- * skills, so they live in their own store. Study *output* (structured notes,
- * cards) is fed back into the Learning OS as evidence rather than duplicated.
+ * Papers and recall cards live in their own store. A paper read to Pass 1 or
+ * further shows up as a cube on the Stacks board (src/stacks/model.ts), under
+ * the subject its research question or keywords point to.
  */
 
 import type { TrackId } from './tracks';

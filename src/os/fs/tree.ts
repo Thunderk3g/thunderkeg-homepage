@@ -24,7 +24,7 @@ ${profile.summary.join('\n\n')}
 ${profile.email} · ${profile.phone} · github.com/${profile.github}
 
 Type 'help' for commands, 'neofetch' for the obligatory ASCII dragon.
-Try:  resume · blog · papers · news · research · learn · psql · vm · ai <question>
+Try:  resume · blog · papers · news · research · stacks · psql · vm · ai <question>
 `;
 
 const section = (title: string, body: string) => `# ${title}\n\n${body}\n`;
@@ -111,16 +111,16 @@ Everything here is interactive:
   • Music             open music (Audius) and commercial-free radio (SomaFM,
                       Radio Browser); keeps playing from the panel (run 'music lofi')
   • Writing           posts + the papers I'm reading (also at /writing)
-  • Learning OS       what to practise today: timed AI-free checks on a spaced schedule,
-                      a prediction before each one, and the skill model behind them
-                      (run 'learn'; state stays in your browser, never on a server)
+  • Stacks            the board on the desktop: every stack is a subject, every cube
+                      one thing I built, measured, studied or wrote, oldest at the
+                      bottom. Hover a cube to read it; run 'stacks' for it in words
   • Linux VM          a real Linux kernel booting in your browser (v86), with this
                       portfolio mounted over 9p at /mnt/portfolio
   • psql              PostgreSQL 18 compiled to WebAssembly (PGlite), in-tab
   • Text Editor       CodeMirror with Markdown preview — try ~/Documents/resume.md
   • Documents         ~/Documents holds the real résumé content
 
-Plain pages for humans in a hurry:  /resume  ·  /writing  ·  /learning
+Plain pages for humans in a hurry:  /resume  ·  /writing  ·  /stacks
 
 — Diwakar
 `;

@@ -9,7 +9,7 @@ import { THEMES } from '../themes';
 import { AppIcon, SysIcon } from '../icons';
 import { WALLPAPERS } from './wallpapers';
 import { useEntries } from '../content';
-import { useLearning } from '@/learning/store';
+import { useBoard } from '@/stacks/useBoard';
 import { useResearch } from '@/research/store';
 import { STATUS_SHORT } from '@/research/types';
 import { hire } from '@/data/resume';
@@ -46,7 +46,7 @@ export function CommandPalette() {
   // the work itself is searchable, not just the apps that hold it
   const entries = useEntries();
   const papers = useResearch((st) => st.papers);
-  const skills = useLearning((st) => st.skills);
+  const { board } = useBoard();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -176,17 +176,19 @@ export function CommandPalette() {
               ))}
             </Command.Group>
 
-            <Command.Group heading="Skills" className="kos-cmdk-group">
-              {skills.map((k) => (
+            <Command.Group heading="Stacks" className="kos-cmdk-group">
+              {board.stacks.map((k) => (
                 <Command.Item
-                  key={k.id}
-                  value={`skill ${k.name} ${k.domain}`}
-                  onSelect={() => run(() => launch('learning', { skillId: k.id }))}
+                  key={k.subject.id}
+                  value={`stack subject skill ${k.subject.name} ${k.field.name} ${k.subject.keywords.join(' ')}`}
+                  onSelect={() => run(() => launch('stacks', { subjectId: k.subject.id }))}
                   className="kos-cmdk-item"
                 >
-                  <AppIcon id="learning" size={22} className="kos-cmdk-icon" />
-                  <span className="kos-cmdk-label">{k.name}</span>
-                  <span className="kos-cmdk-meta">{k.state.toLowerCase()}</span>
+                  <AppIcon id="stacks" size={22} className="kos-cmdk-icon" />
+                  <span className="kos-cmdk-label">{k.subject.name}</span>
+                  <span className="kos-cmdk-meta">
+                    {k.cubes.length ? `${k.cubes.length} in ${k.field.name}` : 'following'}
+                  </span>
                 </Command.Item>
               ))}
             </Command.Group>

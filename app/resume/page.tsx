@@ -172,7 +172,7 @@ export default function ResumePage() {
       <Sec title="SEE ALSO">
         <p className="man-seealso">
           <a href="/hire">hire(1)</a>, <a href="/writing">writing(7)</a>, <a href="/">desktop(1)</a>,{' '}
-          <a href="/learning">learning(7)</a>
+          <a href="/stacks">stacks(7)</a>
         </p>
       </Sec>
     </ManPage>

@@ -1,6 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { isLlmConfigured, streamChatCompletion, thinkStripper } from '@/os/ai/llm';
-import { coachSystemPrompt, digestSystemPrompt, newsSystemPrompt, paperSystemPrompt, systemPrompt } from '@/os/ai/prompts';
+import { digestSystemPrompt, newsSystemPrompt, paperSystemPrompt, systemPrompt } from '@/os/ai/prompts';
+import { allEntries } from '@/content/writing';
+import { RQS } from '@/research/seed';
+import { buildBoard, recordText } from '@/stacks/model';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,6 +11,15 @@ export const dynamic = 'force-dynamic';
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+}
+
+/** The Stacks record as the assistant sees it: the curated record plus published posts and paper notes. */
+function recordContext(): string {
+  try {
+    return recordText(buildBoard({ entries: allEntries(), papers: [], cards: [], rqs: RQS }));
+  } catch {
+    return ''; // the résumé context still answers most questions
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -20,8 +32,8 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as {
     messages?: ChatMessage[];
-    /** swaps the system prompt: résumé grounding, news digest, learning coach, or paper reading */
-    mode?: 'resume' | 'news' | 'digest' | 'coach' | 'paper';
+    /** swaps the system prompt: résumé grounding, news digest, or paper reading */
+    mode?: 'resume' | 'news' | 'digest' | 'paper';
   };
   const userMessages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
   const system =
@@ -29,11 +41,9 @@ export async function POST(req: NextRequest) {
       ? newsSystemPrompt()
       : body.mode === 'digest'
         ? digestSystemPrompt()
-        : body.mode === 'coach'
-          ? coachSystemPrompt()
-          : body.mode === 'paper'
-            ? paperSystemPrompt()
-            : systemPrompt();
+        : body.mode === 'paper'
+          ? paperSystemPrompt()
+          : systemPrompt(recordContext());
 
   // only user/assistant turns from the client; the system prompt is ours
   const turns = userMessages.filter((m) => m.role === 'user' || m.role === 'assistant');

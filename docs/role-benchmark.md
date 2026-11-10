@@ -111,22 +111,12 @@ never written.
 
 ## 7. How this is tracked
 
-The Learning OS (`/learning`, or the Learning app on the desktop) has a
-**Role benchmark** tab that renders this document from
-`src/learning/benchmark.ts`; the 90-day plan is roadmap phases p4–p6 in
-`src/learning/seed.ts`. Change this document first, then those files.
+This document is the whole of it. It used to be rendered by a Role benchmark
+tab in the Learning OS, with self-assessments and checkboxes kept in the
+browser; that app was retired in favour of the Stacks board.
 
-- Section 1's dimensions each take a self-assessment (Senior / Between /
-  Lead).
-- Section 3's gaps are cards in priority order. Each shows the mapped skills
-  with their current state, the artefact that would close the gap, and a
-  "Log evidence" button that attaches evidence to those skills.
-- Section 4's artefacts are checkboxes; section 5's programmes each carry an
-  application status, with a "verify on programme page" flag.
-- A readiness line gives, per track, the share of mapped skills at APPLIED or
-  better. A gap serving both tracks counts toward each.
-- With no LLM key, the offline coach answers "what should I do next" with
-  the highest-priority gap that still has a mapped skill below APPLIED.
-
-All of it is stored in the browser's localStorage only (schema v2), and is
-included in the Learning OS JSON export.
+What closes a gap now shows up where everything else does: an artefact from
+section 4 becomes a cube in `src/data/record.ts` (built or measured), a post
+in `content/`, or a paper read in the Research app, and lands on its subject's
+stack on the desktop and on `/stacks`. A gap with nothing on its stack is
+still open.
