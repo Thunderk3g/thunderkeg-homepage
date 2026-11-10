@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { isPhone } from '../desktop/layout';
+import type { Lens } from './anatomy';
 
 /**
  * Teardown: the running desktop tilted and pulled apart into its layers.
@@ -20,6 +21,9 @@ interface TeardownStore {
   spread: number;
   /** a window to focus once the desktop is back together */
   focusAfter: string | null;
+  /** which reading of the stack is showing: Kali, this site, or an LLM system */
+  lens: Lens;
+  setLens: (lens: Lens) => void;
   open: () => void;
   /** start reassembling; `focusId` is a window to bring forward afterwards */
   close: (focusId?: string) => void;
@@ -41,6 +45,9 @@ export const useTeardown = create<TeardownStore>((set, get) => ({
   pinned: null,
   spread: 1,
   focusAfter: null,
+  // the lens is kept between visits: it is how you chose to read the desktop
+  lens: 'kali',
+  setLens: (lens) => set({ lens }),
   open: () => {
     // a phone has no room for the parts list, and nothing to hover with
     if (isPhone() || get().on) return;

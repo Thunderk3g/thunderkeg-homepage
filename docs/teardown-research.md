@@ -2,7 +2,7 @@
 
 Research behind the Teardown mode (`src/os/teardown`): the running desktop
 tilted and pulled apart into its layers, continuing under the wallpaper into
-the display, the session, the file system, storage and the machine.
+the display, the session, the file system, the kernel and the hardware.
 
 Done on 2026-11-10. How far each claim can be trusted is marked:
 
@@ -131,6 +131,35 @@ All read from the CSS Transforms specifications, MDN and web-platform-tests.
 - Pointing is not left to the browser. The desktop is `inert` while apart and
   the pointer is resolved with the same arithmetic that places the layers.
 
+## 6. Three readings of one stack
+
+Added on the second pass (2026-11-10). The stack can be read three ways, and
+the lens renames every layer and the components shown on it
+(`src/os/teardown/anatomy.ts`):
+
+- **Kali Linux.** What the layer is on a real Kali machine. The Xfce and
+  theme facts are from `docs/kali-desktop-research.md`, which was checked
+  against Kali's own packaging; that zsh became the default shell in 2020.4
+  and that Kali stopped logging in as root in 2020.1 are from the Kali 2020.4
+  release announcement (*summary*). The kernel, systemd and file-system
+  descriptions are general Linux knowledge, not separately sourced.
+- **This site.** What the layer actually is here: which component, which
+  store, which library.
+- **An LLM system.** An analogy, after the "LLM OS" sketch in Andrej
+  Karpathy's 2023 talk *Intro to Large Language Models*: the model as the
+  kernel, the context window as working memory, retrieval and files as the
+  disk, tools as the applications. *Summary: taken from secondary write-ups
+  of the talk; the talk itself was not opened.* The mappings for the panel
+  (observability), the display (decoding), the wallpaper (the prior) and the
+  hardware (compute) are my extensions, and the interface text says so on
+  each. One known strain, from the write-ups: a page fault is invisible to a
+  running process, but fetching from external memory is an explicit step for
+  a model, so "retrieval is paging" should not be pushed far.
+
+Each layer also lists the subjects of the Stacks record where I have worked
+at that layer, and the parts it is wired to. `scripts/teardown-anatomy.test.mts`
+checks that every subject and every link named there exists.
+
 ## Sources
 
 Read:
@@ -153,6 +182,9 @@ Read:
 
 From search summaries only:
 
+- Kali Linux 2020.4 release: https://www.kali.org/blog/kali-linux-2020-4-release/
+- LLM OS, lecture notes citing the talk: https://tddg.github.io/ds5110-spring25/assets/docs/lec11-llm-os.pdf
+- LLM OS, secondary write-up: https://horaceheaven.github.io/publications/llm-os
 - ISO 6433:2012 sample: https://cdn.standards.iteh.ai/samples/51527/d4eaa720fb0448bea2952817ce24d508/ISO-6433-2012.pdf
 - Li and others, 2008: https://grail.cs.washington.edu/projects/exview3D
 - Balloons and parts lists: https://wtcs.pressbooks.pub/blueprintreading/?p=501

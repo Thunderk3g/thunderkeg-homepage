@@ -2,9 +2,11 @@
 
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useOS } from '../store';
+import { KaliMark } from '../icons';
 import { prefersReducedMotion } from '../desktop/layout';
+import { LENSES, type Lens } from './anatomy';
 import { FLAT, ease, fit, inQuad, leaderEnds, quad, type Cam } from './camera';
-import { heights, useTeardownModel, type Part } from './parts';
+import { heights, useTeardownModel, wiring, type Part } from './parts';
 import { SPREAD_MAX, SPREAD_MIN, useTeardown } from './store';
 
 /**
@@ -16,7 +18,14 @@ import { SPREAD_MAX, SPREAD_MIN, useTeardown } from './store';
  * window, the panel) is raised to its own height, so the clock keeps
  * ticking and a terminal keeps printing while it hangs in the air. Under the
  * wallpaper the stack continues into plates drawn from live state: display,
- * session, file system, storage, machine (Plates.tsx, mounted by the desktop).
+ * session, file system, kernel, hardware (Plates.tsx, mounted by the desktop).
+ *
+ * The stack can be read three ways (anatomy.ts): as a Kali Linux machine, as
+ * this site, and as an LLM system. The lens renames every layer, changes the
+ * components named on its plate, and changes the lesson in the notes. Picking
+ * a part also lights the parts it is wired to, so the stack shows how its
+ * pieces depend on each other, and lists the subjects in the Stacks record
+ * where I have worked at that layer.
  *
  * How it is kept honest and usable (docs/teardown-research.md has the sources):
  *   - It is a momentary overview, not a place to work: Esc puts it back.
@@ -38,10 +47,11 @@ const VIEW = { rx: (58 * Math.PI) / 180, rz: (-38 * Math.PI) / 180 };
 const RX_MIN = (30 * Math.PI) / 180;
 const RX_MAX = (80 * Math.PI) / 180;
 /** room kept on the left for the parts list and its notes */
-const LIST_W = 296;
+const RAIL_W = 332;
 /** how far a picked layer slides out of the stack, as a share of the screen's width */
 const PULL = 0.62;
-const OTHERS = 0.5;
+/** how far everything unrelated to the picked layer fades */
+const OTHERS = 0.42;
 
 export function Teardown() {
   const on = useTeardown((s) => s.on);
@@ -54,10 +64,13 @@ function Apart() {
   const pinned = useTeardown((s) => s.pinned);
   const spread = useTeardown((s) => s.spread);
   const closing = useTeardown((s) => s.closing);
+  const lens = useTeardown((s) => s.lens);
   const hover = useTeardown((s) => s.hover);
   const pin = useTeardown((s) => s.pin);
   const setSpread = useTeardown((s) => s.setSpread);
+  const setLens = useTeardown((s) => s.setLens);
   const close = useTeardown((s) => s.close);
+  const launch = useOS((s) => s.launch);
   const user = useOS((s) => s.user);
   const host = useOS((s) => s.host);
   const reducedSetting = useOS((s) => s.settings.reducedMotion);
@@ -65,17 +78,23 @@ function Apart() {
   const active = closing ? null : (hovered ?? pinned);
   const part = parts.find((p) => p.id === active);
   const numbers = useMemo(() => new Map(parts.map((p, i) => [p.id, String(i + 1).padStart(2, '0')])), [parts]);
+  const wires = useMemo(() => (active ? wiring(parts, active) : []), [parts, active]);
   const windowCount = parts.filter((p) => p.kind === 'window').length;
+  const lensInfo = LENSES.find((l) => l.id === lens) ?? LENSES[0];
 
   const [ready, setReady] = useState(false);
   const hud = useRef<HTMLDivElement>(null);
   const rowEls = useRef(new Map<string, HTMLElement>());
   const leaderEls = useRef(new Map<string, SVGPathElement>());
+  const wireEls = useRef(new Map<string, SVGPathElement>());
+  const wireEnds = useRef(new Map<string, SVGCircleElement>());
   const rodsEl = useRef<SVGPathElement>(null);
+  const scaleEl = useRef<HTMLElement>(null);
 
   const live = useRef({
     parts,
     active: active as string | null,
+    wired: new Set<string>(),
     view: { ...VIEW },
     cam: { ...FLAT } as Cam,
     pulls: new Map<string, number>(),
@@ -87,6 +106,7 @@ function Apart() {
   });
   live.current.parts = parts;
   live.current.active = active;
+  live.current.wired = new Set(wires.map((w) => w.id));
   live.current.dirty = true;
 
   // where the balloons are: measured when the list changes, not every frame
@@ -103,7 +123,16 @@ function Apart() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [parts]);
+  }, [parts, lens]);
+
+  // the lens tints the whole drawing
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('.kos');
+    if (root) root.dataset.tdLens = lens;
+    return () => {
+      if (root) delete root.dataset.tdLens;
+    };
+  }, [lens]);
 
   // the camera
   useEffect(() => {
@@ -149,6 +178,7 @@ function Apart() {
       for (const e of els) {
         delete e.dataset.tdPart;
         delete e.dataset.tdActive;
+        delete e.dataset.tdWired;
         e.style.removeProperty('--td-z');
         e.style.removeProperty('--td-x');
         e.style.removeProperty('--td-o');
@@ -175,9 +205,10 @@ function Apart() {
       const { z, units } = heights(L.parts);
       const cam = L.cam;
 
-      // where the camera is headed
+      // where the camera is headed.
       // the right of the stack is left clear: that is where a picked layer slides out to
-      const area = { x0: LIST_W + 56, y0: 50, x1: W - Math.min(230, W * 0.16), y1: H - 58 };
+      const area = { x0: RAIL_W + 52, y0: 50, x1: W - Math.min(230, W * 0.16), y1: H - 58 };
+      const mid = (area.y0 + area.y1) / 2 - H / 2;
       const f = fit(W, H, area, L.view.rx, L.view.rz, units, st.spread);
       let to: Cam;
       if (st.closing) {
@@ -190,7 +221,7 @@ function Apart() {
           s: f.s,
           tx: f.tx,
           // the stack drops as it opens, so it stays centred the whole way
-          ty: (area.y0 + area.y1) / 2 - H / 2 + (f.ty - ((area.y0 + area.y1) / 2 - H / 2)) * Math.min(1, cam.g / Math.max(1, f.g)),
+          ty: mid + (f.ty - mid) * Math.min(1, cam.g / Math.max(1, f.g)),
           // tilt first, then pull apart
           g: now - t0 > 260 || still() ? f.g : 0,
         };
@@ -240,6 +271,7 @@ function Apart() {
         L.dirty = false;
         desk.style.transform = `translate(${cam.tx}px, ${cam.ty}px) rotateX(${cam.rx}rad) rotateZ(${cam.rz}rad) scale3d(${cam.s}, ${cam.s}, ${cam.s})`;
         root.style.setProperty('--td-in', String(Math.min(1, cam.g / Math.max(1, f.g * 0.5))));
+        if (scaleEl.current) scaleEl.current.textContent = cam.s.toFixed(2) + ' : 1';
 
         const ids = new Set(L.parts.map((p) => p.id));
         for (const [id, els] of tagged) {
@@ -249,26 +281,29 @@ function Apart() {
         }
 
         const hits: { id: string; q: [number, number][] }[] = [];
-        const outlines: [number, number][][] = [];
+        const outlines = new Map<string, [number, number][]>();
         for (const p of L.parts) {
           const zpx = (z.get(p.id) ?? 0) * cam.g;
           const dx = pulls.get(p.id) ?? 0;
+          const isActive = L.active === p.id;
+          const isWired = L.wired.has(p.id);
           for (const e of elementsOf(p)) {
             e.style.setProperty('--td-z', zpx.toFixed(2) + 'px');
             e.style.setProperty('--td-x', dx.toFixed(2) + 'px');
-            e.style.setProperty('--td-o', L.active && L.active !== p.id ? String(OTHERS) : '1');
-            if (L.active === p.id) e.dataset.tdActive = '';
+            e.style.setProperty('--td-o', L.active && !isActive && !isWired ? String(OTHERS) : '1');
+            if (isActive) e.dataset.tdActive = '';
             else delete e.dataset.tdActive;
+            if (isWired) e.dataset.tdWired = '';
+            else delete e.dataset.tdWired;
           }
           for (const r of p.hits ?? [p.rect]) hits.push({ id: p.id, q: quad(cam, W, H, r, dx, zpx) });
-
-          outlines.push(quad(cam, W, H, p.rect, dx, zpx));
+          outlines.set(p.id, quad(cam, W, H, p.rect, dx, zpx));
         }
         L.hits = hits;
 
-        // the leaders: from each balloon to a corner of its part, never crossing
+        // the leaders: from each balloon to its part, never crossing
         const rows = L.parts.map((p) => L.rows.get(p.id));
-        leaderEnds(rows, outlines).forEach((a, i) => {
+        leaderEnds(rows, L.parts.map((p) => outlines.get(p.id)!)).forEach((a, i) => {
           const path = leaderEls.current.get(L.parts[i].id);
           const row = rows[i];
           if (!path || !row || !a) return;
@@ -278,6 +313,29 @@ function Apart() {
               `M${(a[0] + 3).toFixed(1)} ${a[1].toFixed(1)}a3 3 0 1 0 -6 0a3 3 0 1 0 6 0`,
           );
         });
+
+        // the wiring: from the picked part to each part it depends on, or that depends on it.
+        // A wire leaves the middle of the picked part and lands on the near corner of the other,
+        // the corner that is in view while it sits in the stack.
+        const from = L.active ? outlines.get(L.active) : undefined;
+        for (const [id, path] of wireEls.current) {
+          const to2 = outlines.get(id);
+          if (!from || !to2) {
+            path.setAttribute('d', '');
+            wireEnds.current.get(id)?.setAttribute('cy', '-99');
+            continue;
+          }
+          const a: [number, number] = [(from[0][0] + from[2][0]) / 2, (from[0][1] + from[2][1]) / 2];
+          const b = to2.reduce((best, c) => (c[1] > best[1] ? c : best), to2[0]);
+          const bend = Math.min(90, Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.22);
+          path.setAttribute(
+            'd',
+            `M${a[0].toFixed(1)} ${a[1].toFixed(1)}Q${((a[0] + b[0]) / 2 + bend).toFixed(1)} ${((a[1] + b[1]) / 2 + bend * 0.4).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,
+          );
+          const end = wireEnds.current.get(id);
+          end?.setAttribute('cx', b[0].toFixed(1));
+          end?.setAttribute('cy', b[1].toFixed(1));
+        }
 
         // the explosion axis: one dashed line up each corner of the stack
         if (rodsEl.current) {
@@ -308,18 +366,22 @@ function Apart() {
         rowEls.current.get(next.id)?.closest('button')?.focus({ preventScroll: true });
       };
       if (e.type === 'keydown') {
-        if (e.key === 'Escape' || (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'x')) {
+        const k = e.key.toLowerCase();
+        if (e.key === 'Escape' || (e.ctrlKey && e.altKey && k === 'x')) {
           e.preventDefault();
           st.close();
-        } else if (!inField && e.key === 'ArrowDown') {
+        } else if (inField || e.ctrlKey || e.metaKey || e.altKey) {
+          // leave fields and browser chords alone
+        } else if (e.key === 'ArrowDown') {
           e.preventDefault();
           step(1);
-        } else if (!inField && e.key === 'ArrowUp') {
+        } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           step(-1);
-        } else if (!inField && (e.key === '+' || e.key === '=')) st.setSpread(st.spread * 1.15);
-        else if (!inField && e.key === '-') st.setSpread(st.spread / 1.15);
-        else if (!inField && (e.key === '0' || e.key.toLowerCase() === 'r')) {
+        } else if (e.key === '+' || e.key === '=') st.setSpread(st.spread * 1.15);
+        else if (e.key === '-') st.setSpread(st.spread / 1.15);
+        else if (e.key === '1' || e.key === '2' || e.key === '3') st.setLens(LENSES[+e.key - 1].id);
+        else if (e.key === '0' || k === 'r') {
           L.view = { ...VIEW };
           st.setSpread(1);
         }
@@ -369,6 +431,14 @@ function Apart() {
     live.current.view = { ...VIEW };
     setSpread(1);
   };
+  const openSubject = (subjectId: string) => {
+    close();
+    // let the layers close up before the record opens over them
+    window.setTimeout(() => launch('stacks', { subjectId }), 620);
+  };
+
+  const reading = part?.anatomy[lens];
+  const others = LENSES.filter((l) => l.id !== lens);
 
   return (
     <div
@@ -397,96 +467,193 @@ function Apart() {
         {parts.map((p) => (
           <path
             key={p.id}
-            className={'td-leader' + (active === p.id ? ' on' : '')}
+            className={'td-leader' + (active === p.id ? ' on' : '') + (wires.some((w) => w.id === p.id) ? ' wired' : '')}
             ref={(el) => {
               if (el) leaderEls.current.set(p.id, el);
               else leaderEls.current.delete(p.id);
             }}
           />
         ))}
+        {wires.map((w) => (
+          <Fragment key={active + '>' + w.id}>
+            <path
+              className={'td-wire ' + (w.dir === 'uses' ? 'out' : 'in')}
+              ref={(el) => {
+                if (el) wireEls.current.set(w.id, el);
+                else wireEls.current.delete(w.id);
+              }}
+            />
+            <circle
+              className="td-wire-end"
+              r="4.5"
+              cy="-99"
+              ref={(el) => {
+                if (el) wireEnds.current.set(w.id, el);
+                else wireEnds.current.delete(w.id);
+              }}
+            />
+          </Fragment>
+        ))}
       </svg>
 
       <div className="td-rail">
-      <header className="td-title">
-        <b>Teardown</b>
-        <span>
-          {user}@{host} · {parts.length} parts · {windowCount} window{windowCount === 1 ? '' : 's'} open
-        </span>
-      </header>
+        <header className="td-title">
+          <b>Teardown</b>
+          <span>
+            {user}@{host} · {parts.length} parts · {windowCount} window{windowCount === 1 ? '' : 's'} open
+          </span>
+        </header>
 
-      <ol className="td-parts" aria-label="Parts, top layer first" onPointerLeave={() => hover(null)}>
-        {parts.map((p, i) => (
-          <Fragment key={p.id}>
-            {p.group === 'under' && parts[i - 1]?.group !== 'under' && (
-              <li className="td-glassline" aria-hidden="true">
-                under the wallpaper
-              </li>
-            )}
-            <li>
-              <button
-                type="button"
-                className={(active === p.id ? 'on ' : '') + (pinned === p.id ? 'pinned' : '')}
-                aria-pressed={pinned === p.id}
-                onPointerEnter={() => hover(p.id)}
-                onClick={() => pin(pinned === p.id ? null : p.id)}
-                onDoubleClick={() => p.action?.run()}
-              >
-                <span
-                  className="td-n"
-                  ref={(el) => {
-                    if (el) rowEls.current.set(p.id, el);
-                    else rowEls.current.delete(p.id);
-                  }}
+        <div className="td-lens" role="radiogroup" aria-label="Read the stack as">
+          {LENSES.map((l, i) => (
+            <button
+              key={l.id}
+              type="button"
+              role="radio"
+              aria-checked={lens === l.id}
+              className={'l-' + l.id + (lens === l.id ? ' on' : '')}
+              title={`${l.blurb} (press ${i + 1})`}
+              onClick={() => setLens(l.id)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+
+        <ol className="td-parts" aria-label="Parts, top layer first" onPointerLeave={() => hover(null)}>
+          {parts.map((p, i) => (
+            <Fragment key={p.id}>
+              {p.group === 'under' && parts[i - 1]?.group !== 'under' && (
+                <li className="td-glassline" aria-hidden="true">
+                  under the wallpaper
+                </li>
+              )}
+              <li>
+                <button
+                  type="button"
+                  className={
+                    (active === p.id ? 'on ' : '') + (pinned === p.id ? 'pinned ' : '') + (wires.some((w) => w.id === p.id) ? 'wired' : '')
+                  }
+                  aria-pressed={pinned === p.id}
+                  onPointerEnter={() => hover(p.id)}
+                  onClick={() => pin(pinned === p.id ? null : p.id)}
+                  onDoubleClick={() => p.action?.run()}
                 >
-                  {numbers.get(p.id)}
-                </span>
-                <span className="td-nm">{p.name}</span>
-                <span className="td-rl">{p.role}</span>
-              </button>
-            </li>
-          </Fragment>
-        ))}
-      </ol>
+                  <span
+                    className="td-n"
+                    ref={(el) => {
+                      if (el) rowEls.current.set(p.id, el);
+                      else rowEls.current.delete(p.id);
+                    }}
+                  >
+                    {numbers.get(p.id)}
+                  </span>
+                  <span className="td-nm">{p.name}</span>
+                  <span className="td-rl">{p.anatomy[lens].name}</span>
+                </button>
+              </li>
+            </Fragment>
+          ))}
+        </ol>
 
-      <aside className="td-detail" aria-live="polite">
-        {part ? (
-          <>
-            <p className="td-detail-n">
-              {numbers.get(part.id)} · {part.group === 'under' ? 'under the wallpaper' : 'on the screen'}
-            </p>
-            <h2>{part.name}</h2>
-            <p className="td-detail-role">Stands in for {part.role}.</p>
-            <p className="td-detail-impl">{part.impl}</p>
-            <dl>
-              {part.facts.map(([k, v]) => (
-                <Fragment key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </Fragment>
-              ))}
-            </dl>
-            {part.action && pinned === part.id && (
-              <button type="button" className="td-btn" onClick={part.action.run}>
-                {part.action.label}
-              </button>
-            )}
-          </>
-        ) : (
-          <>
-            <p className="td-detail-n">exploded view</p>
-            <h2>This is the desktop you were just using</h2>
-            <p className="td-detail-impl">
-              Not a model of it: the same elements, lifted apart in the order they are stacked. The clock is still
-              running. Below the wallpaper are the things that hold it up, read from the live state of this tab.
-            </p>
-            <p className="td-detail-impl">Point at a part to slide it out. Click to hold it there.</p>
-          </>
-        )}
-      </aside>
+        <aside className="td-detail" aria-live="polite">
+          {part && reading ? (
+            <>
+              <p className="td-detail-n">
+                {numbers.get(part.id)} · {part.name} · {lensInfo.short}
+              </p>
+              <h2>{reading.name}</h2>
+              <p className="td-detail-gist">{reading.gist}</p>
+              {part.work.length > 0 && (
+                <>
+                  <h3>My work at this layer</h3>
+                  <div className="td-work">
+                    {part.work.map((w) => (
+                      <button key={w.id} type="button" onClick={() => openSubject(w.id)} title="Reassemble and open this subject in Stacks">
+                        {w.name}
+                        {w.cubes > 0 && <b>{w.cubes}</b>}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {reading.piecesLabel && <h3>{reading.piecesLabel}</h3>}
+              <dl className="td-pieces">
+                {reading.pieces.map(([name, what]) => (
+                  <Fragment key={name}>
+                    <dt>{name}</dt>
+                    <dd>{what}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+
+              <div className="td-also">
+                {others.map((l) => (
+                  <button key={l.id} type="button" className={'l-' + l.id} onClick={() => setLens(l.id)} title={`Read the stack as: ${l.label}`}>
+                    <i>{l.short}</i>
+                    {part.anatomy[l.id].name}
+                  </button>
+                ))}
+              </div>
+
+              {wires.length > 0 && (
+                <>
+                  <h3>Wired to</h3>
+                  <ul className="td-wires">
+                    {wires.map((w) => {
+                      const other = parts.find((p) => p.id === w.id);
+                      if (!other) return null;
+                      return (
+                        <li key={w.id} className={w.dir === 'uses' ? 'out' : 'in'}>
+                          <button type="button" onClick={() => pin(w.id)} title={`Pick ${other.name}`}>
+                            <b>{numbers.get(w.id)}</b> {other.name}
+                          </button>
+                          <span>{w.how}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+
+              <h3>Right now, in this tab</h3>
+              <dl className="td-facts">
+                {part.facts.map(([k, v]) => (
+                  <Fragment key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+              {part.action && pinned === part.id && (
+                <button type="button" className="td-btn" onClick={part.action.run}>
+                  {part.action.label}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="td-detail-n">exploded view · {lensInfo.short}</p>
+              <h2>This is the desktop you were just using</h2>
+              <p className="td-detail-gist">
+                Not a model of it: the same elements, lifted apart in the order they are stacked, with the clock still
+                running. Under the wallpaper are the layers that hold it up, read from this tab as it is right now.
+              </p>
+              <p className="td-detail-gist">
+                <b>Reading it as {lensInfo.label.toLowerCase()}.</b> {lensInfo.blurb}
+              </p>
+              <p className="td-detail-gist">
+                Point at a part to slide it out and see what it is wired to. Click to hold it. Keys 1, 2 and 3 change
+                the reading.
+              </p>
+            </>
+          )}
+        </aside>
       </div>
 
       <footer className="td-controls">
-        <span className="td-hint">Drag to turn · scroll to spread · ↑ ↓ to step through the parts</span>
+        <span className="td-hint">Drag to turn · scroll to spread · ↑ ↓ step through parts · 1 2 3 change the reading</span>
         <label>
           <span>Spread</span>
           <input
@@ -507,6 +674,22 @@ function Apart() {
         </button>
       </footer>
 
+      {/* the drawing's title block */}
+      <div className="td-block" aria-hidden="true">
+        <KaliMark size={30} className="td-block-mark" />
+        <dl>
+          <dt>Drawing</dt>
+          <dd>Kali desktop, exploded</dd>
+          <dt>Read as</dt>
+          <dd className="lens">{lensInfo.label}</dd>
+          <dt>Scale</dt>
+          <dd ref={scaleEl}>1.00 : 1</dd>
+          <dt>Sheet</dt>
+          <dd>
+            {parts.length} parts · drawn live
+          </dd>
+        </dl>
+      </div>
     </div>
   );
 }

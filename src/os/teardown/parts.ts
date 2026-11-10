@@ -8,53 +8,52 @@ import { WALLPAPERS, stacksOn, wallpaperFor } from '../desktop/wallpapers';
 import { panelHeight } from '../desktop/layout';
 import { GUEST } from '../apps/vm/guest';
 import type { FsNode } from '../types';
+import { SUBJECTS } from '@/data/record';
 import { useBoard } from '@/stacks/useBoard';
+import { LAYERS, windowAnatomy, type Anatomy, type LayerKind } from './anatomy';
 import type { Rect } from './camera';
 import { useTeardown } from './store';
 
 /**
  * The desktop as a parts list, top to bottom.
  *
- * Above the glass are the layers anyone can see: the panel, each window, the
- * icons, the Stacks board, the wallpaper. Below it are the layers that hold
- * those up, drawn from the same live state the desktop runs on: the display,
- * the session, the file system, what is stored in this browser, and the
- * machine. Every part says what it stands in for on a real Kali desktop
- * (`role`) and what it actually is here (`impl`), so the teardown doubles as
- * an honest map of how the site is built.
+ * Above the wallpaper are the layers anyone can see: the panel, each window,
+ * the icons, the Stacks board, the wallpaper. Below it are the layers that
+ * hold those up, drawn from the same live state the desktop runs on: the
+ * display, the session, the file system, the kernel, the hardware.
+ *
+ * Every part carries three readings of itself (anatomy.ts): what it is on a
+ * real Kali machine, what it actually is here, and what it corresponds to in
+ * an LLM system. It also knows which other parts it depends on, and which
+ * subjects of the Stacks record show my work at that layer.
  */
 
-export type PartKind =
-  | 'panel'
-  | 'window'
-  | 'nowindows'
-  | 'desk'
-  | 'board'
-  | 'wall'
-  | 'display'
-  | 'session'
-  | 'fs'
-  | 'storage'
-  | 'machine';
+export type PartKind = LayerKind;
 
 export interface Part {
   id: string;
   kind: PartKind;
   /** 'surface' is what you can see; 'under' is what holds it up */
   group: 'surface' | 'under';
+  /** the plain name in the parts list */
   name: string;
-  /** the piece of a real Kali / Xfce system this stands in for */
-  role: string;
-  /** what it really is on this site */
-  impl: string;
+  /** the app in the window, for window parts */
+  appId?: string;
+  /** the three readings: Kali, this site, an LLM system */
+  anatomy: Anatomy;
+  /** live figures, read from this tab right now */
   facts: [string, string][];
+  /** other parts on the board this one depends on */
+  links: { id: string; how: string }[];
+  /** Stacks subjects that show my work at this layer */
+  work: { id: string; name: string; cubes: number }[];
   /** where it sits on its layer, in desktop px: leader lines aim at it */
   rect: Rect;
   /** what the pointer can hit, when that is less than the whole rect */
   hits?: Rect[];
   /** the live element on the desktop that is this part, if there is one */
   selector?: string;
-  /** drawn as a plate by Plates.tsx: glass for a see-through layer, solid under the glass */
+  /** drawn as a plate by Plates.tsx: glass for a see-through layer, solid under the wallpaper */
   plate: 'glass' | 'solid' | null;
   /** how far below the part above it this one hangs, in gaps */
   drop: number;
@@ -81,8 +80,12 @@ export interface Under {
   procs: Proc[];
   fs: { files: number; dirs: number; bytes: number; top: DirStat[] };
   storage: { keys: { key: string; bytes: number }[]; bytes: number; ok: boolean };
-  machine: { cores: number | null; memoryGB: number | null; platform: string; vmOpen: boolean; heapMB: number | null };
+  kernel: { guest: string; guestMB: number; vmOpen: boolean; psqlOpen: boolean; heapMB: number | null; lagMs: number; routes: number };
+  hardware: { cores: number | null; memoryGB: number | null; platform: string };
 }
+
+/** The server routes the desktop calls out through: its network stack. */
+export const ROUTES = ['/api/chat', '/api/research', '/api/news', '/api/music', '/api/hire', '/api/vm/proxy', '/api/content'];
 
 function walk(node: FsNode): { files: number; dirs: number; bytes: number } {
   if (node.type !== 'dir') return { files: 1, dirs: 0, bytes: (node.content ?? '').length };
@@ -179,11 +182,18 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
   const { board } = useBoard();
   const hz = useRefreshRate();
 
-  // the clock, the heap and the viewport move while the desktop is apart
-  const [tick, setTick] = useState(0);
+  // the clock, the heap and the viewport move while the desktop is apart;
+  // how late each tick arrives is the event loop's lag, the load of this "kernel"
+  const [tick, setTick] = useState({ n: 0, lag: 0 });
   useEffect(() => {
-    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
-    const onResize = () => setTick((n) => n + 1);
+    let due = performance.now() + 1000;
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      const lag = Math.max(0, now - due);
+      due = now + 1000;
+      setTick((t) => ({ n: t.n + 1, lag }));
+    }, 1000);
+    const onResize = () => setTick((t) => ({ ...t, n: t.n + 1 }));
     window.addEventListener('resize', onResize);
     return () => {
       window.clearInterval(id);
@@ -193,7 +203,7 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
 
   const fsInfo = useMemo(() => fsStats(fs.root), [fs, fsVersion]);
   // storage only changes when something saves; once a second is plenty
-  const storage = useMemo(readStorage, [tick]);
+  const storage = useMemo(readStorage, [tick.n]);
 
   return useMemo(() => {
     const W = window.innerWidth;
@@ -206,15 +216,13 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       window.setTimeout(fn, 620);
     };
 
-    const live = windows
-      .filter((w) => !w.closing && !w.minimized && (w.workspace ?? 0) === activeWs)
-      .sort((a, b) => b.z - a.z);
+    const open = windows.filter((w) => !w.closing);
+    const live = open.filter((w) => !w.minimized && (w.workspace ?? 0) === activeWs).sort((a, b) => b.z - a.z);
     const focused = windows.find((w) => w.id === focusedId);
     const wallpaper = wallpaperFor(settings);
     const wallName = WALLPAPERS.find((w) => w.id === wallpaper)?.label ?? wallpaper;
     const boardOn = stacksOn(settings);
-    const now = new Date();
-    const clock = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !settings.clock24 });
+    const clock = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !settings.clock24 });
 
     const mem = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
     const nav = navigator as Navigator & { deviceMemory?: number; userAgentData?: { platform?: string } };
@@ -229,52 +237,57 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
         scheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
       },
       procs: [
-        { id: 'session', name: 'xfce4-session', note: 'one zustand store', state: 'daemon' },
-        { id: 'xfwm4', name: 'xfwm4', note: `${windows.length} window${windows.length === 1 ? '' : 's'}`, state: 'daemon' },
+        { id: 'session', name: 'xfce4-session', note: 'the store', state: 'daemon' },
+        { id: 'xfwm4', name: 'xfwm4', note: `${open.length} window${open.length === 1 ? '' : 's'}`, state: 'daemon' },
         { id: 'panel', name: 'xfce4-panel', note: 'top bar', state: 'daemon' },
-        { id: 'xfdesktop', name: 'xfdesktop', note: 'wallpaper and icons', state: 'daemon' },
+        { id: 'xfdesktop', name: 'xfdesktop', note: 'wallpaper, icons', state: 'daemon' },
         { id: 'notifyd', name: 'xfce4-notifyd', note: 'toasts', state: 'daemon' },
-        ...windows
-          .filter((w) => !w.closing)
-          .map<Proc>((w) => ({
-            id: w.id,
-            name: getApp(w.appId)?.title ?? w.title,
-            note: w.id,
-            state:
-              (w.workspace ?? 0) !== activeWs
-                ? 'elsewhere'
-                : w.minimized
-                  ? 'minimized'
-                  : w.id === focusedId
-                    ? 'focused'
-                    : 'running',
-          })),
+        ...open.map<Proc>((w) => ({
+          id: w.id,
+          name: getApp(w.appId)?.title ?? w.title,
+          note: w.id,
+          state: (w.workspace ?? 0) !== activeWs ? 'elsewhere' : w.minimized ? 'minimized' : w.id === focusedId ? 'focused' : 'running',
+        })),
       ],
       fs: fsInfo,
       storage,
-      machine: {
+      kernel: {
+        guest: GUEST.kernel,
+        guestMB: GUEST.memoryMB,
+        vmOpen: open.some((w) => w.appId === 'vm'),
+        psqlOpen: open.some((w) => w.appId === 'psql'),
+        heapMB: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null,
+        lagMs: Math.round(tick.lag),
+        routes: ROUTES.length,
+      },
+      hardware: {
         cores: navigator.hardwareConcurrency || null,
         memoryGB: nav.deviceMemory ?? null,
         platform: nav.userAgentData?.platform || navigator.platform || 'unknown',
-        vmOpen: windows.some((w) => w.appId === 'vm' && !w.closing),
-        heapMB: mem ? Math.round(mem.usedJSHeapSize / 1048576) : null,
       },
     };
 
-    const parts: Part[] = [];
+    /** the Stacks subjects behind a layer, with how much is on each */
+    const workOf = (ids: string[]) =>
+      ids.flatMap((id) => {
+        const subject = SUBJECTS.find((s) => s.id === id);
+        if (!subject) return [];
+        return [{ id, name: subject.name, cubes: board.stacks.find((s) => s.subject.id === id)?.cubes.length ?? 0 }];
+      });
 
-    parts.push({
+    type Draft = Omit<Part, 'links' | 'work' | 'anatomy'> & { anatomy?: Anatomy };
+    const drafts: Draft[] = [];
+
+    drafts.push({
       id: 'panel',
       kind: 'panel',
       group: 'surface',
       name: 'Panel',
-      role: 'xfce4-panel',
-      impl: 'A flex row of React components: menu, launchers, pager, task list, tray. src/os/desktop/Panel.tsx',
       facts: [
         ['Height', `${ph} px`],
         ['Clock', clock],
         ['Workspace', `${activeWs + 1} of ${WORKSPACE_COUNT}`],
-        ['Task buttons', String(windows.filter((w) => !w.closing).length)],
+        ['Task buttons', String(open.length)],
       ],
       rect: { x: 0, y: 0, w: W, h: ph },
       selector: '.kos-panel',
@@ -293,13 +306,13 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
           : w.snapped
             ? { x: w.snapped === 'left' ? 0 : Math.round(W / 2), y: ph, w: Math.round(W / 2), h: H - ph }
             : { x: w.x, y: w.y, w: w.width, h: w.height };
-        parts.push({
+        drafts.push({
           id: w.id,
           kind: 'window',
           group: 'surface',
           name: app?.title ?? w.title,
-          role: 'a window managed by xfwm4',
-          impl: `${app?.description ?? 'An app'}. A React component in a frame drawn by src/os/desktop/Window.tsx`,
+          appId: w.appId,
+          anatomy: windowAnatomy(w.appId),
           facts: [
             ['Window', w.id],
             ['Position', `${r.x}, ${r.y}`],
@@ -311,21 +324,19 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
           selector: `[data-window-id="${w.id}"]`,
           plate: null,
           drop: each,
-          action: { label: 'Reassemble and open', run: () => close(w.id) },
+          action: { label: 'Reassemble and open it', run: () => close(w.id) },
         });
       }
     } else {
-      parts.push({
+      drafts.push({
         id: 'nowindows',
         kind: 'nowindows',
         group: 'surface',
         name: 'Windows',
-        role: 'xfwm4, the window manager',
-        impl: 'Nothing is open, so the window manager has nothing to stack. Open an app and take the desktop apart again: each window becomes its own layer here.',
         facts: [
           ['Open here', '0'],
-          ['On other workspaces', String(windows.filter((w) => !w.closing && (w.workspace ?? 0) !== activeWs).length)],
-          ['Minimised', String(windows.filter((w) => !w.closing && w.minimized).length)],
+          ['On other workspaces', String(open.filter((w) => (w.workspace ?? 0) !== activeWs).length)],
+          ['Minimised', String(open.filter((w) => w.minimized).length)],
         ],
         rect: full,
         hits: [],
@@ -335,13 +346,11 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       });
     }
 
-    parts.push({
+    drafts.push({
       id: 'desk',
       kind: 'desk',
       group: 'surface',
       name: 'Icons and card',
-      role: 'xfdesktop icons and a conky widget',
-      impl: 'A CSS grid of launcher buttons and the introduction card, in one layer that sits under every window. src/os/desktop/Desktop.tsx',
       facts: [
         ['Launchers', String(desktopApps.length)],
         ['Signed in as', user],
@@ -358,13 +367,11 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
     });
 
     if (boardOn) {
-      parts.push({
+      drafts.push({
         id: 'board',
         kind: 'board',
         group: 'surface',
         name: 'Stacks board',
-        role: 'no Xfce twin: a live overlay',
-        impl: 'One canvas, redrawn only when the record behind it changes. src/os/desktop/stacks',
         facts: [
           ['Cubes', String(board.totals.cubes)],
           ['Stacks', String(board.totals.subjects)],
@@ -380,13 +387,11 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       });
     }
 
-    parts.push({
+    drafts.push({
       id: 'wall',
       kind: 'wall',
       group: 'surface',
       name: 'Wallpaper',
-      role: 'xfdesktop backdrop',
-      impl: 'A CSS background on one element, drifting a few pixels on a 20-second loop. app/globals.css',
       facts: [
         ['Wallpaper', wallName],
         ['Theme', settings.theme],
@@ -394,20 +399,18 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       ],
       rect: full,
       selector: '.kos-wall',
-      plate: null,
+      plate: 'glass',
       drop: 1,
       action: { label: 'Reassemble and change it', run: reassembleThen(() => launch('settings', { page: 'wallpaper' })) },
     });
 
-    /* ── under the glass ── */
+    /* ── under the wallpaper ── */
 
-    parts.push({
+    drafts.push({
       id: 'display',
       kind: 'display',
       group: 'under',
       name: 'Display',
-      role: 'Xorg and the framebuffer',
-      impl: 'Your browser tab. The desktop is ordinary HTML laid out to this viewport and composited by the browser, which is why it can be tilted and pulled apart at all.',
       facts: [
         ['Viewport', `${W} × ${H} px`],
         ['Device pixels', `${Math.round(W * under.display.dpr)} × ${Math.round(H * under.display.dpr)} (${under.display.dpr}×)`],
@@ -421,15 +424,13 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       action: { label: 'Reassemble and open display settings', run: reassembleThen(() => launch('settings', { page: 'appearance' })) },
     });
 
-    parts.push({
+    drafts.push({
       id: 'session',
       kind: 'session',
       group: 'under',
       name: 'Session',
-      role: 'xfce4-session, the process table',
-      impl: 'One zustand store holds every window, workspace and setting; each "process" is a mounted React component. src/os/store.ts',
       facts: [
-        ['Windows', `${windows.filter((w) => !w.closing).length} (${windows.filter((w) => w.minimized && !w.closing).length} minimised)`],
+        ['Windows', `${open.length} (${open.filter((w) => w.minimized).length} minimised)`],
         ['Focused', focused ? (getApp(focused.appId)?.title ?? focused.title) : 'the desktop'],
         ['Workspace', `${activeWs + 1} of ${WORKSPACE_COUNT}`],
         ['Tab open for', since(performance.now())],
@@ -441,19 +442,17 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       action: { label: 'Reassemble and open a terminal', run: reassembleThen(() => launch('terminal')) },
     });
 
-    parts.push({
+    drafts.push({
       id: 'fs',
       kind: 'fs',
       group: 'under',
       name: 'File system',
-      role: 'ext4 on /dev/sda1',
-      impl: 'A tree of plain objects in memory, shared by the terminal and the file manager. It is rebuilt on every load. src/os/fs',
       facts: [
-        ['Files', String(fsInfo.files)],
-        ['Directories', String(fsInfo.dirs)],
-        ['Size', kb(fsInfo.bytes)],
+        ['Files in the tree', `${fsInfo.files} in ${fsInfo.dirs} directories`],
+        ['Tree size', `${kb(fsInfo.bytes)}, rebuilt on every load`],
         ['Largest in ~', fsInfo.top[0] ? `${fsInfo.top[0].name} (${kb(fsInfo.top[0].bytes)})` : 'empty'],
-        ['Survives a reload', 'no'],
+        ['Kept in this browser', storage.ok ? `${storage.keys.length} key${storage.keys.length === 1 ? '' : 's'}, ${kb(storage.bytes)}` : 'storage is blocked'],
+        ['Sent to a server', 'none of it'],
       ],
       rect: full,
       plate: 'solid',
@@ -461,44 +460,53 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       action: { label: 'Reassemble and browse it', run: reassembleThen(() => launch('files')) },
     });
 
-    parts.push({
-      id: 'storage',
-      kind: 'storage',
+    drafts.push({
+      id: 'kernel',
+      kind: 'kernel',
       group: 'under',
-      name: 'Storage',
-      role: 'the disk',
-      impl: 'localStorage in this browser: your settings, and the Research library if you used it. None of it is sent to a server.',
-      facts: storage.ok
-        ? [
-            ['Keys', String(storage.keys.length)],
-            ['Total', kb(storage.bytes)],
-            ...storage.keys.slice(0, 3).map<[string, string]>((k) => [k.key, kb(k.bytes)]),
-            ['Leaves this browser', 'never'],
-          ]
-        : [['Storage', 'blocked in this browser, so nothing is kept']],
+      name: 'Kernel',
+      facts: [
+        ['Event-loop lag', `${under.kernel.lagMs} ms on the last tick`],
+        ['Page heap', under.kernel.heapMB !== null ? `${under.kernel.heapMB} MB` : 'not reported by this browser'],
+        ['Linux guest', under.kernel.vmOpen ? `${GUEST.kernel}, running in its window` : `${GUEST.kernel}, not booted`],
+        ['PostgreSQL', under.kernel.psqlOpen ? 'running in WebAssembly' : 'not started'],
+        ['Network routes', String(under.kernel.routes)],
+      ],
+      rect: full,
+      plate: 'solid',
+      drop: 1,
+      action: { label: 'Reassemble and boot the Linux VM', run: reassembleThen(() => launch('vm')) },
+    });
+
+    drafts.push({
+      id: 'hardware',
+      kind: 'hardware',
+      group: 'under',
+      name: 'Hardware',
+      facts: [
+        ['Logical cores', under.hardware.cores ? String(under.hardware.cores) : 'not reported'],
+        ['Memory', under.hardware.memoryGB ? `${under.hardware.memoryGB} GB or more (browsers round this)` : 'not reported'],
+        ['Platform', under.hardware.platform],
+        ['Screen', `${window.screen?.width ?? W} × ${window.screen?.height ?? H}`],
+      ],
       rect: full,
       plate: 'solid',
       drop: 1,
     });
 
-    parts.push({
-      id: 'machine',
-      kind: 'machine',
-      group: 'under',
-      name: 'Machine',
-      role: 'the hardware',
-      impl: `Your device, as far as a web page is allowed to see it. The Linux VM app boots a real ${GUEST.kernel} kernel on an x86 emulator inside this tab.`,
-      facts: [
-        ['Logical cores', under.machine.cores ? String(under.machine.cores) : 'not reported'],
-        ['Memory', under.machine.memoryGB ? `${under.machine.memoryGB} GB or more (browsers round this)` : 'not reported'],
-        ['Platform', under.machine.platform],
-        ['Page heap', under.machine.heapMB !== null ? `${under.machine.heapMB} MB` : 'not reported'],
-        ['Linux VM', under.machine.vmOpen ? `${GUEST.kernel}, ${GUEST.memoryMB} MB guest, window open` : 'not booted'],
-      ],
-      rect: full,
-      plate: 'solid',
-      drop: 1,
-      action: { label: 'Reassemble and boot the VM', run: reassembleThen(() => launch('vm')) },
+    // resolve each part's readings, its work, and the parts it depends on
+    const present = new Set(drafts.map((d) => d.id));
+    const parts: Part[] = drafts.map((d) => {
+      const anatomy = d.anatomy ?? LAYERS[d.kind as Exclude<LayerKind, 'window'>];
+      const seen = new Set<string>();
+      const links = anatomy.links.flatMap(([to, how]) => {
+        // a link to "the windows" lands on the placeholder when none is open
+        const id = to === 'nowindows' || to === 'window' ? 'nowindows' : to;
+        if (!present.has(id) || id === d.id || seen.has(id)) return [];
+        seen.add(id);
+        return [{ id, how }];
+      });
+      return { ...d, anatomy, links, work: workOf(anatomy.work) };
     });
 
     return { parts, under, W, H };
@@ -516,4 +524,17 @@ export function heights(parts: Part[]): { z: Map<string, number>; units: number 
   }
   // `drop` is the gap above the part below, so the top part's own drop is not height
   return { z, units: at - (parts[0]?.drop ?? 0) };
+}
+
+/** Everything a part is wired to, in both directions: what it depends on, and what depends on it. */
+export function wiring(parts: Part[], id: string): { id: string; how: string; dir: 'uses' | 'used by' }[] {
+  const part = parts.find((p) => p.id === id);
+  if (!part) return [];
+  const out: { id: string; how: string; dir: 'uses' | 'used by' }[] = part.links.map((l) => ({ ...l, dir: 'uses' }));
+  for (const p of parts) {
+    if (p.id === id) continue;
+    const back = p.links.find((l) => l.id === id);
+    if (back && !out.some((o) => o.id === p.id)) out.push({ id: p.id, how: back.how, dir: 'used by' });
+  }
+  return out;
 }
