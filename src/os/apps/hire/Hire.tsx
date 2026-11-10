@@ -8,8 +8,8 @@ import { DirectLinks, Process, Services, Status } from '@/hire/HireContent';
 import { downloadResumePdf } from '../terminal/commands/pdf';
 
 /**
- * Work with me — what I take on, and a brief builder that turns into an
- * email. The same content is served without the desktop at /hire.
+ * Work with me — what I take on, and a brief builder that is emailed to
+ * me. The same content is served without the desktop at /hire.
  *
  * Launch args: `engagement` preselects the kind of enquiry ('project',
  * 'consult', 'role', 'research').
@@ -71,7 +71,7 @@ export const hireApp: AppDefinition = {
   icon: '✉',
   category: 'Internet',
   component: HireApp,
-  description: 'What I take on, and a project brief that becomes an email',
+  description: 'What I take on, and a project brief that lands in my inbox',
   defaultSize: { width: 1040, height: 680 },
   minSize: { width: 380, height: 360 },
   desktop: true,

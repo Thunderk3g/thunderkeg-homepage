@@ -330,6 +330,8 @@ export const TIMELINES = ['As soon as possible', 'Within a month', 'In 1–3 mon
 export interface Brief {
   engagement: string;
   name: string;
+  /** where I reply; required to send from the site, unused by the mailto fallback */
+  email: string;
   company: string;
   services: string[];
   timeline: string;
@@ -357,10 +359,13 @@ export function briefText(b: Brief): string {
   return lines.filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n').trim();
 }
 
-export function briefMailto(b: Brief): string {
+export function briefSubject(b: Brief): string {
   const kind = hire.engagements.find((e) => e.id === b.engagement)?.label ?? 'Enquiry';
-  const subject = `${kind}${b.company ? ` — ${b.company}` : ''}`;
-  return `mailto:${profile.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(briefText(b))}`;
+  return `${kind}${b.company ? ` — ${b.company}` : ''}`;
+}
+
+export function briefMailto(b: Brief): string {
+  return `mailto:${profile.email}?subject=${encodeURIComponent(briefSubject(b))}&body=${encodeURIComponent(briefText(b))}`;
 }
 
 /* ───────────────────────── Derived helpers ───────────────────────── */
