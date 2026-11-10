@@ -1,6 +1,6 @@
 'use client';
 
-import type { GraphResponse, PapersResponse } from './types';
+import type { GraphResponse, PapersResponse, PdfCheck, RelatedResponse } from './types';
 
 /**
  * Browser-side wrappers. Everything goes through our own /api/research/*
@@ -46,8 +46,56 @@ export async function fetchGraph(id: string): Promise<GraphResponse> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as GraphResponse;
   } catch {
-    return { available: false, reason: 'unreachable', references: [], citations: [], recommendations: [] };
+    return { available: false, reason: 'unreachable', references: [], citations: [] };
   }
+}
+
+export async function fetchRelated(id: string): Promise<RelatedResponse> {
+  try {
+    const res = await fetch(`/api/research/related?id=${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as RelatedResponse;
+  } catch {
+    return { available: false, reason: 'unreachable', items: [] };
+  }
+}
+
+export type FacetLevel = 'off' | 'results' | 'all';
+
+/** Same-origin reader URLs (see app/api/research/pdf). */
+export function readerUrl(arxivId: string, format: 'pdf' | 'html', facets: FacetLevel = 'off'): string {
+  const qs = new URLSearchParams({ id: arxivId });
+  if (format === 'html') {
+    qs.set('format', 'html');
+    if (facets !== 'off') qs.set('facets', facets);
+  }
+  return `/api/research/pdf?${qs}`;
+}
+
+const checks = new Map<string, Promise<PdfCheck>>();
+/** Can the proxy serve this paper in this format? Memoised for the session; failures are retried. */
+export function checkReader(arxivId: string, format: 'pdf' | 'html'): Promise<PdfCheck> {
+  const k = `${format}:${arxivId}`;
+  let p = checks.get(k);
+  if (!p) {
+    p = fetch(`/api/research/pdf?${new URLSearchParams({ id: arxivId, format, check: '1' })}`)
+      .then(async (r) => {
+        const body = (await r.json().catch(() => ({}))) as Partial<PdfCheck>;
+        return {
+          ok: !!body.ok && r.ok,
+          format,
+          status: body.status ?? r.status,
+          bytes: body.bytes,
+          error: body.error ?? (r.ok ? undefined : `HTTP ${r.status}`),
+        };
+      })
+      .catch((e: unknown): PdfCheck => ({ ok: false, format, error: e instanceof Error ? e.message : String(e) }));
+    void p.then((r) => {
+      if (!r.ok) checks.delete(k);
+    });
+    checks.set(k, p);
+  }
+  return p;
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ResearchQuestion, ResearchState, Topic } from './types';
+import type { ResearchQuestion, ResearchState, StudyPrefs, Topic } from './types';
 
 export const SCHEMA_VERSION = 1;
 
@@ -456,12 +456,24 @@ export const TOPICS: Topic[] = [
   },
 ];
 
+export const DEFAULT_PREFS: StudyPrefs = {
+  budgets: { pass1: 10, pass2: 60, pass3: 180 },
+  weekly: { papers: 2, cards: 40 },
+  readMode: {},
+  splitPct: 58,
+  matrixCols: [],
+};
+
 export function seedState(): ResearchState {
   return {
     version: SCHEMA_VERSION,
     papers: [],
     cards: [],
     log: [],
+    highlights: [],
+    prefs: { ...DEFAULT_PREFS, budgets: { ...DEFAULT_PREFS.budgets }, weekly: { ...DEFAULT_PREFS.weekly }, readMode: {}, matrixCols: [] },
+    ratings: {},
+    activeDays: [],
     rqs: RQS.map((q) => ({ ...q, keywords: [...q.keywords] })),
     topics: TOPICS.map((t) => ({ ...t, keywords: [...t.keywords] })),
     topicSeenAt: {},

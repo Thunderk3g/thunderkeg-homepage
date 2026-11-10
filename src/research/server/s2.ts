@@ -1,12 +1,13 @@
-import type { GraphRef, GraphResponse } from '../types';
+import type { GraphRef, GraphResponse, RelatedResponse } from '../types';
 import { UPSTREAM_UA, UpstreamError } from './cache';
 
 /**
- * Semantic Scholar: citations, references, TLDR and recommendations.
+ * Semantic Scholar: citations, references and TLDR (s2Graph), and
+ * recommendations (s2Recommendations, a separate route so one 429 does not sink both).
  *
  * Optional by design. Anonymous traffic shares one global pool and the Graph
  * API routinely answers 429; a key (S2_API_KEY, server-only) is limited to
- * 1 request/second. So the four calls run one after another, a partial bundle
+ * 1 request/second. So the three calls run one after another, a partial bundle
  * is a normal result, and nothing here ever throws.
  */
 
@@ -53,7 +54,6 @@ export async function s2Graph(id: string): Promise<GraphResponse> {
     `${GRAPH}/${pid}?fields=title,year,venue,citationCount,referenceCount,tldr,externalIds`,
     `${GRAPH}/${pid}/references?fields=${REF_FIELDS}&limit=${LIMIT}`,
     `${GRAPH}/${pid}/citations?fields=${REF_FIELDS}&limit=${LIMIT}`,
-    `${RECS}/${pid}?fields=${REF_FIELDS}&limit=${LIMIT}`,
   ];
 
   // sequential: anonymous calls share a pool, keyed calls are capped at 1 rps
@@ -69,7 +69,7 @@ export async function s2Graph(id: string): Promise<GraphResponse> {
     settled.push(r);
   }
 
-  const [paperR, refsR, citesR, recsR] = settled;
+  const [paperR, refsR, citesR] = settled;
   const ok = <T>(r: PromiseSettledResult<unknown>) => (r.status === 'fulfilled' ? (r.value as T) : undefined);
 
   const p = ok<S2Paper>(paperR);
@@ -78,9 +78,6 @@ export async function s2Graph(id: string): Promise<GraphResponse> {
     .filter((x): x is GraphRef => !!x);
   const citations = (ok<{ data?: { citingPaper?: S2Paper }[] }>(citesR)?.data ?? [])
     .map((d) => toRef(d.citingPaper))
-    .filter((x): x is GraphRef => !!x);
-  const recommendations = (ok<{ recommendedPapers?: S2Paper[] }>(recsR)?.recommendedPapers ?? [])
-    .map(toRef)
     .filter((x): x is GraphRef => !!x);
 
   const statuses = settled.map((r) =>
@@ -94,7 +91,7 @@ export async function s2Graph(id: string): Promise<GraphResponse> {
         ? 'unreachable'
         : undefined;
 
-  const available = !!p?.title || references.length + citations.length + recommendations.length > 0;
+  const available = !!p?.title || references.length + citations.length > 0;
   if (!available && !reason) reason = 'unreachable';
   return {
     available,
@@ -112,6 +109,32 @@ export async function s2Graph(id: string): Promise<GraphResponse> {
       : undefined,
     references,
     citations,
-    recommendations,
   };
+}
+
+/**
+ * "Papers like this one" from the recommendations endpoint (SPECTER embeddings
+ * over the S2 corpus). One call; never throws.
+ */
+export async function s2Recommendations(id: string): Promise<RelatedResponse> {
+  const key = process.env.S2_API_KEY;
+  const headers: Record<string, string> = { 'user-agent': UPSTREAM_UA };
+  if (key) headers['x-api-key'] = key;
+  const url = `${RECS}/${encodeURIComponent(id)}?fields=title,year,venue,externalIds,citationCount&limit=10`;
+  try {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000), cache: 'no-store' });
+    if (res.status === 429) return { available: false, reason: 'rate-limited', items: [] };
+    if (res.status === 404) return { available: false, reason: 'not-found', items: [] };
+    if (!res.ok) return { available: false, reason: 'unreachable', items: [] };
+    const body = (await res.json()) as { recommendedPapers?: S2Paper[] };
+    const items = (body.recommendedPapers ?? [])
+      .map((p): (GraphRef & { venue?: string }) | null => {
+        const r = toRef(p);
+        return r ? { ...r, venue: p.venue || undefined } : null;
+      })
+      .filter((x): x is GraphRef & { venue?: string } => !!x);
+    return { available: true, items };
+  } catch {
+    return { available: false, reason: 'unreachable', items: [] };
+  }
 }

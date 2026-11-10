@@ -18,7 +18,7 @@
 
 import { useId, type ReactNode, type SVGProps } from 'react';
 import {
-  Accessibility, AppWindow, ArrowLeft, ArrowRight, ArrowUp, BatteryCharging, BatteryFull, BatteryLow,
+  Accessibility, AppWindow, BookOpen, CodeXml, Wrench, ArrowLeft, ArrowRight, ArrowUp, BatteryCharging, BatteryFull, BatteryLow,
   BatteryMedium, Bell, Calendar, ChevronRight, Clipboard, Columns2, Copy, Cpu, EyeOff, FolderOpen, FolderPlus,
   Globe, Grid3x3, History, Image, Info, Keyboard, LayoutGrid, List, Lock, LogOut, Minus, Monitor, MonitorUp,
   Music2, Network, PanelTop, Power, RotateCcw, Search, Settings, Shield, Square, SquareTerminal, Star, Users, Volume2,
@@ -157,7 +157,7 @@ const GLYPHS: Record<string, Plate> = {
       </>
     ),
   },
-  editor: {
+  'text-editor': {
     from: '#8fc1ff', to: '#3f78d8',
     glyph: (
       <>
@@ -229,133 +229,6 @@ const GLYPHS: Record<string, Plate> = {
       <>
         <path {...S} d={KALI_MARK_PATH} />
         <circle {...F} cx="17.2" cy="7.1" r="0.9" />
-      </>
-    ),
-  },
-  msfconsole: {
-    from: '#3b6fd6', to: '#1b2c66',
-    glyph: (
-      <>
-        <path {...S} d="M12 3.8 L19 6.4 V11.6 C19 15.8 16 18.8 12 20.2 C8 18.8 5 15.8 5 11.6 V6.4 Z" />
-        <circle {...S} cx="12" cy="12" r="3" />
-        <path {...S} d="M12 7 V9 M12 15 V17 M7 12 H9 M15 12 H17" />
-      </>
-    ),
-  },
-  nmap: {
-    from: '#2bb3a3', to: '#14536e',
-    glyph: (
-      <>
-        <circle {...S} cx="12" cy="6" r="2.2" />
-        <circle {...S} cx="6" cy="17" r="2.2" />
-        <circle {...S} cx="18" cy="17" r="2.2" />
-        <path {...S} d="M10.9 7.9 L7.1 15.1 M13.1 7.9 L16.9 15.1 M8.2 17 H15.8" />
-      </>
-    ),
-  },
-  sqlmap: {
-    from: '#4c9aff', to: '#2840a8',
-    glyph: (
-      <>
-        <ellipse {...S} cx="10" cy="6.5" rx="5.5" ry="2.3" />
-        <path {...S} d="M4.5 6.5 V16.5 C4.5 17.8 7 18.8 10 18.8 M15.5 6.5 V10.5 M4.5 11.5 C4.5 12.8 7 13.8 10 13.8" />
-        <path {...S} d="M13.5 19.5 L19.5 13.5 M17.5 12.5 L20.5 15.5 M14.5 16.5 L16.5 18.5" />
-      </>
-    ),
-  },
-  wireshark: {
-    from: '#3a8ee6', to: '#16397a',
-    glyph: (
-      <>
-        <path {...S} d="M8 14 L13.5 5 C14.2 8.5 15.8 11.4 18 14" />
-        <path {...S} d="M3.5 17 C5.5 15.4 7.5 15.4 9.5 17 S13.5 18.6 15.5 17 S19.5 15.4 20.5 16.2" />
-      </>
-    ),
-  },
-  john: {
-    from: '#f0b429', to: '#b06a10',
-    glyph: (
-      <>
-        <rect {...S} x="5.5" y="10.5" width="13" height="9.5" rx="2" />
-        <path {...S} d="M8.5 10.5 V7.5 A3.5 3.5 0 0 1 15.3 6.4" />
-        <path {...S} d="M12 14 V16.5" />
-      </>
-    ),
-  },
-  hashcat: {
-    from: '#6a5cff', to: '#2d1f8a',
-    glyph: (
-      <>
-        <path {...S} d="M6 7.5 L8.2 4.5 L10 7 M14 7 L15.8 4.5 L18 7.5" />
-        <path {...S} d="M10 9.5 L8.8 19 M15.2 9.5 L14 19 M6.5 12.5 H18 M6 16 H17.5" />
-      </>
-    ),
-  },
-  aircrack: {
-    from: '#2ec4ff', to: '#1665c1',
-    glyph: (
-      <>
-        <path {...S} d="M4 9.5 A11 11 0 0 1 20 9.5 M7 12.6 A6.8 6.8 0 0 1 17 12.6 M10 15.6 A2.6 2.6 0 0 1 14 15.6" />
-        <circle {...F} cx="12" cy="18.6" r="1.3" />
-      </>
-    ),
-  },
-  hydra: {
-    from: '#43c26b', to: '#1a6b3a',
-    glyph: (
-      <>
-        <path {...S} d="M12 20 V13 M12 13 C12 10 7 10.5 6 7 M12 13 V6.5 M12 13 C12 10 17 10.5 18 7" />
-        <circle {...S} cx="6" cy="5.5" r="1.6" />
-        <circle {...S} cx="12" cy="4.8" r="1.6" />
-        <circle {...S} cx="18" cy="5.5" r="1.6" />
-      </>
-    ),
-  },
-  nikto: {
-    from: '#9a6cff', to: '#4a2a9c',
-    glyph: (
-      <>
-        <ellipse {...S} cx="12" cy="13" rx="3.4" ry="4.4" />
-        <circle {...S} cx="12" cy="6.8" r="1.8" />
-        <path {...S} d="M8.6 11 L4.5 9 M8.6 14 L4 14 M8.8 16.4 L5 19 M15.4 11 L19.5 9 M15.4 14 L20 14 M15.2 16.4 L19 19" />
-      </>
-    ),
-  },
-  gobuster: {
-    from: '#ffa74f', to: '#c2511f',
-    glyph: (
-      <>
-        <path {...S} d="M4 7.5 A1.5 1.5 0 0 1 5.5 6 H9.5 L11.5 8 H17 A1.5 1.5 0 0 1 18.5 9.5 V10.5 M11 18 H5.5 A1.5 1.5 0 0 1 4 16.5 Z" />
-        <circle {...S} cx="15.5" cy="15" r="3.2" />
-        <path {...S} d="M17.9 17.4 L20.2 19.7" />
-      </>
-    ),
-  },
-  burpsuite: {
-    from: '#ff8a3d', to: '#d0451a',
-    glyph: (
-      <>
-        <path {...S} d="M4 9 H17 M14 5.5 L17.5 9 L14 12.5" />
-        <path {...S} d="M20 15 H7 M10 11.5 L6.5 15 L10 18.5" />
-      </>
-    ),
-  },
-  whois: {
-    from: '#47b8ff', to: '#2457b8',
-    glyph: (
-      <>
-        <rect {...S} x="3.8" y="5.5" width="16.4" height="13" rx="2" />
-        <circle {...S} cx="9" cy="11" r="2" />
-        <path {...S} d="M6 16 C6.6 14.2 11.4 14.2 12 16 M14 10 H17.5 M14 13 H17" />
-      </>
-    ),
-  },
-  recon: {
-    from: '#5c7cff', to: '#22308f',
-    glyph: (
-      <>
-        <path {...S} d="M8 12.5 L5 9.5 L9.5 5 L12.5 8 Z M14 13.5 L11.5 16 M10.5 10 L14 13.5 L19 11.5 L12.5 5 L10.5 10" />
-        <path {...S} d="M7 19.5 A3 3 0 0 1 4.5 17 M8.5 22 A6 6 0 0 1 2 15.5" transform="translate(1,-2)" />
       </>
     ),
   },
@@ -491,7 +364,6 @@ const SYS: Record<string, LucideIcon> = {
   split: Columns2,
   info: Info,
   terminal: SquareTerminal,
-  users: Users,
   bell: Bell,
   star: Star,
   history: History,
@@ -510,6 +382,9 @@ const SYS: Record<string, LucideIcon> = {
   a11y: Accessibility,
   panel: PanelTop,
   shield: Shield,
+  book: BookOpen,
+  code: CodeXml,
+  tools: Wrench,
 };
 
 export type SysIconName = keyof typeof SYS;

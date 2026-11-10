@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Entry } from '@/content/writing';
-import { SCHEMA_VERSION, seedState } from './seed';
+import { DEFAULT_PREFS, SCHEMA_VERSION, seedState } from './seed';
 import { isoDay, nextDue } from './schedule';
 import { bibKey } from './bibtex';
 import { relevance } from './rank';
@@ -12,11 +12,15 @@ import type {
   Card,
   FiveCs,
   Grade,
+  Highlight,
   Paper,
   PaperHit,
   PaperNote,
+  Rating,
+  ReadMode,
   ReadStatus,
   ResearchState,
+  StudyPrefs,
   Topic,
 } from './types';
 
@@ -31,6 +35,7 @@ import type {
 
 const KEY = 'kos:research';
 const LOG_CAP = 1000;
+const DAYS_CAP = 400;
 
 const now = () => new Date().toISOString();
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
@@ -48,6 +53,11 @@ export const emptyNote = (): PaperNote => ({
 
 export type NotePatch = Partial<Omit<PaperNote, 'fiveCs'>> & { fiveCs?: Partial<FiveCs> };
 export type NewCard = Pick<Card, 'paperId' | 'prompt' | 'answer' | 'origin'> & Partial<Pick<Card, 'elaboration' | 'rqIds'>>;
+export type NewHighlight = Pick<Highlight, 'paperId' | 'text'> & Partial<Pick<Highlight, 'where' | 'why'>>;
+
+/** Mark today as a study day (for the streak strip). */
+const touched = (days: string[], day = isoDay()): string[] =>
+  days.includes(day) ? days : [...days, day].sort().slice(-DAYS_CAP);
 
 interface Actions {
   /** idempotent by id; returns the paper id */
@@ -57,6 +67,20 @@ interface Actions {
   patchNote: (id: string, patch: NotePatch) => void;
   setTags: (id: string, tags: string[]) => void;
   toggleRq: (id: string, rqId: string) => void;
+  /** metadata only (citation count, venue…); notes go through patchNote */
+  patchPaper: (id: string, patch: Partial<Pick<Paper, 'citationCount' | 'venue' | 'doi'>>) => void;
+
+  addHighlight: (h: NewHighlight) => string;
+  patchHighlight: (id: string, patch: Partial<Omit<Highlight, 'id' | 'paperId'>>) => void;
+  deleteHighlight: (id: string) => void;
+
+  setReadMode: (paperId: string, mode: ReadMode) => void;
+  /** null clears the rating */
+  rate: (paperId: string, r: Rating | null, keywords?: string[]) => void;
+  addMatrixCol: (name: string) => void;
+  removeMatrixCol: (name: string) => void;
+  setExtra: (paperId: string, col: string, value: string) => void;
+  setPrefs: (patch: Partial<Omit<StudyPrefs, 'readMode'>>) => void;
 
   addCard: (c: NewCard) => string;
   patchCard: (id: string, patch: Partial<Card>) => void;
@@ -85,6 +109,10 @@ const dataOf = (s: ResearchState): ResearchState => ({
   papers: s.papers,
   cards: s.cards,
   log: s.log,
+  highlights: s.highlights,
+  prefs: s.prefs,
+  activeDays: s.activeDays,
+  ratings: s.ratings,
   rqs: s.rqs,
   topics: s.topics,
   topicSeenAt: s.topicSeenAt,
@@ -121,7 +149,8 @@ function paperFromEntry(e: Entry, s: ResearchState, taken: Set<string>): Paper {
     ...hit,
     savedAt: now(),
     status,
-    statusChangedAt: now(),
+    // the note's own date, so a seeded "read" paper does not count as finished this week
+    statusChangedAt: /^\d{4}-\d{2}-\d{2}/.test(e.date) ? new Date(`${e.date.slice(0, 10)}T12:00:00Z`).toISOString() : now(),
     tags: e.tags,
     rqIds,
     note: { ...emptyNote(), freeform: e.body },
@@ -183,16 +212,22 @@ export const useResearch = create<ResearchStore>()(
       removePaper: (id) =>
         set((s) => {
           const gone = new Set(s.cards.filter((c) => c.paperId === id).map((c) => c.id));
+          const { [id]: _drop, ...readMode } = s.prefs.readMode;
           return {
             papers: s.papers.filter((p) => p.id !== id),
             cards: s.cards.filter((c) => !gone.has(c.id)),
             log: s.log.filter((l) => !gone.has(l.cardId)),
+            highlights: s.highlights.filter((h) => h.paperId !== id),
+            prefs: { ...s.prefs, readMode },
           };
         }),
 
       setStatus: (id, status) =>
         set((s) => ({
-          papers: s.papers.map((p) => (p.id === id ? { ...p, status, statusChangedAt: now() } : p)),
+          papers: s.papers.map((p) =>
+            p.id === id && p.status !== status ? { ...p, status, statusChangedAt: now() } : p,
+          ),
+          activeDays: touched(s.activeDays),
         })),
 
       patchNote: (id, patch) =>
@@ -202,6 +237,66 @@ export const useResearch = create<ResearchStore>()(
               ? p
               : { ...p, note: { ...p.note, ...patch, fiveCs: { ...p.note.fiveCs, ...(patch.fiveCs ?? {}) } } },
           ),
+          activeDays: touched(s.activeDays),
+        })),
+
+      patchPaper: (id, patch) =>
+        set((s) => ({ papers: s.papers.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
+
+      addHighlight: (h) => {
+        const id = uid('hl');
+        const hl: Highlight = {
+          id,
+          paperId: h.paperId,
+          text: h.text.trim(),
+          where: h.where?.trim() || undefined,
+          why: h.why?.trim() || undefined,
+          createdAt: now(),
+        };
+        set((s) => ({ highlights: [...s.highlights, hl], activeDays: touched(s.activeDays) }));
+        return id;
+      },
+
+      patchHighlight: (id, patch) =>
+        set((s) => ({ highlights: s.highlights.map((h) => (h.id === id ? { ...h, ...patch, id: h.id } : h)) })),
+
+      deleteHighlight: (id) => set((s) => ({ highlights: s.highlights.filter((h) => h.id !== id) })),
+
+      setReadMode: (paperId, mode) =>
+        set((s) => {
+          if ((s.prefs.readMode[paperId] ?? 'off') === mode) return {};
+          return { prefs: { ...s.prefs, readMode: { ...s.prefs.readMode, [paperId]: mode } } };
+        }),
+
+      rate: (paperId, r, keywords = []) =>
+        set((s) => {
+          const { [paperId]: _old, ...rest } = s.ratings;
+          return { ratings: r === null ? rest : { ...rest, [paperId]: { r, keywords: keywords.slice(0, 20) } } };
+        }),
+
+      addMatrixCol: (name) =>
+        set((s) => {
+          const n = name.trim().slice(0, 40);
+          if (!n || s.prefs.matrixCols.some((c) => c.toLowerCase() === n.toLowerCase())) return {};
+          return { prefs: { ...s.prefs, matrixCols: [...s.prefs.matrixCols, n] } };
+        }),
+
+      removeMatrixCol: (name) =>
+        set((s) => ({ prefs: { ...s.prefs, matrixCols: s.prefs.matrixCols.filter((c) => c !== name) } })),
+
+      setExtra: (paperId, col, value) =>
+        set((s) => ({
+          papers: s.papers.map((p) => (p.id === paperId ? { ...p, extra: { ...(p.extra ?? {}), [col]: value } } : p)),
+        })),
+
+      setPrefs: (patch) =>
+        set((s) => ({
+          prefs: {
+            ...s.prefs,
+            ...patch,
+            budgets: { ...s.prefs.budgets, ...(patch.budgets ?? {}) },
+            weekly: { ...s.prefs.weekly, ...(patch.weekly ?? {}) },
+          },
         })),
 
       setTags: (id, tags) =>
@@ -234,14 +329,18 @@ export const useResearch = create<ResearchStore>()(
           reps: 0,
           lapses: 0,
         };
-        set((s) => ({ cards: [...s.cards, card] }));
+        set((s) => ({ cards: [...s.cards, card], activeDays: touched(s.activeDays) }));
         return id;
       },
 
       patchCard: (id, patch) =>
         set((s) => ({ cards: s.cards.map((c) => (c.id === id ? { ...c, ...patch, id: c.id } : c)) })),
 
-      deleteCard: (id) => set((s) => ({ cards: s.cards.filter((c) => c.id !== id) })),
+      deleteCard: (id) =>
+        set((s) => ({
+          cards: s.cards.filter((c) => c.id !== id),
+          highlights: s.highlights.map((h) => (h.cardId === id ? { ...h, cardId: undefined } : h)),
+        })),
 
       review: (cardId, grade, typedRecall) =>
         set((s) => {
@@ -251,6 +350,7 @@ export const useResearch = create<ResearchStore>()(
           return {
             cards: s.cards.map((c) => (c.id === cardId ? { ...c, ...next } : c)),
             log: [...s.log, { cardId, date: now(), grade, typedRecall }].slice(-LOG_CAP),
+            activeDays: touched(s.activeDays),
           };
         }),
 
@@ -297,6 +397,10 @@ export const useResearch = create<ResearchStore>()(
           set({
             ...seed,
             ...parsed,
+            highlights: Array.isArray(parsed.highlights) ? parsed.highlights : [],
+            activeDays: Array.isArray(parsed.activeDays) ? parsed.activeDays : [],
+            ratings: parsed.ratings ?? {},
+            prefs: mergePrefs(parsed.prefs),
             rqs: unionById(parsed.rqs ?? [], seed.rqs),
             topics: mergeTopics(parsed.topics ?? [], seed.topics),
             version: SCHEMA_VERSION,
@@ -334,6 +438,11 @@ export const useResearch = create<ResearchStore>()(
         return {
           ...current,
           ...p,
+          // fields added after the first release default for older stored state
+          highlights: p.highlights ?? [],
+          activeDays: p.activeDays ?? [],
+          ratings: p.ratings ?? {},
+          prefs: mergePrefs(p.prefs),
           rqs: unionById(p.rqs ?? [], current.rqs),
           topics: mergeTopics(p.topics ?? [], current.topics),
         };
@@ -341,6 +450,17 @@ export const useResearch = create<ResearchStore>()(
     },
   ),
 );
+
+function mergePrefs(p: Partial<StudyPrefs> | undefined): StudyPrefs {
+  return {
+    ...DEFAULT_PREFS,
+    ...(p ?? {}),
+    budgets: { ...DEFAULT_PREFS.budgets, ...(p?.budgets ?? {}) },
+    weekly: { ...DEFAULT_PREFS.weekly, ...(p?.weekly ?? {}) },
+    readMode: { ...(p?.readMode ?? {}) },
+    matrixCols: [...(p?.matrixCols ?? [])],
+  };
+}
 
 function unionById<T extends { id: string }>(stored: T[], seed: T[]): T[] {
   const ids = new Set(stored.map((x) => x.id));

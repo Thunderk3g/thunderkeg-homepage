@@ -44,7 +44,7 @@ const helpCommand: Command = {
       out.push(`  ${cat}:`);
       out.push('    ' + names.sort().join('  '));
     }
-    out.push('', 'Tip: Tab completes · ↑/↓ history · launch apps: firefox, thunar, games, msfconsole');
+    out.push('', 'Tip: Tab completes · ↑/↓ history · launch apps: firefox, thunar, nano, psql, vm');
     return out.join('\n');
   },
   complete: ({ args }) => allCommands.map((c) => c.name).filter((n) => n.startsWith(args[0] ?? '')),

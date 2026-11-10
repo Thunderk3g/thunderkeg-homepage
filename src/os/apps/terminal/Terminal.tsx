@@ -16,7 +16,7 @@ interface Block {
 const WELCOME = [
   'Kali GNU/Linux Rolling — web edition',
   'Portfolio of Diwakar Adhikari · Technical Lead, AI Engineering',
-  "Type 'help' for commands, 'neofetch' for system info, or 'games' to play.",
+  "Type 'help' for commands, 'research' for the paper desk, 'psql' for PostgreSQL or 'vm' for a real Linux VM.",
   '',
 ].join('\n');
 

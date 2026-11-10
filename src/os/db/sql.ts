@@ -1,7 +1,7 @@
 import { getDb } from './workspace';
 
 /**
- * Shared SQL runner for the psql app, the terminal `psql -c` and msfconsole:
+ * Shared SQL runner for the psql app and the terminal `psql -c`:
  * psql meta-commands (\dt, \d, \l, \?, \timing) are translated to catalog
  * queries; everything else goes straight to PostgreSQL.
  */

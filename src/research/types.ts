@@ -29,6 +29,8 @@ export interface PaperHit {
   upvotes?: number;
   aiSummary?: string;
   venue?: string;
+  /** from Semantic Scholar, filled in when the Connections panel loads */
+  citationCount?: number;
 }
 
 /** Keshav's three passes, plus the two ways a paper leaves the queue. */
@@ -86,6 +88,8 @@ export interface Paper extends PaperHit {
   bibKey: string;
   evidenceLoggedAt?: string;
   contentSlug?: string;
+  /** values of his custom literature-matrix columns, by column name */
+  extra?: Record<string, string>;
 }
 
 export interface ResearchQuestion {
@@ -135,12 +139,53 @@ export interface ReviewLog {
   typedRecall: boolean;
 }
 
+/**
+ * A sentence he pasted from the paper while reading. The PDF iframe cannot
+ * share its selection with the page, so highlights are typed or pasted.
+ */
+export interface Highlight {
+  id: string;
+  paperId: string;
+  text: string;
+  /** "p. 4", "§3.2", "Table 2" — free text */
+  where?: string;
+  why?: string;
+  createdAt: string;
+  /** the recall card made from it, if any */
+  cardId?: string;
+}
+
+/** Read mode layout, remembered per paper. 'off' is the normal detail view. */
+export type ReadMode = 'off' | 'split' | 'reader' | 'notes';
+
+export type Pass = 'pass1' | 'pass2' | 'pass3';
+
+export interface StudyPrefs {
+  /** minutes per pass (Keshav: 5–10 min, ≤1 h, 4–5 h for a beginner) */
+  budgets: Record<Pass, number>;
+  weekly: { papers: number; cards: number };
+  readMode: Record<string, ReadMode>;
+  /** reader pane width in split mode, percent of the detail width */
+  splitPct: number;
+  /** custom literature-matrix columns ("dataset", "baseline", …) */
+  matrixCols: string[];
+}
+
+/** Explicit feedback on a feed item: +1 more like this, -1 not relevant (hidden). */
+export type Rating = 1 | -1;
+
 export interface ResearchState {
   version: 1;
   papers: Paper[];
   cards: Card[];
   /** capped at 1000 */
   log: ReviewLog[];
+  highlights: Highlight[];
+  prefs: StudyPrefs;
+  /** feed ratings by paper id; the rated papers' keywords nudge ranking */
+  ratings: Record<string, { r: Rating; keywords: string[] }>;
+  /** YYYY-MM-DD days with any study activity (status change, note, card, review); capped */
+  activeDays: string[];
   rqs: ResearchQuestion[];
   topics: Topic[];
   /** topicId → newest `published` seen */
@@ -182,5 +227,20 @@ export interface GraphResponse {
   };
   references: GraphRef[];
   citations: GraphRef[];
-  recommendations: GraphRef[];
+}
+
+/** Shape of /api/research/related (Semantic Scholar recommendations). */
+export interface RelatedResponse {
+  available: boolean;
+  reason?: 'rate-limited' | 'not-found' | 'unreachable';
+  items: (GraphRef & { venue?: string })[];
+}
+
+/** Shape of /api/research/pdf?check=1. */
+export interface PdfCheck {
+  ok: boolean;
+  format: 'pdf' | 'html';
+  status?: number;
+  bytes?: number;
+  error?: string;
 }

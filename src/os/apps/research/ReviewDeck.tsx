@@ -48,19 +48,36 @@ export function ReviewDeck({ onOpenPaper }: { onOpenPaper: (id: string) => void 
     setRevealed(false);
   };
 
-  // 1–4 grade once the answer is showing
-  useEffect(() => {
-    if (!revealed) return;
-    const onKey = (e: KeyboardEvent) => {
+  /**
+   * Scoped to this deck (not window), so other windows keep their keys.
+   * Space reveals — from anywhere in the deck, or in the recall box while it is
+   * still empty; 1–4 grade once the answer shows (the recall box is read-only then).
+   */
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || !card) return;
+    const t = e.target as HTMLElement;
+    const inRecall = t instanceof HTMLTextAreaElement;
+    const editable = inRecall ? !(t as HTMLTextAreaElement).readOnly : t instanceof HTMLInputElement;
+    if (!revealed && e.key === ' ' && (!editable || (inRecall && typed.length === 0))) {
+      e.preventDefault();
+      setRevealed(true);
+      return;
+    }
+    if (revealed && !editable) {
       const g = GRADES.find((x) => x.key === e.key);
-      if (g && !(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) {
+      if (g) {
         e.preventDefault();
+        e.stopPropagation();
         grade(g.grade);
       }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
+    }
+  };
+
+  // after a reveal the deck itself holds focus, so 1–4 work without a click
+  const deckRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (revealed) deckRef.current?.focus({ preventScroll: true });
+  }, [revealed]);
 
   useEffect(() => {
     if (!revealed && card) inputRef.current?.focus({ preventScroll: true });
@@ -86,7 +103,7 @@ export function ReviewDeck({ onOpenPaper }: { onOpenPaper: (id: string) => void 
   const nextDue = scheduled.map((c) => c.due).filter((d) => d > today).sort()[0];
 
   return (
-    <div className="rsx-review">
+    <div className="rsx-review" ref={deckRef} tabIndex={-1} onKeyDown={onKeyDown} data-testid="rsx-review">
       {!done && card ? (
         <div className="rsx-card-face">
           <p className="rsx-review-count">
@@ -116,7 +133,7 @@ export function ReviewDeck({ onOpenPaper }: { onOpenPaper: (id: string) => void 
           />
           {!revealed ? (
             <button className="lrn-btn primary big" onClick={() => setRevealed(true)}>
-              Reveal <span className="lrn-dim">(Enter)</span>
+              Reveal <span className="lrn-dim">(Enter / Space)</span>
             </button>
           ) : (
             <>

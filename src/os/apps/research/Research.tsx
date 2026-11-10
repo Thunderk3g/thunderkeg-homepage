@@ -7,11 +7,13 @@ import { TRACKS, isTrackId, trackFromWord, trackOf, type TrackId } from '@/resea
 import { Brief } from './Brief';
 import { Feed } from './Feed';
 import { News } from './News';
-import { Library } from './Library';
+import { Library, type LibraryFilter, type LibraryView } from './Library';
+import { Today } from './Today';
+import './research.css';
 import { ReviewDeck } from './ReviewDeck';
 import { Search } from './Search';
 
-type Tab = 'search' | 'brief' | 'feed' | 'news' | 'library' | 'review';
+type Tab = 'search' | 'brief' | 'today' | 'feed' | 'news' | 'library' | 'review';
 
 const TRACK_KEY = 'kos:research:track';
 
@@ -55,6 +57,8 @@ function ResearchApp({ args }: AppProps) {
   const [track, setTrackState] = useState<TrackId>('core');
   const [tab, setTab] = useState<Tab>('brief');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [libView, setLibView] = useState<LibraryView>('list');
+  const [libFilter, setLibFilter] = useState<LibraryFilter | null>(null);
   /** the submitted goal search, and the text being typed */
   const [query, setQuery] = useState('');
   const [text, setText] = useState('');
@@ -80,7 +84,8 @@ function ResearchApp({ args }: AppProps) {
     if (typeof args.paperId === 'string') {
       setOpenId(args.paperId);
       setTab('library');
-    } else if (arg === 'review' || arg === 'library' || arg === 'news' || arg === 'brief') setTab(arg);
+    } else if (arg === 'review' || arg === 'library' || arg === 'news' || arg === 'brief' || arg === 'today') setTab(arg);
+    else if (arg === 'radar' || arg === 'ainews') setTab('news');
     else if (named) setTab('brief');
     else if (arg) {
       setText(arg);
@@ -91,6 +96,7 @@ function ResearchApp({ args }: AppProps) {
 
   const openPaper = (id: string) => {
     setOpenId(id);
+    setLibView('list');
     setTab('library');
   };
 
@@ -103,6 +109,7 @@ function ResearchApp({ args }: AppProps) {
   const tabs: { id: Tab; label: string }[] = [
     ...(query ? [{ id: 'search' as Tab, label: '⌕ Results' }] : []),
     { id: 'brief', label: '✦ Brief' },
+    { id: 'today', label: 'Today' },
     { id: 'feed', label: 'Papers' },
     { id: 'news', label: 'News' },
     { id: 'library', label: `Library (${c.papers})` },
@@ -183,12 +190,24 @@ function ResearchApp({ args }: AppProps) {
           <Search key={query} q={query} onOpenPaper={openPaper} onOpenTopic={openTopic} />
         ) : tab === 'brief' ? (
           <Brief key={track} track={track} onOpenPaper={openPaper} onShowNews={() => setTab('news')} />
+        ) : tab === 'today' ? (
+          <Today
+            onReview={() => setTab('review')}
+            onRead={openPaper}
+            onFeed={() => setTab('feed')}
+            onLibrary={(f) => {
+              setLibFilter({ ...f, nonce: Date.now() });
+              setOpenId(null);
+              setLibView('list');
+              setTab('library');
+            }}
+          />
         ) : tab === 'feed' ? (
           <Feed key={track + (topicId ?? '')} track={track} initialTopic={topicId} onOpenPaper={openPaper} />
         ) : tab === 'news' ? (
           <News key={track} track={track} />
         ) : tab === 'library' ? (
-          <Library openId={openId} onOpen={setOpenId} />
+          <Library openId={openId} onOpen={setOpenId} view={libView} onView={setLibView} filter={libFilter} />
         ) : (
           <ReviewDeck onOpenPaper={openPaper} />
         )}

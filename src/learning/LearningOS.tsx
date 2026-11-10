@@ -8,12 +8,15 @@ import { BuildPanel } from './panels/Build';
 import { PrepPanel } from './panels/Prep';
 import { CoachPanel } from './panels/Coach';
 import { ReviewPanel } from './panels/Review';
+import { BenchmarkPanel } from './panels/Benchmark';
+import './learning.css';
 import { Card, Independence, StateBadge, fmtDate } from './ui';
 
-type Tab = 'dashboard' | 'skills' | 'build' | 'prep' | 'coach' | 'review';
+type Tab = 'dashboard' | 'benchmark' | 'skills' | 'build' | 'prep' | 'coach' | 'review';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'benchmark', label: 'Role benchmark' },
   { id: 'skills', label: 'Skills & queue' },
   { id: 'build', label: 'Projects & evidence' },
   { id: 'prep', label: 'Interview & reading' },
@@ -44,10 +47,15 @@ function Dashboard({ go }: { go: (t: Tab) => void }) {
   return (
     <div className="lrn-grid">
       <Card title="North star" wide>
-        <p className="lrn-northstar">{state.target.northStar}</p>
+        <p className={'lrn-northstar' + (state.target.northStar.length > 48 ? ' long' : '')}>
+          {state.target.northStar}
+        </p>
         <p className="lrn-spike">Deep spike — {state.target.spike}</p>
         <p className="lrn-note">{state.target.notes}</p>
         <p className="lrn-note">Target teams: {state.target.companies.join(' · ')}</p>
+        <button className="lrn-btn tiny" onClick={() => go('benchmark')}>
+          Role benchmark →
+        </button>
       </Card>
 
       <Card title="Current bottleneck" hint="unblocked, highest priority">

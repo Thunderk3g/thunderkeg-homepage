@@ -1,13 +1,17 @@
 import type { Command } from '../../../types';
-import { DATA_DIR, getDb, getDbStatus } from '../../../db/workspace';
+import { getDb } from '../../../db/workspace';
+import { mirrorSettled, startResearchMirror } from '../../../db/mirror';
 import { cellText, errorText, formatTable, runInput, type SqlError } from '../../../db/sql';
 
-/* psql / msfdb / pg_dump against the real in-browser PostgreSQL (PGlite). */
+/* psql / pg_dump against the real in-browser PostgreSQL (PGlite): the research workspace. */
 
 const FLAGS_WITH_VALUE = new Set(['-d', '-U', '-h', '-p', '--dbname', '--username', '--host', '--port']);
 
 async function runAndFormat(sql: string): Promise<string> {
   try {
+    startResearchMirror();
+    await getDb();
+    await mirrorSettled();
     const r = await runInput(sql);
     if (r.text) return r.text;
     return r.results.map(formatTable).join('\n\n');
@@ -48,57 +52,6 @@ async function version(): Promise<string> {
   const r = await db.query<{ v: string }>(`select substring(version() from 'PostgreSQL [0-9.]+') as v`);
   return r.rows[0]?.v ?? 'PostgreSQL';
 }
-
-const msfdb: Command = {
-  name: 'msfdb',
-  summary: 'manage the Metasploit workspace database (real PostgreSQL via PGlite)',
-  usage: 'msfdb status|init|run',
-  category: 'database',
-  run: async ({ args, shell }) => {
-    const sub = args[0] ?? 'status';
-    if (sub === 'run' || sub === 'console') {
-      shell.launch('psql');
-      return '[+] Starting database\n[*] opening psql against the msf workspace…';
-    }
-    if (sub === 'init' || sub === 'start' || sub === 'status') {
-      const before = getDbStatus().phase;
-      try {
-        const db = await getDb();
-        const st = getDbStatus();
-        const v = await db.query<{ version: string }>('select version()');
-        const counts = await db.query<{ t: string; n: number }>(
-          ['workspaces', 'hosts', 'services', 'notes', 'loot', 'creds', 'papers', 'events']
-            .map((t) => `select '${t}' as t, count(*)::int as n from ${t}`)
-            .join(' union all '),
-        );
-        const out: string[] = [];
-        if (sub === 'init') {
-          out.push(st.fresh && before !== 'ready' ? '[+] Creating database schema and seeding the portfolio workspace' : '[i] Database already initialized');
-        }
-        out.push(
-          '● msfdb — PostgreSQL in the browser (PGlite, WebAssembly)',
-          `     Active: active (running) · booted in ${(st.elapsed / 1000).toFixed(2)} s`,
-          `    Storage: ${DATA_DIR} (IndexedDB, this browser only)`,
-          `    Version: ${v.rows[0]?.version}`,
-          '',
-          '  table        rows',
-          '  ----------  -----',
-          ...counts.rows.map((r) => `  ${r.t.padEnd(10)}  ${String(r.n).padStart(5)}`),
-          '',
-          '  Lab hosts are simulated training data; nothing is ever scanned.',
-        );
-        return out.join('\n');
-      } catch (e) {
-        return `[-] database failed to start: ${(e as Error).message}`;
-      }
-    }
-    if (sub === 'stop' || sub === 'delete' || sub === 'reinit') {
-      return `[i] msfdb ${sub}: not supported in the browser build. Clear site data to reset ${DATA_DIR}.`;
-    }
-    return 'Usage: msfdb status|init|run';
-  },
-  complete: ({ args }) => ['status', 'init', 'run'].filter((s) => s.startsWith(args[0] ?? '')),
-};
 
 const DUMP_LIMIT = 200;
 
@@ -154,4 +107,4 @@ const pgDump: Command = {
   },
 };
 
-export const dbCommands: Command[] = [psql, msfdb, pgDump];
+export const dbCommands: Command[] = [psql, pgDump];
