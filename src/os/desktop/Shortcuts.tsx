@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useOS } from '../store';
 import { getApp } from '../registry';
 import { isTypingTarget } from './layout';
+import { useTeardown } from '../teardown/store';
 
 /**
  * Global desktop shortcuts (Kali's xfce4-keyboard-shortcuts defaults).
@@ -24,6 +25,7 @@ export const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'Super+W', action: 'Web browser' },
   { keys: 'Super+L', action: 'Lock screen' },
   { keys: 'Super+D', action: 'Show desktop' },
+  { keys: 'Ctrl+Alt+X', action: 'Teardown: take the desktop apart into its layers' },
   { keys: 'Alt+Tab · Alt+Shift+Tab', action: 'Cycle windows' },
   { keys: 'Alt+F4', action: 'Close window' },
   { keys: 'Alt+F11', action: 'Toggle maximise' },
@@ -72,6 +74,7 @@ export function Shortcuts() {
         if (k === 'ArrowLeft') return act(() => s.switchWorkspace(-1));
         if (k === 'ArrowRight') return act(() => s.switchWorkspace(1));
         if (k === 'Delete') return act(() => s.setSessionDialog(true));
+        if (k === 'x') return act(() => useTeardown.getState().open());
         if (/^[1-4]$/.test(e.code.replace('Digit', ''))) return act(() => s.setWorkspace(+e.code.replace('Digit', '') - 1));
         return;
       }

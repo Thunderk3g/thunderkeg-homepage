@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOS, isUndercover, WORKSPACE_COUNT } from '../store';
+import { useTeardown } from '../teardown/store';
 import { getApp } from '../registry';
 import type { WindowState } from '../types';
 import { AppIcon, KaliMark, SysIcon } from '../icons';
@@ -68,6 +69,14 @@ export function Panel() {
             aria-label="Show desktop"
           >
             <SysIcon name="show-desktop" size={16} />
+          </button>
+          <button
+            className="kos-panel-btn kos-hide-sm"
+            onClick={() => useTeardown.getState().open()}
+            title="Teardown: take the desktop apart (Ctrl+Alt+X)"
+            aria-label="Teardown: take the desktop apart into its layers"
+          >
+            <SysIcon name="layers" size={16} />
           </button>
           <span className="kos-tray-pop kos-hide-sm" ref={placesRef}>
             <button

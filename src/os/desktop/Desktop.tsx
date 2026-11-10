@@ -14,6 +14,8 @@ import { SessionDialog } from './SessionDialog';
 import { stacksOn, wallpaperFor } from './wallpapers';
 import { Stacks } from './stacks/Stacks';
 import { StacksTimeline } from './stacks/Timeline';
+import { useTeardown } from '../teardown/store';
+import { TeardownPlates } from '../teardown/Plates';
 
 /** Touch screens have no comfortable double-click, so a single tap opens. */
 const isCoarsePointer = () =>
@@ -72,7 +74,7 @@ export function Desktop() {
     if ((e.target as HTMLElement).closest('.kos-welcome')) return;
     e.preventDefault();
     const x = Math.min(e.clientX, window.innerWidth - 236);
-    const y = Math.min(e.clientY, window.innerHeight - 280);
+    const y = Math.min(e.clientY, window.innerHeight - 312);
     setCtx({ x, y });
   };
 
@@ -139,6 +141,8 @@ export function Desktop() {
         ))}
       </div>
 
+      <TeardownPlates />
+
       {menuOpen && <WhiskerMenu />}
       {sessionDialog && <SessionDialog />}
 
@@ -163,6 +167,9 @@ export function Desktop() {
             <SysIcon name="paste" /> Paste
           </button>
           <hr />
+          <button role="menuitem" onClick={run(() => useTeardown.getState().open())}>
+            <SysIcon name="layers" /> Take the Desktop Apart
+          </button>
           <button role="menuitem" onClick={run(() => launch('settings', { page: 'wallpaper' }))}>
             <SysIcon name="image" /> Change Wallpaper…
           </button>

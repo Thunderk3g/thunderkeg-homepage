@@ -1,6 +1,8 @@
 'use client';
 
 import type { Command } from '../../../../types';
+import { isPhone } from '../../../../desktop/layout';
+import { useTeardown } from '../../../../teardown/store';
 
 /** Small real utilities: a month calendar and a ROT-N cipher for crypto study. */
 
@@ -33,6 +35,18 @@ function ordinal(n: number): string {
 }
 
 export const miscCommands: Command[] = [
+  {
+    name: 'teardown',
+    summary: 'take the desktop apart into its layers (Esc puts it back)',
+    usage: 'teardown',
+    category: 'shell',
+    run: () => {
+      if (isPhone()) return 'teardown: needs a wider screen than this one';
+      // after this line has printed, so the terminal is seen hanging in the stack with it
+      window.setTimeout(() => useTeardown.getState().open(), 350);
+      return 'Lifting the layers apart. This window is one of them. Esc reassembles.';
+    },
+  },
   {
     name: 'cal',
     summary: 'display a calendar for the current month',

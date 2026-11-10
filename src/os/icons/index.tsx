@@ -23,6 +23,7 @@ import {
   Globe, Grid3x3, History, Image, Info, Keyboard, LayoutGrid, List, Lock, LogOut, Minus, Monitor, MonitorUp,
   Music2, Network, PanelTop, Power, RotateCcw, Search, Settings, Shield, Square, SquareTerminal, Star, Users, Volume2,
   VolumeX, Wifi, X, type LucideIcon,
+  Layers,
 } from 'lucide-react';
 
 /* ───────────────────────── app plates ───────────────────────── */
@@ -386,6 +387,7 @@ const SYS: Record<string, LucideIcon> = {
   book: BookOpen,
   code: CodeXml,
   tools: Wrench,
+  layers: Layers,
 };
 
 export type SysIconName = keyof typeof SYS;

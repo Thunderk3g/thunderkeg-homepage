@@ -10,6 +10,7 @@ import { AppIcon, SysIcon } from '../icons';
 import { WALLPAPERS } from './wallpapers';
 import { useEntries } from '../content';
 import { useBoard } from '@/stacks/useBoard';
+import { useTeardown } from '../teardown/store';
 import { useResearch } from '@/research/store';
 import { STATUS_SHORT } from '@/research/types';
 import { hire } from '@/data/resume';
@@ -78,6 +79,13 @@ export function CommandPalette() {
         toggleUndercover();
         if (undercover) toast('Undercover mode off');
       },
+    },
+    {
+      id: 'teardown',
+      label: 'Teardown: take the desktop apart into its layers',
+      icon: 'layers',
+      keys: 'Ctrl+Alt+X',
+      run: () => useTeardown.getState().open(),
     },
     { id: 'show-desktop', label: 'Show desktop', icon: 'show-desktop', keys: 'Super+D', run: () => s().showDesktop() },
     { id: 'lock', label: 'Lock screen', icon: 'lock', keys: 'Super+L', run: () => s().lock() },

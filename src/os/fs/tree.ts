@@ -114,6 +114,9 @@ Everything here is interactive:
   • Stacks            the board on the desktop: every stack is a subject, every cube
                       one thing I built, measured, studied or wrote, oldest at the
                       bottom. Hover a cube to read it; run 'stacks' for it in words
+  • Teardown          the whole desktop tilted and pulled apart into its layers, down
+                      to the display, the session, the file system and your machine
+                      (the layers button in the panel, Ctrl+Alt+X, or run 'teardown')
   • Linux VM          a real Linux kernel booting in your browser (v86), with this
                       portfolio mounted over 9p at /mnt/portfolio
   • psql              PostgreSQL 18 compiled to WebAssembly (PGlite), in-tab

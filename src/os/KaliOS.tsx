@@ -10,6 +10,7 @@ import { Desktop } from './desktop/Desktop';
 import { CommandPalette } from './desktop/CommandPalette';
 import { Shortcuts } from './desktop/Shortcuts';
 import { AltTab } from './desktop/AltTab';
+import { Teardown } from './teardown/Teardown';
 import { panelHeight } from './desktop/layout';
 import { getTheme } from './themes';
 
@@ -55,6 +56,7 @@ export default function KaliOS() {
       {phase === 'off' && <PowerOff />}
       {phase === 'desktop' && <CommandPalette />}
       {phase === 'desktop' && <AltTab />}
+      {phase === 'desktop' && !undercover && <Teardown />}
       <Shortcuts />
       {/* xfce4-notifyd lives top-right under the panel; Undercover mode mutes it */}
       {!undercover && (
