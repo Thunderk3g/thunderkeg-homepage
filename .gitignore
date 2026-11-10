@@ -8,6 +8,9 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 *.pdf
+# ...but these two are route folders, not files: /resume.pdf and /cv.pdf are built from src/data/resume.ts
+!app/resume.pdf/
+!app/cv.pdf/
 .shots/
 verify_game.py
 public/vm/*.wasm
