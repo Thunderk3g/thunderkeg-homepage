@@ -28,6 +28,8 @@ export interface OSSettings {
   panelGraph: boolean;
   /** drag-to-edge window snapping */
   snapping: boolean;
+  /** the live Stacks skyline, drawn over whichever wallpaper is chosen */
+  stacks: boolean;
 }
 
 export const WORKSPACE_COUNT = 4;
@@ -120,6 +122,7 @@ const DEFAULT_SETTINGS: OSSettings = {
   clock24: true,
   panelGraph: true,
   snapping: true,
+  stacks: true,
 };
 
 const undercoverOn = (s: { settings: OSSettings }) => s.settings.theme === UNDERCOVER_THEME;

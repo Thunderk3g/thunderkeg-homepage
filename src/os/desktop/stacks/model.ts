@@ -29,6 +29,12 @@ export interface Column {
   due: boolean;
   /** the one skill being studied right now */
   current: boolean;
+  /** the paper most recently moved along, among those still being read */
+  reading: boolean;
+  /** touched in the last week (a skill practised, a paper moved on) or a post from the last month */
+  recent: boolean;
+  /** where the stack is headed, drawn as an outline above the current skill; 0 = none */
+  target: number;
   /** one-line state for the hover readout */
   state: string;
   detail: string;
@@ -54,17 +60,23 @@ export interface City {
   /** grid extent */
   w: number;
   h: number;
-  totals: { skills: number; proven: number; papers: number; posts: number; due: number };
+  totals: { skills: number; proven: number; papers: number; posts: number; due: number; recent: number };
 }
 
 const PAPER_LEVEL: Record<string, number> = { inbox: 1, pass1: 2, pass2: 3, pass3: 4, done: 5 };
 
 const isoDay = () => new Date().toISOString().slice(0, 10);
+const daysAgo = (iso: string | undefined, today: string) =>
+  iso ? Math.round((Date.parse(today) - Date.parse(iso.slice(0, 10))) / 86400000) : Infinity;
+const ago = (d: number) => (d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`);
+const INTERNALIZED = STATE_ORDER.indexOf('INTERNALIZED');
 
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
 
 function skillColumn(s: Skill, currentId: string, today: string): Column {
   const level = STATE_ORDER.indexOf(s.state);
+  const practised = daysAgo(s.lastPracticed, today);
+  const current = s.id === currentId;
   return {
     id: 'skill:' + s.id,
     kind: 'skill',
@@ -72,10 +84,14 @@ function skillColumn(s: Skill, currentId: string, today: string): Column {
     level: Math.max(0, level),
     proven: s.independent,
     due: !!s.nextReview && s.nextReview <= today,
-    current: s.id === currentId,
+    current,
+    reading: false,
+    recent: practised <= 7,
+    target: current && level < INTERNALIZED ? INTERNALIZED : 0,
     state:
       s.state.toLowerCase() +
-      (s.independent === true ? ', proven without AI' : s.independent === false ? ', not yet proven without AI' : ', untested without AI'),
+      (s.independent === true ? ', proven without AI' : s.independent === false ? ', not yet proven without AI' : ', untested without AI') +
+      (practised < 400 ? `, practised ${ago(practised)}` : ''),
     detail: s.objective,
     open: { app: 'learning', args: { skillId: s.id } },
     gx: 0,
@@ -83,7 +99,7 @@ function skillColumn(s: Skill, currentId: string, today: string): Column {
   };
 }
 
-function paperColumn(p: Paper, dueByPaper: Map<string, number>): Column {
+function paperColumn(p: Paper, dueByPaper: Map<string, number>, today: string): Column {
   const due = dueByPaper.get(p.id) ?? 0;
   return {
     id: 'paper:' + p.id,
@@ -93,6 +109,9 @@ function paperColumn(p: Paper, dueByPaper: Map<string, number>): Column {
     proven: null,
     due: due > 0,
     current: false,
+    reading: false,
+    recent: daysAgo(p.statusChangedAt, today) <= 7,
+    target: 0,
     state: STATUS_SHORT[p.status] + (due ? `, ${due} recall card${due === 1 ? '' : 's'} due` : ''),
     detail: clip(p.authors.slice(0, 3).join(', ') + (p.authors.length > 3 ? ' et al.' : '') + (p.venue ? ` — ${p.venue}` : ''), 110),
     open: { app: 'research', args: { paperId: p.id } },
@@ -101,7 +120,7 @@ function paperColumn(p: Paper, dueByPaper: Map<string, number>): Column {
   };
 }
 
-function postColumn(e: Entry): Column {
+function postColumn(e: Entry, today: string): Column {
   const words = e.body.split(/\s+/).length;
   return {
     id: 'post:' + e.slug,
@@ -111,6 +130,9 @@ function postColumn(e: Entry): Column {
     proven: null,
     due: false,
     current: false,
+    reading: false,
+    recent: daysAgo(e.date, today) <= 30,
+    target: 0,
     state: `published ${e.date}, ${Math.max(1, Math.round(words / 230))} min read`,
     detail: clip(e.summary, 130),
     open: { app: 'writing', args: { slug: e.slug } },
@@ -175,13 +197,22 @@ export function buildCity(input: CityInput): City {
   };
   for (const p of input.papers) {
     if (p.status === 'dropped') continue;
-    rqDistrict(p.rqIds[0]).columns.push(paperColumn(p, dueByPaper));
+    rqDistrict(p.rqIds[0]).columns.push(paperColumn(p, dueByPaper, today));
   }
   for (const e of input.entries) {
     if (e.kind !== 'post') continue;
-    rqDistrict(rqForPost(e, input.rqs)).columns.push(postColumn(e));
+    rqDistrict(rqForPost(e, input.rqs)).columns.push(postColumn(e, today));
   }
   districts.push(...byRq.values());
+
+  // "reading now": the in-progress paper whose status moved most recently
+  const inProgress = input.papers
+    .filter((p) => p.status === 'pass1' || p.status === 'pass2' || p.status === 'pass3')
+    .sort((a, b) => b.statusChangedAt.localeCompare(a.statusChangedAt))[0];
+  if (inProgress) {
+    const col = districts.flatMap((d) => d.columns).find((c) => c.id === 'paper:' + inProgress.id);
+    if (col) col.reading = true;
+  }
 
   layout(districts);
 
@@ -197,15 +228,22 @@ export function buildCity(input: CityInput): City {
       papers: cols.filter((c) => c.kind === 'paper').length,
       posts: cols.filter((c) => c.kind === 'post').length,
       due: cols.filter((c) => c.due).length,
+      recent: cols.filter((c) => c.recent).length,
     },
   };
 }
 
 /**
- * Shelf-pack the districts onto the grid with one-cell streets between them.
- * Research sits on the near shelves (it is what a visitor came for), learning
- * behind it; inside a district the tall stacks go to the back so nothing hides.
+ * Shelf-pack the districts onto the grid. Research sits on the near shelves
+ * (it is what a visitor came for), learning behind it; inside a district the
+ * tall stacks go to the back so nothing hides.
+ *
+ * Names are painted on each district's front row, so nothing may stand in
+ * front of that row: districts on a shelf share a front edge, and the street
+ * between shelves is wide enough (SHELF_GAP cells) that a full five-cube
+ * stack on the next shelf, 2.2 cells tall on screen, cannot reach it.
  */
+const SHELF_GAP = 2;
 function layout(districts: District[]) {
   for (const d of districts) {
     const n = d.columns.length;
@@ -221,23 +259,35 @@ function layout(districts: District[]) {
     ...districts.filter((d) => d.wing === 'research').sort((a, b) => b.h - a.h || b.columns.length - a.columns.length),
   ];
 
+  // cut the order into shelves
+  const shelves: District[][] = [];
   let x = 0;
-  let y = 0;
-  let shelfH = 0;
   let wing: District['wing'] | undefined;
   for (const d of order) {
-    const newWing = wing !== undefined && d.wing !== wing;
-    if (x > 0 && (x + d.w > shelfW || newWing)) {
+    if (!shelves.length || x + d.w > shelfW || d.wing !== wing) {
+      shelves.push([]);
       x = 0;
-      y += shelfH + 1 + (newWing ? 1 : 0);
-      shelfH = 0;
     }
     wing = d.wing;
-    d.gx = x;
-    d.gy = y;
+    shelves[shelves.length - 1].push(d);
     x += d.w + 1;
-    shelfH = Math.max(shelfH, d.h);
+  }
 
+  let y = 0;
+  for (let i = 0; i < shelves.length; i++) {
+    const shelf = shelves[i];
+    const shelfH = Math.max(...shelf.map((d) => d.h));
+    let sx = 0;
+    for (const d of shelf) {
+      d.gx = sx;
+      d.gy = y + shelfH - d.h; // front edges line up
+      sx += d.w + 1;
+    }
+    const next = shelves[i + 1];
+    y += shelfH + SHELF_GAP + (next && next[0].wing !== shelf[0].wing ? 1 : 0);
+  }
+
+  for (const d of order) {
     const sorted = [...d.columns].sort((a, b) => b.level - a.level || a.title.localeCompare(b.title));
     sorted.forEach((c, i) => {
       c.gx = d.gx + (i % d.w);

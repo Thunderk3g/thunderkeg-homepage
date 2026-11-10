@@ -4,11 +4,14 @@ import type { OSSettings } from '../store';
  * Wallpaper catalogue. Ids are stable (they are persisted settings and CSS
  * class names: `.wall-<id>`); the artwork behind `kali-dragon` is now the
  * original isometric "data-dragon" cubes in /public/wallpapers. `stacks` is
- * the live one: a canvas drawn from the research and learning stores
- * (src/os/desktop/stacks).
+ * the plain midnight backdrop the skyline was designed on.
+ *
+ * The Stacks skyline itself (src/os/desktop/stacks) is not a wallpaper: it is
+ * a layer drawn over whichever one is chosen, so the record of the work is
+ * the same on every backdrop. See stacksOn().
  */
 export const WALLPAPERS: { id: string; label: string }[] = [
-  { id: 'stacks', label: 'Stacks (live)' },
+  { id: 'stacks', label: 'Midnight' },
   { id: 'kali-dragon', label: 'Data Dragon' },
   { id: 'sweep', label: 'Sweep' },
   { id: 'ticker', label: 'Ticker' },
@@ -28,4 +31,12 @@ export function wallpaperFor(settings: Pick<OSSettings, 'theme' | 'wallpaper'>):
   if (settings.theme === 'kali-undercover') return 'undercover';
   if (settings.theme === 'backtrack') return 'backtrack';
   return settings.wallpaper;
+}
+
+/**
+ * Whether the Stacks skyline is drawn. On by default over every wallpaper;
+ * Undercover hides it with the rest of the Kali look.
+ */
+export function stacksOn(settings: Pick<OSSettings, 'theme' | 'stacks'>): boolean {
+  return settings.stacks !== false && settings.theme !== 'kali-undercover';
 }

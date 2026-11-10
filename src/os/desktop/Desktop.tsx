@@ -11,7 +11,7 @@ import { Window } from './Window';
 import { WelcomeCard } from './WelcomeCard';
 import { WhiskerMenu } from './WhiskerMenu';
 import { SessionDialog } from './SessionDialog';
-import { wallpaperFor } from './wallpapers';
+import { stacksOn, wallpaperFor } from './wallpapers';
 import { Stacks } from './stacks/Stacks';
 
 /** Touch screens have no comfortable double-click, so a single tap opens. */
@@ -44,6 +44,7 @@ export function Desktop() {
   const menuOpen = useOS((s) => s.menuOpen);
   const sessionDialog = useOS((s) => s.sessionDialog);
   const wallpaper = useOS((s) => wallpaperFor(s.settings));
+  const stacks = useOS((s) => stacksOn(s.settings));
   const [selected, setSelected] = useState<string | null>(null);
   const [ctx, setCtx] = useState<Menu | null>(null);
   const launchers = useMemo(desktopLaunchers, []);
@@ -96,7 +97,7 @@ export function Desktop() {
   return (
     <div className="kos-desktop" onContextMenu={onContext}>
       <div className={'kos-wall wall-' + wallpaper} aria-hidden="true" />
-      {wallpaper === 'stacks' && <Stacks />}
+      {stacks && <Stacks veil={wallpaper !== 'stacks'} />}
       <Panel />
 
       <div

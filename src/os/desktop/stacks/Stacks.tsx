@@ -9,11 +9,18 @@ import { isPhone, prefersReducedMotion } from '../layout';
 import { buildCity, type City, type Column, type District } from './model';
 
 /**
- * The live wallpaper. An isometric skyline drawn on one canvas from
- * model.ts; columns rise once when the desktop appears and afterwards only
- * when the data behind them changes. Hovering a column names it, clicking
- * opens it in its app. The canvas is decoration for assistive tech: every
- * item is reachable through the apps and the command palette.
+ * The live skyline, drawn over whichever wallpaper is chosen. One canvas,
+ * from model.ts; columns rise once when the desktop appears and afterwards
+ * only when the data behind them changes. Hovering a column names it,
+ * clicking opens it in its app. The canvas is decoration for assistive tech:
+ * every item is reachable through the apps and the command palette.
+ *
+ * What the marks mean (also in the legend):
+ *   height          depth: knowledge state, reading pass, or length
+ *   bright blue     a skill proven without AI
+ *   lit cap         touched in the last week
+ *   outline above   where the skill being studied is headed
+ *   amber diamond   something due today
  */
 
 interface Shade {
@@ -166,6 +173,24 @@ function drawColumn(
   let { cy } = foot(g, c);
   if (hot) cy -= 3;
 
+  if (c.target > c.level) {
+    // where this stack is headed: the outline of the cubes still to earn
+    const T = c.target * ch;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(200, 216, 255, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const x of [cx - hw, cx, cx + hw]) {
+      const y0 = x === cx ? cy + hh : cy;
+      ctx.moveTo(x, y0 - shown * ch);
+      ctx.lineTo(x, y0 - T);
+    }
+    ctx.stroke();
+    poly(ctx, [[cx - hw, cy - T], [cx, cy - hh - T], [cx + hw, cy - T], [cx, cy + hh - T]]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   if (c.level === 0 && shown < 0.05) {
     // an empty lot: a skill with no evidence yet
     poly(ctx, [[cx - hw, cy], [cx, cy - hh], [cx + hw, cy], [cx, cy + hh]]);
@@ -197,6 +222,14 @@ function drawColumn(
     poly(ctx, [[cx - hw, cy - H], [cx, cy - hh - H], [cx + hw, cy - H], [cx, cy + hh - H]]);
     ctx.fillStyle = s.top;
     ctx.fill();
+    if (c.recent && !hot) {
+      // touched this week: the cap is lit
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.25;
+      ctx.stroke();
+    }
     if (hot) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.fill();
@@ -207,7 +240,7 @@ function drawColumn(
     }
   }
 
-  const topY = cy - hh - shown * ch;
+  const topY = cy - hh - Math.max(shown, c.target) * ch;
   if (c.due) {
     // something to do today: a marker floating over the stack
     const y = topY - 9 - pulse * 3;
@@ -216,18 +249,51 @@ function drawColumn(
     ctx.fillStyle = `rgba(255, 200, 87, ${0.55 + 0.45 * (1 - pulse)})`;
     ctx.fill();
   }
-  if (c.current) {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx, topY + hh);
-    ctx.lineTo(cx, topY - 16);
-    ctx.stroke();
-    ctx.font = `600 10.5px ${getComputedStyle(ctx.canvas).fontFamily}`;
-    ctx.textBaseline = 'bottom';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.fillText('studying now', cx + 5, topY - 8);
-  }
+}
+
+/** "studying now" / "reading now": a flag on a pole, drawn over everything so it is never hidden. */
+function drawFlag(ctx: CanvasRenderingContext2D, g: Geo, c: Column, shown: number, text: string) {
+  const { cx, cy, hh, ch } = foot(g, c);
+  const topY = cy - hh - Math.max(shown, c.target) * ch;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, topY + hh);
+  ctx.lineTo(cx, topY - 18);
+  ctx.stroke();
+  ctx.font = `600 10.5px ${getComputedStyle(ctx.canvas).fontFamily}`;
+  const w = ctx.measureText(text).width;
+  ctx.fillStyle = 'rgba(10, 12, 28, 0.78)';
+  ctx.beginPath();
+  ctx.roundRect(cx + 1, topY - 23, w + 12, 16, 3);
+  ctx.fill();
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.fillText(text, cx + 7, topY - 14.5);
+}
+
+/** A soft dark pool under the city so it reads the same on a busy wallpaper as on a plain one. */
+function drawVeil(ctx: CanvasRenderingContext2D, g: Geo, city: City, alpha: number) {
+  const [lx] = P(g, 0, city.h);
+  const [rx] = P(g, city.w, 0);
+  const [, ty] = P(g, 0, 0);
+  const [, by] = P(g, city.w, city.h);
+  const cx = (lx + rx) / 2;
+  const cy = (ty + by) / 2 - g.U * 0.6;
+  const rxr = (rx - lx) / 2 + g.U * 3;
+  const ryr = (by - ty) / 2 + g.U * 3.4;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, ryr / rxr);
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rxr);
+  grad.addColorStop(0, `rgba(8, 10, 30, ${0.74 * alpha})`);
+  grad.addColorStop(0.62, `rgba(8, 10, 30, ${0.6 * alpha})`);
+  grad.addColorStop(1, 'rgba(8, 10, 30, 0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, rxr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 interface Tip {
@@ -236,7 +302,7 @@ interface Tip {
   y: number;
 }
 
-export function Stacks() {
+export function Stacks({ veil = false }: { veil?: boolean }) {
   const launch = useOS((s) => s.launch);
   const reducedSetting = useOS((s) => s.settings.reducedMotion);
   const learningReady = useHydrated();
@@ -263,8 +329,15 @@ export function Stacks() {
     born: Map<string, number>;
     hot: string | null;
     order: Column[];
+    veil: boolean;
     kick: () => void;
-  }>({ city: null, geo: null, shown: new Map(), born: new Map(), hot: null, order: [], kick: () => {} });
+  }>({ city: null, geo: null, shown: new Map(), born: new Map(), hot: null, order: [], veil, kick: () => {} });
+
+  // a different wallpaper: same city, with or without the pool beneath it
+  useEffect(() => {
+    live.current.veil = veil;
+    live.current.kick();
+  }, [veil]);
 
   // the draw loop: runs while something is moving, then parks
   useEffect(() => {
@@ -295,6 +368,7 @@ export function Stacks() {
       const first = Math.min(...L.born.values(), now);
       const floorAlpha = still() ? 1 : Math.min(1, (now - first) / 500);
       if (floorAlpha < 1) moving = true;
+      if (L.veil) drawVeil(ctx, g, c, floorAlpha);
       for (const d of c.districts) {
         drawFloor(ctx, g, d, floorAlpha);
         drawLabel(ctx, g, d, floorAlpha, false);
@@ -313,6 +387,11 @@ export function Stacks() {
         } else moving = true;
         L.shown.set(col.id, s);
         drawColumn(ctx, g, col, s, L.hot === col.id, pulse);
+      }
+
+      for (const col of L.order) {
+        if (col.current) drawFlag(ctx, g, col, L.shown.get(col.id) ?? col.level, 'studying now');
+        else if (col.reading) drawFlag(ctx, g, col, L.shown.get(col.id) ?? col.level, 'reading now');
       }
 
       // the hovered column's district: outline it and bring its name to the front
@@ -397,7 +476,7 @@ export function Stacks() {
       if (surface) surface.style.cursor = c ? 'pointer' : '';
       if (c && L.geo) {
         const f = foot(L.geo, c);
-        setTip({ col: c, x: f.cx, y: f.cy - f.hh - c.level * f.ch });
+        setTip({ col: c, x: f.cx, y: f.cy - f.hh - Math.max(c.level, c.target) * f.ch });
       } else setTip(null);
       L.kick();
     };
@@ -427,6 +506,17 @@ export function Stacks() {
   return (
     <>
       <canvas ref={canvasRef} className="kos-stacks" aria-hidden="true" />
+      {city && (
+        <ul className={'kos-stacks-legend' + (veil ? ' veiled' : '')} aria-hidden="true">
+          <li><i className="sw k-skill" />skill</li>
+          <li><i className="sw k-proven" />proven without AI</li>
+          <li><i className="sw k-paper" />paper</li>
+          <li><i className="sw k-post" />post</li>
+          <li><i className="sw k-recent" />touched this week{city.totals.recent ? ` (${city.totals.recent})` : ''}</li>
+          <li><i className="sw k-due" />due today{city.totals.due ? ` (${city.totals.due})` : ''}</li>
+          <li className="dim">taller is deeper</li>
+        </ul>
+      )}
       {tip && (
         <div
           className={'kos-stacks-tip' + (tip.x > window.innerWidth - 340 ? ' flip' : '')}
@@ -437,7 +527,12 @@ export function Stacks() {
           <strong>{tip.col.title}</strong>
           <span className="kos-stacks-state">{tip.col.state}</span>
           {tip.col.detail && <span className="kos-stacks-detail">{tip.col.detail}</span>}
-          <span className="kos-stacks-hint">Click to open in {OPENS_IN[tip.col.kind]}</span>
+          {tip.col.target > tip.col.level && (
+            <span className="kos-stacks-detail">The outline is the target: internalized, without AI.</span>
+          )}
+          <span className="kos-stacks-hint">
+            {tip.col.due ? 'Due today. ' : ''}Click to open in {OPENS_IN[tip.col.kind]}
+          </span>
         </div>
       )}
     </>

@@ -7,7 +7,7 @@ import { hire, profile } from '@/data/resume';
 import { useLearning } from '@/learning/store';
 import { dueForReview } from '@/learning/priority';
 import { counts, useResearch } from '@/research/store';
-import { wallpaperFor } from './wallpapers';
+import { stacksOn } from './wallpapers';
 
 /**
  * The card on the desktop: who this is, how to get in touch, and what the
@@ -20,7 +20,7 @@ export function WelcomeCard() {
   const launch = useOS((s) => s.launch);
   const user = useOS((s) => s.user);
   const host = useOS((s) => s.host);
-  const live = useOS((s) => wallpaperFor(s.settings) === 'stacks');
+  const live = useOS((s) => stacksOn(s.settings));
   const skills = useLearning((s) => s.skills);
   const papers = useResearch((s) => s.papers);
   const cards = useResearch((s) => s.cards);

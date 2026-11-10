@@ -159,6 +159,12 @@ function SettingsApp({ args }: AppProps) {
         {page === 'wallpaper' && (
           <div className="kos-settings-group">
             {undercover && <p className="kos-settings-hint">Undercover mode uses its own wallpaper while it is on.</p>}
+            <Toggle
+              checked={settings.stacks !== false}
+              onChange={(v) => setSetting('stacks', v)}
+              label="Stacks skyline"
+              hint="Draws my skills, papers and posts as a live skyline over any wallpaper. Hover a column to read it, click to open it."
+            />
             <div className="kos-settings-walls">
               {WALLPAPERS.map((w) => (
                 <button
