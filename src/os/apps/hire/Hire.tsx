@@ -49,7 +49,10 @@ function HireApp({ args }: AppProps) {
 
         <DirectLinks>
           <button className="hire-link" onClick={() => downloadResumePdf()}>
-            Download résumé (PDF)
+            Download résumé (PDF, 2 pages)
+          </button>
+          <button className="hire-link" onClick={() => downloadResumePdf('cv')}>
+            Academic CV (PDF)
           </button>
           <button className="hire-link" onClick={() => launch('browser', { page: 'experience' })}>
             Full experience

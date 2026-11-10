@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { awards, education, hire, profile, projects, research, roles, skills } from '@/data/resume';
 import { ManPage, Sec } from '@/content/ManPage';
 import { PrintButton } from '@/content/PrintButton';
+import { FILE_NAME } from '@/content/resumeFiles';
 import { SITE } from '@/content/site';
 
 export const metadata: Metadata = {
@@ -55,7 +56,13 @@ export default function ResumePage() {
               Work with me
             </a>
           )}
-          <PrintButton>Print or save as PDF</PrintButton>
+          <a className="man-btn" href="/resume.pdf" download={FILE_NAME.resume}>
+            Download résumé (PDF, 2 pages)
+          </a>
+          <a className="man-btn" href="/cv.pdf" download={FILE_NAME.cv}>
+            Academic CV (PDF)
+          </a>
+          <PrintButton>Print this page</PrintButton>
         </p>
         {hire.open && <p className="man-aside">{hire.status}.</p>}
       </Sec>
@@ -64,6 +71,17 @@ export default function ResumePage() {
         {profile.summary.map((s, i) => (
           <p key={i}>{s}</p>
         ))}
+      </Sec>
+
+      <Sec title="SKILLS">
+        <dl className="man-options">
+          {skills.map((s) => (
+            <div key={s.group}>
+              <dt>{s.group}</dt>
+              <dd>{s.items.split(' · ').join(', ')}</dd>
+            </div>
+          ))}
+        </dl>
       </Sec>
 
       <Sec title="EXPERIENCE" id="experience">
@@ -79,6 +97,11 @@ export default function ResumePage() {
             {r.groups.map((g, gi) => (
               <div key={gi}>
                 {g.heading && <h4>{g.heading}</h4>}
+                {g.result && (
+                  <p className="man-result">
+                    <b>Result:</b> {g.result}
+                  </p>
+                )}
                 <ul>
                   {g.points.map((p, pi) => (
                     <li key={pi}>{p}</li>
@@ -112,7 +135,16 @@ export default function ResumePage() {
       </Sec>
 
       <Sec title="RESEARCH">
-        {[...research.inPreparation, ...research.published].map((r) => (
+        <h4>Peer-reviewed</h4>
+        {research.published.map((r) => (
+          <article key={r.title} className="man-entry">
+            <h3>{r.title}</h3>
+            <p className="man-aside">{r.venue}</p>
+            <p>{r.summary}</p>
+          </article>
+        ))}
+        <h4>Manuscripts, with their status</h4>
+        {research.inPreparation.map((r) => (
           <article key={r.title} className="man-entry">
             <h3>{r.title}</h3>
             <p className="man-aside">{r.venue}</p>
@@ -126,17 +158,6 @@ export default function ResumePage() {
           ))}
         </ul>
         <p>{research.track}</p>
-      </Sec>
-
-      <Sec title="SKILLS">
-        <dl className="man-options">
-          {skills.map((s) => (
-            <div key={s.group}>
-              <dt>{s.group}</dt>
-              <dd>{s.items.split(' · ').join(', ')}</dd>
-            </div>
-          ))}
-        </dl>
       </Sec>
 
       <Sec title="EDUCATION">
@@ -163,9 +184,9 @@ export default function ResumePage() {
 
       <Sec title="CAVEATS">
         <p>
-          Employer-internal production metrics are deliberately not published on this page. Figures that appear
-          here come from public corpora or personal repositories; the rest are available on request, subject to
-          clearance.
+          Every figure on this page is one of three kinds: public (a corpus, a repository), structural (how many
+          systems, regulators, splits), or already published in one of my posts. My employer&rsquo;s internal volumes
+          and outcomes are not here. They are available on request, subject to clearance.
         </p>
       </Sec>
 

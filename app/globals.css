@@ -2133,6 +2133,7 @@ html:has(.man) { background: #0d0f16; }
 }
 .man a.man-btn { color: var(--m-bright); }
 .man-btn:hover { border-color: var(--m-link); }
+.man-result { margin: 0.2rem 0 0.4rem; color: var(--m-bright); }
 .man-btn.primary { background: var(--m-blue); border-color: var(--m-blue); color: #fff; }
 .man a.man-btn.primary { color: #fff; }
 .man-btn.primary:hover { background: #4d8eff; border-color: #4d8eff; }

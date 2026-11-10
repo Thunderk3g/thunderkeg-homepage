@@ -2,6 +2,7 @@
 
 import { useOS } from '../store';
 import { hire, profile } from '@/data/resume';
+import { FILE_NAME } from '@/content/resumeFiles';
 import { useBoard } from '@/stacks/useBoard';
 import { stacksOn } from './wallpapers';
 
@@ -46,6 +47,9 @@ export function WelcomeCard() {
         </button>
         <a className="kos-welcome-btn" href="/resume" target="_blank" rel="noreferrer">
           Résumé
+        </a>
+        <a className="kos-welcome-btn" href="/resume.pdf" download={FILE_NAME.resume} title="Download my résumé as a two-page PDF">
+          PDF
         </a>
         <button className="kos-welcome-btn" onClick={() => launch('browser', { page: 'home' })}>
           About me

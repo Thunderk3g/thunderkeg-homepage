@@ -19,7 +19,7 @@
 
 export const profile = {
   name: 'DIWAKAR ADHIKARI',
-  title: 'Technical Lead — AI Engineering',
+  title: 'Technical Lead, AI Engineering',
   company: 'Bajaj Life Insurance',
   location: 'Pune, India',
   phone: '+91 93780 67880',
@@ -27,17 +27,32 @@ export const profile = {
   github: 'Thunderk3g',
   githubUrl: 'https://github.com/Thunderk3g',
   tagline: 'Retrieval-grounded and speech AI, built where a wrong answer is a regulatory event.',
+  /**
+   * Three sentences, in the order a reader needs them: scope, what makes the
+   * work different, where it is going. No adjectives; every clause is backed
+   * by a bullet further down.
+   */
   summary: [
-    'Engineer with four years in regulated Indian financial services: three and a half leading a ten-person team on insurance purchase journeys, and the last year leading AI engineering for a life insurer, where a wrong answer is a regulatory event and every claim has to survive an audit.',
-    'Method over numbers: declared confounds, stated sample sizes, leakage-safe splits, and negative results reported as results — including falsifying a headline finding of my own at full-corpus scale.',
-    'Preparing for research in AI & Law and speech technology: a measurement of constraint density in the public DAPRECO GDPR knowledge base, and an engineering case study of grounded regulatory compliance review.',
+    'AI engineering lead in regulated Indian insurance. I own three production AI systems for a life insurer (compliance review, speech analytics and document AI) from design through operation, after three and a half years leading a ten-person engineering team.',
+    'My work is making these systems safe to rely on: every answer tied to evidence, a fail-closed path to a human, and evaluation that survives a second look. When the full data did not support my own headline result, I retracted it and published why.',
+    'Preparing research in AI & Law and speech technology: one measurement paper on a public legal rule base is under revision, and a case study of the compliance system is in preparation.',
   ],
 };
 
-/* ───────────────────────── Experience ───────────────────────── */
+/* ───────────────────────── Experience ─────────────────────────
+   How a bullet is written here (docs/resume-research.md has the sources):
+
+   - Outcome or decision first, then the measure, then the method.
+   - A number appears only with what it was measured on. Numbers are either
+     public (a corpus, a repository, one of my posts) or structural (how many
+     systems, regulators, splits). Nothing internal is estimated.
+   - `result` is the slot for a cleared internal figure. It is empty until I
+     have one in writing; when filled it prints first, in bold. */
 
 export interface RoleGroup {
   heading: string;
+  /** one cleared, measured outcome for the whole stream, e.g. a relative change with its baseline */
+  result?: string;
   points: string[];
 }
 
@@ -53,37 +68,40 @@ export interface Role {
 export const roles: Role[] = [
   {
     id: 'bajaj-life',
-    title: 'Technical Lead — AI Engineering',
+    title: 'Technical Lead, AI Engineering',
     org: 'Bajaj Life Insurance',
     period: 'Dec 2025 – Present',
     blurb:
-      'Leads AI engineering for the marketing function of an IRDAI-regulated life insurer: three production streams — compliance review, speech analytics and document AI — owned from design through operation. Employer-internal figures are omitted by policy; method, decisions and negative results are reported instead.',
+      'Lead AI engineering for the marketing function of an IRDAI-regulated life insurer: three production systems, each owned from design and evaluation through release and operation. Internal volumes are confidential, so the figures below are public, structural, or already published in my own posts.',
     groups: [
       {
-        heading: 'Retrieval-grounded regulatory compliance review (production)',
+        heading: 'Compliance review of marketing copy (LLM system, in production)',
         points: [
-          'Designed and operate an LLM reviewer that grades life-insurance marketing copy against IRDAI, SEBI and brand obligations on the principle of grounding before generation: every finding is anchored to a retrieved reviewer precedent, an active rule, a product fact or a mandated disclosure, and carries that evidence tier as a queryable column.',
-          'Hybrid retrieval — dense (pgvector) and BM25 fused by reciprocal rank fusion over typed indexes — with a deterministic verbatim-evidence critic that drops any finding whose quoted evidence is not literally in the source, removing fabricated evidence without a second model call.',
-          'Fail-closed by construction: anything not substantively evaluated resolves to human review, never a grade. Rule reliability is estimated from reviewer verdicts (Beta-Binomial) with reviewer scores architecturally excluded from training, so the evaluation channel stays independent; replay evaluation is leakage-safe by two independent barriers.',
-          'Measured a safety default instead of trusting it: found most of the corpus untagged and silently bypassing the regulatory-applicability judge under a permissive default, then inverted the default to fail-closed with the exclusions shown to reviewers.',
-          'Root-caused and reported rather than tuned away: a saturating score metric (replaced by a strictly decreasing, versioned policy); DOCX extraction that missed disclaimers in headers, footers and text boxes; a disclaimer inverted by deleting "not" that still passed fuzzy matching (fixed with a legally-critical-token guard); and a company rename done as find-and-replace that corrupted rules and seed data (replaced by an alias registry with effective dates).',
+          'Built and run the reviewer that grades marketing copy against IRDAI, SEBI and brand rules before a person sees it. Every finding cites one of four kinds of evidence (a past reviewer decision, an active rule, a product fact, a mandated disclosure), stored so it can be audited.',
+          'Removed fabricated quotes by construction: a deterministic check drops any finding whose quoted evidence is not literally in the source, with no second model call.',
+          'Made it fail closed. Anything the system has not actually evaluated goes to a human reviewer and never receives a grade.',
+          'Measured a safety default instead of trusting it, and found most of the corpus was untagged and bypassing the applicability check. Inverted the default; what is excluded is now shown to reviewers.',
+          'Found and fixed four silent failures that tuning would have hidden: a score that saturated, disclaimers lost in DOCX headers and text boxes, a disclaimer that still passed with "not" deleted, and a rename that corrupted rules.',
+          'Under it: hybrid retrieval (pgvector and BM25, fused by reciprocal rank) over typed indexes, rule reliability estimated from reviewer verdicts (Beta-Binomial), and replay evaluation protected against leakage by two independent barriers.',
         ],
       },
       {
-        heading: 'Speech analytics and code-switched ASR data (Hinglish / Indian English telephony)',
+        heading: 'Speech analytics and code-switched ASR data (Hinglish and Indian English telephony)',
         points: [
-          'Built call intelligence over insurance telephony — speaker-labelled transcripts, disposition and compliance detection — and an offline corpus pipeline for code-switched Hinglish and Indian English with train / validation / protected-test splits; found speaker leakage in the protected split, re-carved it agent-atomically, verified zero leakage across all split pairs, and kept the pre-fix result on record.',
-          'Benchmarked speaker attribution against human-adjudicated ground truth: stereo channel-split attribution outperformed commercial neural diarization, which inverted speakers on whole calls; showed the residual failure moves from separation to role labelling and built a confidence-ordered role voter with diarization fallback.',
-          'Falsified my own headline result on consensus pseudo-labelling: a script-matched third ASR hypothesis looked decisive on a pilot slice, but the full-corpus pass with the coverage confound removed kept only a small fraction of the gain. Isolated three separable mechanisms — orthographic divergence in romanized text, same-family correlated error, and call- versus utterance-level granularity mismatch.',
-          'Showed that Whisper hallucination loops are decoder artefacts rather than audio quality (every confirmed looper resolved under a temperature-fallback ladder, at a measured compute cost), invalidating a data-quality filter that would have discarded usable audio; tested a published ICASSP tokenizer-expansion method and reported that its premise does not hold for romanized text.',
-          'Data governance: a data-class export gate under the DPDP Act 2023 and IRDAI localisation rules; BFSI PII redaction labelled engineering-clean, not DPO-verified; a TTS training track stopped before any spend over an unresolved vendor terms-of-service question.',
+          'Built call intelligence over insurance telephony (speaker-labelled transcripts, disposition and compliance detection) and the corpus pipeline behind it, with train, validation and protected test splits.',
+          'Found speaker leakage in the protected test split, rebuilt it so that no speaker crosses a split, verified zero leakage across every pair of splits, and kept the pre-fix result on record.',
+          'Retracted my own headline result. A third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×); the full corpus gave 2.74%. Published both, with the three mechanisms that explain the gap.',
+          'Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer, which swapped the two speakers on whole calls.',
+          'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
+          'Built governance in: an export gate by data class under the DPDP Act 2023 and IRDAI localisation rules, PII redaction, and a text-to-speech track stopped before any spend over an unresolved vendor-terms question.',
         ],
       },
       {
-        heading: 'Document AI and evaluation practice',
+        heading: 'Document AI for KYC, and evaluation practice',
         points: [
-          'Built a KYC document-validation gate — capture-quality pre-gate, classification, dual-engine OCR, cross-engine reconciliation and decision states with reason codes — with the rule engine implemented identically in Python and Java so that measured differences are attributable to OCR alone; reported that upscaling and better OCR models barely moved confidence on degraded captures, so the fix was capture quality, not a better parser.',
-          'Built qualityos, a standard-library evaluation harness (observe → hypothesise → experiment → revise beliefs) with an append-only belief graph and a rule forbidding synthetic runs or smoothed curves, run by role-separated agents — judges diagnose, a separate agent fixes, a librarian documents — so that disagreement is preserved rather than rounded to a verdict.',
+          'Built the KYC document gate: a capture-quality check, classification, two OCR engines reconciled against each other, and four decision states, each with a reason code a person can act on.',
+          'Wrote its rule engine identically in Python and Java so that any measured difference is attributable to OCR alone. Finding: upscaling and better OCR models barely moved confidence on poor captures, so the fix went to capture quality, not a new parser.',
+          'Built qualityos, an evaluation harness with an append-only record of beliefs and a rule against synthetic runs, operated by role-separated agents (one diagnoses, one fixes, one documents) so that disagreement is kept, not averaged away.',
         ],
       },
     ],
@@ -93,13 +111,14 @@ export const roles: Role[] = [
     title: 'Dev Lead',
     org: 'Bajaj Finserv Direct Ltd',
     period: 'Jun 2022 – Nov 2025',
-    blurb: 'Term-insurance purchase journeys for an insurance marketplace — API design, release management and cross-team integration.',
+    blurb: 'Term-insurance purchase journeys for an insurance marketplace.',
     groups: [
       {
         heading: '',
         points: [
-          'Led a ten-member engineering team delivering term-insurance purchase journeys end to end, owning API design, release management and the integration with Bajaj Allianz Life.',
-          'Remediated critical authentication findings raised in VAPT security assessments on the production journeys.',
+          'Led a ten-person engineering team delivering term-insurance purchase journeys end to end.',
+          'Owned API design, release management and the integration with the insurer, Bajaj Allianz Life.',
+          'Closed the critical authentication findings raised by VAPT security assessments on the production journeys.',
         ],
       },
     ],
@@ -119,33 +138,34 @@ export interface Project {
 
 export const projects: Project[] = [
   {
-    name: 'Mneme',
-    kind: 'LLM knowledge compiler',
-    blurb:
-      'Compiles PDF, HTML and text sources into a cross-referenced, citation-bearing wiki that is queried directly — an explicit architectural bet against paying RAG’s per-query re-derivation cost. Staged compiler (decompose → extract → align → critic → write → index → graph), content-hash dedupe, hosted and local model backends behind one interface, and a lint that finds orphan pages and broken links so the knowledge base is testable.',
-    caveat: 'No baseline against RAG exists yet — that is the missing experiment.',
-    url: 'https://github.com/Thunderk3g/Mneme',
-  },
-  {
-    name: 'Arbor (R2P-IP)',
+    name: 'Arbor',
     kind: 'agent-governance architecture',
     blurb:
-      'An architecture for agents that act on real systems: human sign-off for irreversible actions, an immutable audit chain, credential-free sandboxes and prompt-injection defence in depth are enforced by the architecture, not by policy. Documented as an RFC with decision records and wired, tested vertical slices.',
-    caveat: 'A blueprint with vertical slices, not a deployed platform.',
+      'For agents that act on real systems: human sign-off for irreversible actions, an immutable audit chain, credential-free sandboxes and layered prompt-injection defence, enforced by the architecture and not by policy. Written up as an RFC with 10 decision records and 219 passing tests.',
+    caveat: 'A blueprint with working vertical slices, not a deployed platform.',
     url: 'https://github.com/Thunderk3g/Arbor',
   },
   {
-    name: 'ForgeLM',
-    kind: 'fine-tuning on constrained hardware',
+    name: 'Mneme',
+    kind: 'LLM knowledge compiler',
     blurb:
-      'A small fine-tuning platform for consumer GPUs: 4-bit loading, LoRA adapters and a GRPO trainer behind one configuration, built to learn the training stack from the inside rather than through a hosted API.',
+      'Compiles PDF, HTML and text into a cross-referenced, cited wiki that is queried directly, instead of paying retrieval cost on every question. A seven-stage compiler (decompose, extract, align, critic, write, index, graph), content-hash dedupe, hosted and local models behind one interface, and a lint that finds orphan pages and broken links.',
+    caveat: 'No baseline against RAG yet. That is the missing experiment.',
+    url: 'https://github.com/Thunderk3g/Mneme',
+  },
+  {
+    name: 'ForgeLM',
+    kind: 'fine-tuning on consumer GPUs',
+    blurb:
+      'A small fine-tuning platform: 4-bit loading, LoRA adapters and a GRPO trainer behind one configuration, built to learn the training stack from the inside and not through a hosted API.',
     caveat: 'Self-directed; results are on toy tasks, not published benchmarks.',
+    url: 'https://github.com/Thunderk3g/ForgeLM',
   },
   {
     name: 'This site',
-    kind: 'research workbench disguised as a desktop',
+    kind: 'a research workbench that is also a desktop',
     blurb:
-      'A Kali-style desktop in the browser that runs a real Linux 6.8 kernel (v86) and a real PostgreSQL 18 (PGlite), around a paper-study workbench — three-pass notes, highlights, spaced recall, a literature matrix — with this résumé rendered from one typed source to every surface.',
+      'A Kali-style desktop in the browser with 13 apps, a real Linux 6.8 kernel (v86) and a real PostgreSQL 18 (PGlite), around a paper-study workbench. The whole desktop can be taken apart in 3D and read as a Kali machine, as this codebase, or as an LLM system.',
     url: 'https://github.com/Thunderk3g/thunderkeg-homepage',
   },
 ];
@@ -157,68 +177,72 @@ export const research = {
     {
       title: 'Coverage is not constraint: measuring constraint density in formalised regulatory rule bases',
       venue: 'Manuscript under revision for resubmission (preprint available on request)',
+      /** the one line an industry reader needs */
+      brief:
+        'A measurement on the public DAPRECO GDPR rule base: 962 rules, a mean constraint density of 0.462, and 43 rules (4.5%) that cannot tell any two scenarios apart.',
       summary:
-        'Measured over the DAPRECO GDPR knowledge base, the largest freely available LegalRuleML corpus: 962 rules with a median of 12 antecedent predicates each, yet a mean constraint density of 0.462, and 43 rules (4.5 %) whose antecedents consist entirely of predicates that fire on any scenario the corpus can describe. Antecedent length is not selectivity, so a coverage-style audit cannot distinguish a faithfully general principle from a structurally non-discriminating rule. The six ubiquitous predicates are identical across a 25–50 % threshold plateau, so the finding is not an artefact of the cut-off. The measurement script is standard-library Python and ships with the paper; all data is public (Robaldo et al.).',
+        'Measured over the DAPRECO GDPR knowledge base, the largest freely available LegalRuleML corpus: 962 rules with a median of 12 antecedent predicates each, yet a mean constraint density of 0.462, and 43 rules (4.5%) whose antecedents consist entirely of predicates that fire on any scenario the corpus can describe. Antecedent length is not selectivity, so a coverage-style audit cannot tell a faithfully general principle from a rule that discriminates nothing. The six ubiquitous predicates are identical across a 25–50% threshold plateau, so the finding does not depend on the cut-off. The measurement script is standard-library Python and ships with the paper; all data is public (Robaldo et al.).',
     },
     {
       title:
         'Grounded regulatory compliance review: an engineering case study of a precedent-imitating retrieval system in insurance marketing',
       venue: 'Manuscript in preparation (pending employer clearance)',
       summary:
-        'The grounding-tier taxonomy, fail-closed persistence, precedent canonicalisation with leakage barriers, bounded Beta-Binomial feedback and deterministic applicability and disclosure adjudication — with the negative results, bypassed quality gates and exonerated suspects reported as contributions.',
+        'The grounding-tier taxonomy, fail-closed persistence, precedent canonicalisation with leakage barriers, bounded Beta-Binomial feedback and deterministic applicability and disclosure adjudication, with the negative results, bypassed quality gates and exonerated suspects reported as contributions.',
     },
   ],
   published: [
     {
       title: 'SustainAI: Enhancing Sustainable Energy Forecasting',
-      venue: 'CSEAI 2023 — 1st International Conference on Computing for Science, Engineering & AI',
+      venue: 'CSEAI 2023, 1st International Conference on Computing for Science, Engineering & AI',
       summary: 'Presented at the conference; forecasting for sustainable energy.',
     },
   ],
   directions: [
-    'Applicability-constrained retrieval — where a hard categorical constraint that semantic similarity cannot express should be enforced: in the embedding, the SQL filter, or a post-retrieval deterministic judge.',
+    'Applicability-constrained retrieval: where a hard categorical constraint that semantic similarity cannot express should be enforced. In the embedding, the SQL filter, or a deterministic judge after retrieval.',
     'Whether constraint density near 0.4 is a general property of formalised regulatory rule bases, measurable across the public LegalRuleML corpora.',
-    'Defaults as unverified distributional claims — a safety default adopted for a correct reason can route most of a corpus around the mechanism it protects, and only coverage measurement reveals it.',
-    'When consensus pseudo-labelling fails for code-switched low-resource ASR — orthographic divergence, same-family correlated error, and hypothesis-granularity mismatch, measured at two scales.',
-    'Evaluation instruments for romanized code-switched speech — WER scores spelling variants of one word as errors, and script canonicalisation is ill-posed when English tokens legitimately stay Latin; a script-aware, entity-weighted, human-validated metric for Indian financial speech does not yet exist.',
+    'Defaults as unverified distributional claims: a safety default adopted for a correct reason can route most of a corpus around the mechanism it protects, and only coverage measurement reveals it.',
+    'When consensus pseudo-labelling fails for code-switched low-resource ASR: orthographic divergence, same-family correlated error and hypothesis-granularity mismatch, measured at two scales.',
+    'Evaluation instruments for romanized code-switched speech. WER scores spelling variants of one word as errors, and script canonicalisation is ill-posed when English tokens legitimately stay Latin; a script-aware, entity-weighted, human-validated metric for Indian financial speech does not yet exist.',
   ],
   /** Areas I read in and keep current on — tracked in the Research app, not claimed as my research. */
   following: [
-    'AI in defense and national security — autonomy and counter-UAS, ISR and target recognition, LLMs for cyber operations, adversarial robustness, wargaming, and the policy around meaningful human control.',
-    'AI agents in cyber security — autonomous pentesting and CTF agents, LLM-driven vulnerability discovery and fuzzing, SOC automation, and defending agents against prompt injection and tool abuse.',
-    'Autonomous operation of large, configuration-heavy AI applications — coding and SWE agents, CI/CD and build repair, configuration validation and drift, incident root-cause analysis, and regression-testing LLM apps as prompts, models and configs change.',
-    'AI and LLMs in trading and markets — financial LLMs and multi-agent trading systems, reinforcement learning for execution and portfolios, alpha mining, and the look-ahead and backtest biases that make results look better than they are.',
+    'AI in defense and national security: autonomy and counter-UAS, ISR and target recognition, LLMs for cyber operations, adversarial robustness, wargaming, and the policy around meaningful human control.',
+    'AI agents in cyber security: autonomous pentesting and CTF agents, LLM-driven vulnerability discovery and fuzzing, SOC automation, and defending agents against prompt injection and tool abuse.',
+    'Autonomous operation of large, configuration-heavy AI applications: coding and SWE agents, CI/CD and build repair, configuration validation and drift, incident root-cause analysis, and regression-testing LLM apps as prompts, models and configs change.',
+    'AI and LLMs in trading and markets: financial LLMs and multi-agent trading systems, reinforcement learning for execution and portfolios, alpha mining, and the look-ahead and backtest biases that make results look better than they are.',
   ],
   /** Openly stated: this portfolio is part of a research-master's application. */
   track:
     'Applying for research-oriented master’s programmes in AI & Law and speech technology in Europe (Erasmus Mundus joint masters and Dutch, German and UK programmes) for the 2027 intake.',
 };
 
-/* ───────────────────────── Skills ───────────────────────── */
+/* ───────────────────────── Skills ─────────────────────────
+   Only what a bullet above evidences. No self-ratings, nothing stale. */
 
 export const skills: { group: string; items: string }[] = [
   {
-    group: 'Research methods',
+    group: 'LLM systems and retrieval',
     items:
-      'benchmark design with declared confounds and stopping rules · leakage-safe splitting · threshold-sensitivity analysis · correlated-error analysis of ASR ensembles · Beta-Binomial reliability estimation · falsification-first reporting of negative results',
-  },
-  {
-    group: 'LLM systems',
-    items:
-      'retrieval-augmented generation · hybrid dense + BM25 with reciprocal rank fusion · pgvector · generator–critic verification · LangGraph / LangChain orchestration · evaluation-harness design · prompt-injection defence · cost governance for paid model APIs · LoRA / QLoRA and GRPO fine-tuning (self-directed)',
+      'hybrid retrieval (dense + BM25, reciprocal rank fusion) · pgvector · generator and critic verification · LangGraph / LangChain · prompt-injection defence · API cost governance · LoRA / QLoRA and GRPO fine-tuning (self-directed)',
   },
   {
     group: 'Speech',
     items:
-      'ASR pipeline engineering · speaker diarization and channel-based attribution · VAD · WER/CER with script-normalised scoring · code-switched Hinglish and Indic handling · streaming STT/TTS · faster-whisper · corpus construction and dataset cards',
+      'ASR pipelines · speaker diarization and channel-based attribution · WER/CER with script-normalised scoring · code-switched Hinglish and Indic · faster-whisper · corpus construction and dataset cards',
   },
   {
-    group: 'Legal informatics & governance',
-    items: 'LegalRuleML static analysis · GDPR (DAPRECO / PrOnto) · IRDAI and SEBI advertising obligations · DPDP Act 2023 data-class gating · PII redaction · append-only audit design',
+    group: 'Evaluation and research methods',
+    items:
+      'benchmark design with declared confounds · leakage-safe splitting · threshold-sensitivity analysis · correlated-error analysis of ASR ensembles · Beta-Binomial reliability estimation · negative results reported as results',
+  },
+  {
+    group: 'Regulation and governance',
+    items: 'IRDAI and SEBI advertising obligations · DPDP Act 2023 data-class gating · PII redaction · GDPR (DAPRECO / PrOnto) · LegalRuleML analysis · append-only audit design',
   },
   {
     group: 'Engineering',
-    items: 'Python · TypeScript · Java · SQL · FastAPI · PostgreSQL / pgvector · Redis · Qdrant · Next.js · Docker / Podman · RHEL 9 · Azure OpenAI · test-driven development · documentation as a maintained artefact',
+    items: 'Python · TypeScript · Java · SQL · FastAPI · PostgreSQL · Redis · Qdrant · Next.js · Docker / Podman · Azure OpenAI · API design · release management · test-driven development',
   },
 ];
 
@@ -306,7 +330,7 @@ export const hire = {
       name: 'Agent safety and governance',
       outcome:
         'Agents that cannot do the irreversible thing without sign-off: a tool gateway, approval tokens, an audit trail and layered prompt-injection defence.',
-      proof: 'Designed Arbor, an agent-governance architecture with 10 ADRs and 219 passing tests.',
+      proof: 'Designed Arbor, an agent-governance architecture with 10 decision records and 219 passing tests.',
       link: { label: 'Arbor on GitHub', href: 'https://github.com/Thunderk3g/Arbor' },
     },
     {
@@ -389,6 +413,7 @@ export function resumeText(): string {
     out.push('', `### ${r.title} · ${r.org} · ${r.period}`, r.blurb);
     for (const g of r.groups) {
       if (g.heading) out.push('', `#### ${g.heading}`);
+      if (g.result) out.push(`Result: ${g.result}`);
       out.push(...g.points.map((p) => '- ' + p));
     }
   }
