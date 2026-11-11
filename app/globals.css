@@ -717,7 +717,8 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
   background: var(--kos-win); border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--kos-radius-win) var(--kos-radius-win) var(--kos-radius) var(--kos-radius);
   box-shadow: var(--kos-shadow-2); overflow: hidden; contain: layout;
-  animation: kos-win-in 0.18s var(--kos-ease) both;
+  /* no fill-mode: a filling opacity animation would flatten the window's children when Teardown lifts them */
+  animation: kos-win-in 0.18s var(--kos-ease);
   transition: left 0.2s var(--kos-ease), top 0.2s var(--kos-ease), width 0.2s var(--kos-ease), height 0.2s var(--kos-ease), box-shadow var(--kos-fast);
 }
 .kos-window.focused { box-shadow: var(--kos-shadow-3); border-color: rgba(255,255,255,0.1); }
@@ -960,7 +961,8 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
 /* ---------- Phones ---------- */
 @media (max-width: 640px) {
   .kos { --kos-panel-h: 44px; }
-  .kos-hide-sm, .kos-tray-hide-sm, .kos-cpugraph,   .kos-panel { padding: 0 2px; }
+  .kos-hide-sm, .kos-tray-hide-sm, .kos-cpugraph, .kos-tray-presence { display: none !important; }
+  .kos-panel { padding: 0 2px; }
   .kos-panel-menu { width: 44px; height: 40px; justify-content: center; padding: 0; }
   .kos-task, .kos-tray-item, .kos-tray-clock { height: 40px; }
   .kos-task { width: 42px; }
@@ -2274,9 +2276,12 @@ html:has(.man) { background: #0d0f16; }
    TEARDOWN — the desktop tilted and pulled apart (src/os/teardown).
    The desktop element is the 3D scene; `.kos` supplies the perspective and
    clips it. Every layer is raised with `translate`, which composes with any
-   `transform` the layer already has. Heights come from the camera loop as
-   --td-z / --td-x on each layer. The lens (Kali, this site, an LLM system)
-   sets --td-accent for the whole drawing.
+   `transform` the layer already has. Height and opacity come from the camera
+   loop as --td-z / --td-o on each layer, already eased: nothing here adds a
+   transition of its own on top, which would make the layers lag the lines
+   drawn to them. On a layer's own screen its pieces are moved the same way,
+   and --td-p says how far it has come apart. The lens (Kali, this site, an
+   LLM system) sets --td-accent for the whole drawing.
    ========================================================================== */
 .kos[data-teardown] {
   perspective: 3200px;
@@ -2296,16 +2301,27 @@ html:has(.man) { background: #0d0f16; }
 /* transform-style is not inherited: every element between the scene and a layer needs it */
 .kos[data-teardown] .kos-desktop { transform-style: preserve-3d; transform-origin: 50% 50%; will-change: transform; }
 .kos[data-teardown] .kos-windows { transform-style: preserve-3d; }
-.kos[data-teardown] [data-td-part] {
-  translate: var(--td-x, 0px) 0 var(--td-z, 0px);
-  opacity: var(--td-o, 1); transition: opacity 0.18s ease;
-}
+.kos[data-teardown] [data-td-part] { translate: 0 0 var(--td-z, 0px); opacity: var(--td-o, 1); }
 .kos[data-teardown] .kos-wall { inset: 0; animation: none; border-radius: 10px; }
-.kos[data-teardown] .kos-window { transition: opacity 0.18s ease; }
-.kos[data-teardown] .kos-window[data-td-active],
-.kos[data-teardown] .kos-panel[data-td-active] { outline: 4px solid var(--td-hot); outline-offset: 3px; }
+.kos[data-teardown] .kos-window,
+.kos[data-teardown] .kos-panel { outline: 4px solid transparent; outline-offset: 3px; transition: outline-color 0.2s ease; }
 .kos[data-teardown] .kos-window[data-td-wired],
-.kos[data-teardown] .kos-panel[data-td-wired] { outline: 3px solid var(--td-wire); outline-offset: 3px; }
+.kos[data-teardown] .kos-panel[data-td-wired] { outline-color: var(--td-wire); }
+.kos[data-teardown] .kos-window[data-td-active],
+.kos[data-teardown] .kos-panel[data-td-active] { outline-color: var(--td-hot); }
+/* on its own screen a layer needs no ring round it */
+.kos[data-td-open] .kos-window[data-td-active],
+.kos[data-td-open] .kos-panel[data-td-active] { outline-color: transparent; }
+
+/* a layer's own screen: its pieces lift out of it, so it and everything between it and a
+   piece must keep children in 3D, and must not clip them */
+.kos[data-teardown] [data-td-open],
+.kos[data-teardown] [data-td-chain] { transform-style: preserve-3d; overflow: visible; contain: none; }
+.kos[data-teardown] [data-td-piece='stand'] { transform-origin: 50% 100%; }
+.kos[data-teardown] .kos-window[data-td-open] { box-shadow: 0 0 0 2px rgba(var(--td-accent-rgb), 0.7); }
+.kos[data-teardown] .kos-window[data-td-open] > .kos-titlebar,
+.kos[data-teardown] .kos-window[data-td-open] > .kos-window-body { box-shadow: 0 0 0 2px rgba(var(--td-accent-rgb), 0.55); }
+.kos[data-teardown] .kos-window[data-td-open] > .kos-rz { display: none; }
 .kos[data-teardown] .kos-stacks-tip,
 .kos[data-teardown] .kos-ctx,
 .kos[data-teardown] .kos-snap-preview { display: none; }
@@ -2327,35 +2343,100 @@ html:has(.man) { background: #0d0f16; }
     linear-gradient(90deg, rgba(140, 160, 255, 0.06) 1px, transparent 1px) 0 0 / 2.8vw 100%,
     linear-gradient(160deg, #151b4c, #0a0d2a);
 }
-.td-plate[data-td-active] { border-color: var(--td-hot); border-width: 4px; }
+.td-plate.bare { border: 0; }
+.td-plate[data-td-wired] { border-color: var(--td-wire); }
+.td-plate[data-td-active] { border-color: var(--td-hot); }
 .td-plate.glass[data-td-active] { background: rgba(255, 200, 87, 0.045); }
-.td-plate[data-td-wired] { border-color: var(--td-wire); border-width: 3px; }
+.kos[data-td-open] .td-plate[data-td-active] { border-color: rgba(var(--td-accent-rgb), 0.7); }
+.kos[data-td-open] .td-plate.glass[data-td-active] { background: rgba(var(--td-accent-rgb), 0.025); }
 
 /* the index tab: hangs off the right-hand corner, the one side of the stack nothing else covers */
 .td-tab {
   position: absolute; left: 100%; bottom: 1.4vw; padding: 0 0.6vw 0.35vw 1vw; white-space: nowrap;
   font-size: 2.25vw; font-weight: 700; letter-spacing: 0.01em; color: var(--td-ink);
-  border-bottom: 3px solid rgba(var(--td-accent-rgb), 0.85); transition: border-color 0.3s;
+  border-bottom: 3px solid rgba(var(--td-accent-rgb), 0.85); transition: border-color 0.3s, opacity 0.25s;
   text-shadow: 0 0 1.2vw rgba(6, 8, 23, 0.9);
 }
+/* a layer's own screen has its name at the top of the sheet instead */
+.kos[data-td-open] .td-tab { opacity: 0; }
 .td-tab b { margin-right: 0.9vw; color: var(--td-accent); transition: color 0.3s; }
 .td-plate[data-td-wired] .td-tab { border-color: var(--td-wire); }
 .td-plate[data-td-active] .td-tab { border-color: var(--td-hot); }
 .td-plate[data-td-active] .td-tab b { color: var(--td-hot); }
 
-/* the panel's plugins, named in place */
-.td-notes { position: absolute; left: 0; right: 0; top: var(--kos-panel-h); height: 0; }
-.td-notes span {
-  position: absolute; top: 2.2vw; transform: translateX(-50%); white-space: nowrap;
-  font-size: 1.75vw; color: var(--td-accent); transition: color 0.3s;
+/* flags: on a live layer's own screen, a label beside each real piece that lifts out.
+   The loop raises each one to the height of its group. The fade is on the flag, not on
+   the container, because an opacity on the container would flatten them to the plate. */
+.td-plate[data-td-open], .td-flags, .td-slabs { transform-style: preserve-3d; }
+.td-flags, .td-slabs { position: absolute; inset: 0; }
+.td-flag {
+  position: absolute; white-space: nowrap; padding: 0.25vw 0.7vw; opacity: var(--td-p, 0);
+  font-size: 1.45vw; font-weight: 700; color: #f1f4ff;
+  border: 2px solid rgba(var(--td-accent-rgb), 0.85); border-radius: 0.45vw; background: rgba(6, 8, 23, 0.86);
 }
-.td-notes span.low { top: 5vw; }
-.td-notes span::before { content: ''; position: absolute; left: 50%; bottom: 100%; width: 2px; height: 1.9vw; background: rgba(var(--td-accent-rgb), 0.7); }
-.td-notes span.low::before { height: 4.7vw; }
+.td-flag::before { content: ''; position: absolute; background: rgba(var(--td-accent-rgb), 0.85); }
+/* under a row of pieces the flags hang at three depths, so neighbours never collide */
+.td-flag.f-below { --drop: 1.6vw; transform: translate(-50%, var(--drop)); font-size: 1.25vw; }
+.td-flag.f-below.t1 { --drop: 4.4vw; }
+.td-flag.f-below.t2 { --drop: 7.2vw; }
+.td-flag.f-below::before { left: 50%; bottom: 100%; width: 2px; height: var(--drop); }
+.td-flag.f-above { transform: translate(-50%, calc(-100% - 1.5vw)); }
+.td-flag.f-above::before { left: 50%; top: 100%; width: 2px; height: 1.5vw; }
+.td-flag.f-right { transform: translate(1.6vw, -50%); }
+.td-flag.f-right::before { right: 100%; top: 50%; width: 1.6vw; height: 2px; }
+
+/* slabs: under the wallpaper, the layer's components as pieces that rise off the plate on
+   its own screen. Laid out by Plates.tsx, moved by the loop; each move has its own look. */
+.td-slab {
+  position: absolute; opacity: 0; color: #f1f4ff;
+  border: 2px solid rgba(var(--td-accent-rgb), 0.85); border-radius: 0.8vw; background: rgba(var(--td-accent-rgb), 0.14);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.td-slab span { position: absolute; left: 1.2vw; bottom: 0.9vw; display: flex; align-items: center; gap: 0.8vw; white-space: nowrap; font-size: 1.9vw; font-weight: 700; line-height: 1.1; }
+.td-slab b {
+  display: grid; place-items: center; width: 2.5vw; height: 2.5vw; flex: none; border-radius: 50%;
+  font-size: 1.35vw; color: #06101e; background: var(--td-accent); transition: background-color 0.15s;
+}
+.td-slab.hot { border-color: var(--td-hot); }
+.td-slab.hot b { background: var(--td-hot); }
+/* sheets: the planes of a picture, one behind another, each named along the near edge */
+.m-sheets .td-slab { background: rgba(var(--td-accent-rgb), 0.06); border-radius: 0.4vw; }
+.m-sheets .td-slab span { left: calc(1.2vw + var(--i) * (84% / var(--n))); }
+.m-sheets .td-slab:nth-child(1) { border-color: #ff7a7a; background: rgba(255, 90, 90, 0.07); }
+.m-sheets .td-slab:nth-child(2) { border-color: #6fe08f; background: rgba(80, 220, 120, 0.07); }
+.m-sheets .td-slab:nth-child(3) { border-color: #74a2ff; background: rgba(90, 140, 255, 0.07); }
+/* cascade: little windows, each with a title strip */
+.m-cascade .td-slab { background: rgba(11, 15, 46, 0.9); border-radius: 0.7vw 0.7vw 0.3vw 0.3vw; box-shadow: 0 1.2vw 2.4vw rgba(0, 0, 0, 0.35); }
+.m-cascade .td-slab::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4.2vw; border-radius: 0.5vw 0.5vw 0 0; background: rgba(var(--td-accent-rgb), 0.34); }
+.m-cascade .td-slab span { top: 0.85vw; bottom: auto; }
+/* drawers: solid, with a front lip to carry the label */
+.m-drawers .td-slab { background: linear-gradient(180deg, #17215c, #0c1238); border-bottom-width: 4.4vw; border-bottom-color: rgba(var(--td-accent-rgb), 0.5); border-radius: 0.5vw; }
+.m-drawers .td-slab span { bottom: -3.6vw; }
+/* rings: each one a step of the ziggurat, named on the band the next ring leaves showing */
+.m-rings .td-slab { background: rgba(11, 15, 46, 0.86); border-radius: 1.4vw; }
+.m-rings .td-slab span { left: 50%; bottom: 0.75vw; transform: translateX(-50%); font-size: 1.7vw; }
+.m-rings .td-slab:first-child span { bottom: 50%; transform: translate(-50%, 50%); font-size: 2.4vw; }
+.m-rings .td-slab:first-child { background: rgba(var(--td-accent-rgb), 0.3); }
+/* chips: packages on a board, with their legs showing */
+.m-chips .td-slab {
+  border-color: #eaa93a; border-radius: 0.5vw; background: linear-gradient(145deg, #1c2233, #0b0e18);
+  outline: 0.55vw dashed rgba(234, 169, 58, 0.55); outline-offset: 0.35vw;
+}
+.m-chips .td-slab span { left: 50%; bottom: 50%; transform: translate(-50%, 50%); font-size: 2.3vw; }
+.m-chips .td-slab b { background: #eaa93a; }
+/* fan: paint swatches, colour above and name below, turning about a pin under the hand */
+.m-fan .td-slab {
+  transform-origin: 50% 185%; border-color: #eef1ff; border-radius: 0.5vw; color: #0a0d26;
+  background: linear-gradient(180deg, rgba(var(--td-accent-rgb), 0.92) 0 70%, #eef1ff 70%);
+  filter: hue-rotate(calc(var(--i) * 26deg - 30deg)); box-shadow: 0 0.8vw 1.8vw rgba(0, 0, 0, 0.4);
+}
+.m-fan .td-slab span { left: 0.9vw; bottom: 1.1vw; font-size: 1.35vw; white-space: normal; }
+.m-fan .td-slab b { display: none; }
 
 /* under the wallpaper: live figures in the body, the layer's components along the near lip */
-.td-body { position: absolute; inset: 2vw 2vw 11.4vw 2vw; }
+.td-body { position: absolute; inset: 2vw 2vw 11.4vw 2vw; opacity: calc(1 - var(--td-p, 0) * 0.86); }
 .td-lip {
+  opacity: calc(1 - var(--td-p, 0));
   position: absolute; left: 0; right: 0; bottom: 0; height: 9.6vw; margin: 0; padding: 1.1vw 1.3vw; list-style: none;
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.9vw;
   border-top: 2px solid rgba(var(--td-accent-rgb), 0.5); background: rgba(var(--td-accent-rgb), 0.07);
@@ -2434,17 +2515,23 @@ html:has(.man) { background: #0d0f16; }
 .td-stage { position: absolute; inset: 0; cursor: grab; touch-action: none; }
 .td-stage:active { cursor: grabbing; }
 .td-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+/* a layer's own screen has no stack to draw lines to */
+.td-hud.ready.opened > .td-lines { opacity: 0; transition-duration: 0.18s; }
+.td-hud.opened .td-parts { display: none; }
+.td-hud.opened .td-stage { cursor: zoom-out; }
 .td-rods { fill: none; stroke: rgba(170, 188, 255, 0.28); stroke-width: 1; stroke-dasharray: 3 5; }
 .td-leader { fill: rgba(170, 188, 255, 0.55); stroke: var(--td-line); stroke-width: 1; transition: stroke 0.15s, fill 0.15s; }
 .td-leader.wired { stroke: var(--td-wire); fill: var(--td-wire); }
 .td-leader.on { stroke: var(--td-hot); fill: var(--td-hot); stroke-width: 1.5; }
 .td-wire {
   fill: none; stroke: var(--td-wire); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 2 9;
-  filter: drop-shadow(0 0 5px rgba(111, 233, 255, 0.7)); animation: td-flow 0.9s linear infinite;
+  filter: drop-shadow(0 0 5px rgba(111, 233, 255, 0.7)); animation: td-flow 0.9s linear infinite, td-wire-in 0.28s ease 0.14s both;
 }
 .td-wire.in { animation-direction: reverse; }
 @keyframes td-flow { to { stroke-dashoffset: -22; } }
-.td-wire-end { fill: var(--td-wire); filter: drop-shadow(0 0 5px rgba(111, 233, 255, 0.8)); }
+.td-wire-end { fill: var(--td-wire); filter: drop-shadow(0 0 5px rgba(111, 233, 255, 0.8)); animation: td-wire-in 0.28s ease 0.14s both; }
+/* wires wait a beat, so sweeping the pointer down the stack does not flash them */
+@keyframes td-wire-in { from { opacity: 0; } }
 
 .td-rail { position: absolute; left: 14px; top: 14px; bottom: 14px; width: 304px; display: flex; flex-direction: column; gap: 9px; pointer-events: none; }
 .td-rail > * { pointer-events: auto; }
@@ -2464,6 +2551,25 @@ html:has(.man) { background: #0d0f16; }
 .td-lens button.l-kali.on { background: #5b93ff; }
 .td-lens button.l-site.on { background: #45d6b8; }
 .td-lens button.l-llm.on { background: #c58cf5; }
+
+/* on a layer's own screen: the way back, and the way to the next layer */
+.td-crumb { flex: none; display: flex; align-items: center; gap: 6px; animation: td-card 0.25s ease; }
+.td-crumb span { flex: 1; text-align: center; font-family: var(--kos-mono); font-size: 11px; color: var(--td-dim); }
+.td-crumb span b { color: var(--td-hot); font-size: 13px; }
+.td-crumb .step { width: 30px; padding: 0; }
+.td-btn:disabled { opacity: 0.35; pointer-events: none; }
+
+/* the name of a layer's own screen, across the top of the sheet */
+.td-screen { position: absolute; left: 396px; right: 40px; top: 18px; pointer-events: none; animation: td-screen 0.5s ease 0.12s both; }
+.td-screen p:first-child { font-family: var(--kos-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--td-accent); transition: color 0.3s; }
+.td-screen p:first-child b { margin-right: 10px; padding: 1px 7px; border-radius: 999px; background: var(--td-hot); color: #1a1303; letter-spacing: 0.04em; }
+.td-screen h1 { margin-top: 4px; font-size: clamp(22px, 2.4vw, 34px); font-weight: 700; line-height: 1.12; color: #fff; text-shadow: 0 2px 18px rgba(6, 8, 23, 0.9); }
+.td-screen-move { margin-top: 6px; max-width: 62ch; font-size: 13px; line-height: 1.45; color: #b9c1e6; text-shadow: 0 1px 10px rgba(6, 8, 23, 0.95); }
+.td-screen-move i {
+  margin-right: 9px; padding: 1px 7px; border: 1px solid rgba(var(--td-accent-rgb), 0.8); border-radius: 4px;
+  font-style: normal; font-family: var(--kos-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--td-accent);
+}
+@keyframes td-screen { from { opacity: 0; transform: translateY(-8px); } }
 
 .td-parts { flex: none; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
 .td-parts button {
@@ -2496,6 +2602,8 @@ html:has(.man) { background: #0d0f16; }
   border-top: 2px solid var(--td-accent); transition: border-color 0.3s;
   backdrop-filter: blur(10px); font-size: 12.5px; line-height: 1.5; user-select: text;
 }
+.td-card { animation: td-card 0.22s ease; }
+@keyframes td-card { from { opacity: 0; transform: translateY(5px); } }
 .td-detail-n { font-family: var(--kos-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--td-accent); transition: color 0.3s; }
 .td-detail h2 { margin-top: 2px; font-size: 16px; font-weight: 700; line-height: 1.25; color: #fff; }
 .td-detail h3 { margin: 12px 0 5px; padding-top: 9px; border-top: 1px solid rgba(170, 188, 255, 0.16); font-family: var(--kos-mono); font-size: 10px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--td-dim); }
@@ -2504,7 +2612,19 @@ html:has(.man) { background: #0d0f16; }
 .td-pieces { margin-top: 9px; display: grid; gap: 5px; }
 .td-pieces dt { font-weight: 700; color: #f1f4ff; line-height: 1.3; }
 .td-pieces dt::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 2px; background: var(--td-accent); transition: background-color 0.3s; }
-.td-pieces dd { margin: -4px 0 0 14px; color: #a0a9d2; font-size: 12px; line-height: 1.4; }
+.td-pieces dd { margin: 1px 0 0 14px; color: #a0a9d2; font-size: 12px; line-height: 1.4; }
+/* on a layer's screen each component is one of the pieces in the air: pointing at it here lights it there */
+.td-pieces .piece { margin: 0 -6px; padding: 2px 6px; border-radius: 5px; transition: background-color 0.15s; }
+.td-pieces .piece dt::before { display: none; }
+.td-pieces .piece dt b {
+  display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: 7px; border-radius: 50%; vertical-align: 1px;
+  font-family: var(--kos-mono); font-size: 10px; color: #06101e; background: var(--td-accent); transition: background-color 0.15s;
+}
+.td-pieces .piece dd { margin-left: 23px; }
+.td-pieces .piece.hot { background: rgba(255, 200, 87, 0.1); }
+.td-pieces .piece.hot dt b { background: var(--td-hot); }
+.td-detail .td-btn.open { margin-top: 10px; border-color: var(--td-hot); color: #ffe0a3; }
+.td-detail .td-btn.open kbd { opacity: 0.7; }
 .td-also { display: grid; gap: 4px; margin-top: 11px; }
 .td-also button {
   display: flex; align-items: baseline; gap: 8px; padding: 4px 8px; border: 1px solid rgba(170, 188, 255, 0.18); border-radius: 6px;
@@ -2569,7 +2689,7 @@ html:has(.man) { background: #0d0f16; }
   .td-block { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .td-hud > :not(.td-stage), .kos[data-teardown] [data-td-part] { transition: none; }
-  .td-wire, .td-lip li { animation: none; }
+  .td-hud > :not(.td-stage), .kos[data-teardown] .kos-window, .kos[data-teardown] .kos-panel, .td-tab { transition: none; }
+  .td-wire, .td-wire-end, .td-lip li, .td-card, .td-crumb, .td-screen { animation: none; }
   .td-wire { stroke-dasharray: none; }
 }

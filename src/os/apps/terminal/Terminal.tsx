@@ -103,7 +103,38 @@ function TerminalApp({ windowId, args }: AppProps) {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
   }, [blocks, busy]);
 
-  const focusInput = () => inputRef.current?.focus();
+  const focusInput = () => inputRef.current?.focus({ preventScroll: true });
+
+  /* A click in the scrollback must leave the keyboard with the prompt. Focusing on
+     mousedown does not survive: the browser then moves focus to what was clicked,
+     which is not focusable, so it lands on <body>. Focus on release instead, and
+     not when the click was a drag that selected text to copy. */
+  const onRelease = () => {
+    if (!window.getSelection()?.toString()) focusInput();
+  };
+
+  // a click on the window's own title bar does the same thing to focus, so listen on the whole window
+  useEffect(() => {
+    const win = bodyRef.current?.closest('.kos-window');
+    if (!win) return;
+    const onUp = (e: Event) => {
+      if ((e.target as Element | null)?.closest?.('button, a, input, textarea')) return;
+      onRelease();
+    };
+    win.addEventListener('mouseup', onUp);
+    return () => win.removeEventListener('mouseup', onUp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // and when the window is brought forward from the panel or the keyboard
+  const isFocused = useOS((s) => s.focusedId === windowId);
+  useEffect(() => {
+    if (!isFocused) return;
+    const t = window.setTimeout(() => {
+      if (!window.getSelection()?.toString() && !document.activeElement?.closest?.('input, textarea, [contenteditable]')) focusInput();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [isFocused]);
 
   const submit = async () => {
     const line = input;
@@ -159,7 +190,7 @@ function TerminalApp({ windowId, args }: AppProps) {
   };
 
   return (
-    <div className="kos-term" onMouseDown={focusInput} ref={bodyRef} data-window={windowId}>
+    <div className="kos-term" ref={bodyRef} data-window={windowId}>
       <div className="kos-term-inner">
         {blocks.map((b) =>
           b.prompt ? (

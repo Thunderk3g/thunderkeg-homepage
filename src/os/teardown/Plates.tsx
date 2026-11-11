@@ -3,7 +3,9 @@
 import { useLayoutEffect, useState } from 'react';
 import { KALI_MARK_PATH } from '../icons';
 import type { Lens } from './anatomy';
+import { BREAKDOWNS, DRAWN, MAX_SLABS, slabBox } from './breakdowns';
 import { kb, useTeardownModel, type Part, type Under } from './parts';
+import { livePieces, type LiveGroup } from './pieces';
 import { useTeardown } from './store';
 
 /**
@@ -17,7 +19,10 @@ import { useTeardown } from './store';
  *            row along the near edge: the strip that stays in view.
  *   body     live figures from this tab: the display, the process table, the
  *            file tree and what is stored, the two kernels, the machine.
- *   notes    on the panel's glass, a label under each real plugin.
+ *   slabs    the layer's components as pieces that rise off the plate on the
+ *            layer's own screen, each layer in its own way (breakdowns.ts).
+ *   flags    for a live layer, a label beside each real piece that lifts out:
+ *            the panel's plugins, a window's title bar, the icons.
  *
  * Type is set in viewport units: at the scale the stack is shown, 2.2vw is
  * about a caption. Decoration only: everything here is also in the HUD as text.
@@ -31,38 +36,110 @@ export function TeardownPlates() {
 }
 
 function Plates() {
-  const { parts, under } = useTeardownModel();
+  const { parts, under, W, H } = useTeardownModel();
   const lens = useTeardown((s) => s.lens);
+  const opened = useTeardown((s) => s.opened);
+  const hot = useTeardown((s) => s.piece);
   return (
     <>
-      {parts
-        .filter((p) => p.plate)
-        .map((p) => {
-          const reading = p.anatomy[lens];
+      {parts.map((p) => {
+        const reading = p.anatomy[lens];
+        const move = BREAKDOWNS[p.kind].move;
+        const isOpen = opened === p.id;
+        // a window has no plate of its own: only somewhere to hang its flags
+        if (!p.plate) {
           return (
-            <div key={p.id} className={`td-plate ${p.plate} k-${p.kind}`} data-td-plate={p.id} aria-hidden="true">
-              <span className="td-tab">
-                <b>{String(parts.indexOf(p) + 1).padStart(2, '0')}</b>
-                {reading.name}
-              </span>
-              {p.kind === 'panel' && <PanelNotes lens={lens} />}
-              {p.kind === 'nowindows' && <p className="td-plate-empty">no windows open</p>}
-              {p.plate === 'solid' && (
-                <>
-                  <div className="td-body">
-                    {p.kind === 'display' && <Display d={under.display} />}
-                    {p.kind === 'session' && <Session procs={under.procs} />}
-                    {p.kind === 'fs' && <Files fs={under.fs} storage={under.storage} />}
-                    {p.kind === 'kernel' && <Kernel k={under.kernel} />}
-                    {p.kind === 'hardware' && <Hardware h={under.hardware} />}
-                  </div>
-                  <Lip part={p} lens={lens} />
-                </>
-              )}
+            <div key={p.id} className="td-plate bare" data-td-plate={p.id} aria-hidden="true">
+              <Flags part={p} lens={lens} live={isOpen} />
             </div>
           );
-        })}
+        }
+        return (
+          <div key={p.id} className={`td-plate ${p.plate} k-${p.kind} m-${move}`} data-td-plate={p.id} aria-hidden="true">
+            <span className="td-tab">
+              <b>{String(parts.indexOf(p) + 1).padStart(2, '0')}</b>
+              {reading.name}
+            </span>
+            {p.kind === 'nowindows' && <p className="td-plate-empty">no windows open</p>}
+            {p.plate === 'solid' && (
+              <>
+                <div className="td-body">
+                  {p.kind === 'display' && <Display d={under.display} />}
+                  {p.kind === 'session' && <Session procs={under.procs} />}
+                  {p.kind === 'fs' && <Files fs={under.fs} storage={under.storage} />}
+                  {p.kind === 'kernel' && <Kernel k={under.kernel} />}
+                  {p.kind === 'hardware' && <Hardware h={under.hardware} />}
+                </div>
+                <Lip part={p} lens={lens} />
+              </>
+            )}
+            {DRAWN.includes(move) ? <Slabs part={p} lens={lens} W={W} H={H} hot={isOpen ? hot : null} /> : <Flags part={p} lens={lens} live={isOpen} />}
+          </div>
+        );
+      })}
     </>
+  );
+}
+
+/**
+ * The layer's components as pieces resting on the plate. They are laid out
+ * here and moved by the camera loop (Teardown.tsx), which finds them by
+ * data-td-slab; at rest they are invisible.
+ */
+function Slabs({ part, lens, W, H, hot }: { part: Part; lens: Lens; W: number; H: number; hot: number | null }) {
+  const move = BREAKDOWNS[part.kind].move;
+  const pieces = part.anatomy[lens].pieces.slice(0, MAX_SLABS);
+  return (
+    <div className="td-slabs" key={lens}>
+      {pieces.map(([name], i) => {
+        const b = slabBox(move, i, pieces.length, W, H);
+        return (
+          <div
+            key={name}
+            className={'td-slab' + (hot === i ? ' hot' : '')}
+            data-td-slab={i}
+            style={{ left: b.x, top: b.y, width: b.w, height: b.h, ['--i' as string]: i, ['--n' as string]: pieces.length }}
+          >
+            <span>
+              <b>{String(i + 1)}</b>
+              {name}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * A label beside each group of live pieces. Measured when the layer's screen
+ * opens, since that is when the layer is as it will be shown; the loop lifts
+ * each flag to the height of its group.
+ */
+function Flags({ part, lens, live }: { part: Part; lens: Lens; live: boolean }) {
+  const [groups, setGroups] = useState<LiveGroup[]>([]);
+  useLayoutEffect(() => {
+    if (!live) return;
+    const root = document.querySelector<HTMLElement>('.kos-desktop');
+    const layer = root && part.selector ? root.querySelector<HTMLElement>(part.selector) : null;
+    if (root) setGroups(livePieces(part.kind, layer, root).groups);
+  }, [live, part.kind, part.selector]);
+  return (
+    <div className="td-flags">
+      {groups.map((g, n) => {
+        const at =
+          g.flag === 'below'
+            ? { left: g.box.x + g.box.w / 2, top: g.box.y + g.box.h }
+            : g.flag === 'above'
+              ? { left: g.box.x + g.box.w / 2, top: g.box.y }
+              : { left: g.box.x + g.box.w, top: g.box.y + Math.min(g.box.h / 2, 40) };
+        return (
+          <span key={g.at} className={`td-flag f-${g.flag} t${n % 3}`} data-td-flag={n} style={at}>
+            {g.names[lens]}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -77,47 +154,6 @@ function Lip({ part, lens }: { part: Part; lens: Lens }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-/**
- * A label under each plugin of the real panel. Positions are measured from
- * the live panel once, in the frame before the desktop tilts.
- */
-const PANEL_SPOTS: { sel: string; kali: string; site: string; llm: string }[] = [
-  { sel: '.kos-panel-menu', kali: 'Whisker Menu', site: 'menu', llm: 'tool menu' },
-  { sel: '.kos-panel-launcher', kali: 'launchers', site: 'launchers', llm: 'pinned tools' },
-  { sel: '.kos-pager', kali: 'workspace switcher', site: 'pager', llm: 'sessions' },
-  { sel: '.kos-task', kali: 'window buttons', site: 'task list', llm: 'traces' },
-  { sel: '.kos-cpugraph', kali: 'CPU graph', site: 'load graph', llm: 'latency' },
-  { sel: '.kos-tray-item', kali: 'status tray', site: 'tray', llm: 'cost meters' },
-  { sel: '.kos-tray-clock', kali: 'clock', site: 'clock', llm: 'timestamps' },
-];
-
-function PanelNotes({ lens }: { lens: Lens }) {
-  const [spots, setSpots] = useState<{ x: number; w: number; i: number }[]>([]);
-  useLayoutEffect(() => {
-    const found: { x: number; w: number; i: number }[] = [];
-    PANEL_SPOTS.forEach((s, i) => {
-      const els = [...document.querySelectorAll<HTMLElement>('.kos-panel ' + s.sel)].filter((e) => e.offsetWidth > 0);
-      if (!els.length) return;
-      const rects = els.map((e) => e.getBoundingClientRect());
-      const left = Math.min(...rects.map((r) => r.left));
-      const right = Math.max(...rects.map((r) => r.right));
-      // only trust the measurement while the desktop is still flat
-      if (rects[0].top > 4 || right - left < 4) return;
-      found.push({ x: left, w: right - left, i });
-    });
-    if (found.length) setSpots(found);
-  }, []);
-  return (
-    <div className="td-notes">
-      {spots.map((s, n) => (
-        <span key={s.i} className={n % 2 ? 'low' : ''} style={{ left: s.x + s.w / 2 }}>
-          {PANEL_SPOTS[s.i][lens]}
-        </span>
-      ))}
-    </div>
   );
 }
 

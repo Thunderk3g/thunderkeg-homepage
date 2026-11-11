@@ -96,7 +96,7 @@ blocking order; balloons in one column numbered top to bottom to match the
 stack; straight leaders at an angle that are re-aimed until none cross
 (`leaderEnds` in `camera.ts`, checked by `scripts/teardown-camera.test.mts`);
 dashed lines up the four corners as the assembly path; and any layer can be
-slid out of the stack, so nothing stays hidden behind another.
+opened on its own, so nothing stays hidden behind another.
 
 ## 5. CSS 3D on a whole live page
 
@@ -159,6 +159,86 @@ the lens renames every layer and the components shown on it
 Each layer also lists the subjects of the Stacks record where I have worked
 at that layer, and the parts it is wired to. `scripts/teardown-anatomy.test.mts`
 checks that every subject and every link named there exists.
+
+## 7. Two levels: leafing the stack, and a layer's own screen
+
+Added on the third pass (2026-11-11), after the first version was used on the
+live site. *All of this section is mine: it comes from testing here, not from
+a source.*
+
+**What was wrong.** Pointing at a layer slid it sideways out of the stack by
+most of the screen's width. Three things made that feel rough:
+
+- The pointer test followed the layer. A layer that slid away was no longer
+  under the pointer, so the layer beneath took the hover, slid out in turn,
+  and the first came back. A perfectly still pointer was stable, but a hand
+  is not: a reviewer with no knowledge of the code, driving the live site,
+  counted 20 to 30 changes of the picked layer in three seconds under two
+  pixels of jiggle, and 108 on one slow sweep down the stack.
+- Each leader chose its landing corner again on every frame, so a leader
+  could jump from one corner to another while its layer was moving. The same
+  scripted sweep run on both versions (the live site, then this build
+  locally): the largest single-frame jump of a
+  leader's end was 432 px before and 17 px after; the picked layer changed
+  102 times before and 29 after.
+- Everything else was dimmed with a CSS opacity transition on top of the
+  camera's own easing. Two easings in series lag each other, and a
+  full-screen layer changing opacity is repainted in full.
+
+**What it does now.**
+
+- *Pointing leafs the stack.* Every layer above the one being pointed at
+  lifts by a fraction of a gap, which opens the stack at that layer the way a
+  thumb opens a pile of paper. The layer itself does not move.
+- *The pointer is tested against the stack at rest*, never against the
+  displaced layers, so what is under the pointer cannot change unless the
+  pointer crosses an edge. Measured with the reviewer's own test, two pixels
+  of jiggle for three seconds at seven points on the stack: 0, 27, 22, 30,
+  29, 0 and 30 changes of the picked layer before; none at any point after.
+- *A leader's corner is chosen once*, on the stack at rest, and again only
+  when the camera itself is turned (`leaderPicks` returns an index; the end
+  point then follows the layer).
+- *Nothing is dimmed on hover*, and opacity is written by the camera loop
+  with no CSS transition over it. The notes follow the pointer 90 ms late, so
+  sweeping across the stack does not re-render them at every layer.
+- *Clicking a layer opens its own screen.* The rest of the stack steps away
+  (up if it was above, down if below) and stops being painted; the camera
+  takes an angle chosen for that layer and frames it with room for its
+  pieces (`frame` in `camera.ts`); and the layer comes apart in a way of its
+  own (`breakdowns.ts`):
+
+| Layer | Move | What moves |
+| --- | --- | --- |
+| Panel | Keys | each real plugin lifts out of the bar, left to right |
+| A window | Lid | the real title bar and client area lift off the frame |
+| Icons and card | Pop-up | the real icons and the card stand up on their lower edge |
+| Stacks board | Replay | the record is rebuilt one year at a time |
+| Wallpaper | Fan | its components fan out like paint swatches |
+| Display | Sheets | full-size sheets separate, one behind another |
+| Session | Cascade | cards step out like a cascade of windows |
+| File system | Drawers | slabs slide out in a staircase |
+| Kernel | Rings | concentric rings rise to a ziggurat |
+| Hardware | Chips | chips lift off the board to different heights |
+
+  For the three live layers the pieces are the page's own elements, found by
+  selector and measured with offsets (which ignore transforms). For the rest
+  they are the layer's components under the current reading, drawn by the
+  plate. Esc steps back one level at a time.
+
+**Two more things CSS 3D did here that the sources did not predict.**
+
+- A window's open animation had `animation-fill-mode: both`, the same trap as
+  the desktop's fade-in in section 5: it would have flattened the title bar
+  and client area back onto the frame. The fill mode was removed.
+- A layer that has stepped away is given `visibility: hidden`, and its
+  children inherit that. Deciding which pieces exist by asking whether they
+  are visible therefore found none on a layer that was just coming back. The
+  test is now on the piece's own opacity, which is not inherited.
+
+**Not verified.** Frame rate. Everything above was measured in headless
+Chromium without a GPU, at roughly ten frames a second, where only jumps and
+feedback loops can be seen, not smoothness itself. Firefox and Safari have
+not been tried.
 
 ## Sources
 

@@ -1,7 +1,8 @@
 # Résumé: what the evidence says, and what was done about it
 
 Research behind the résumé rewrite of 2026-11-10 (`src/data/resume.ts`,
-`src/content/resumePdf.ts`, `/resume`, `/resume.pdf`, `/cv.pdf`).
+`src/content/resumePdf.ts`, `/resume`, `/resume.pdf`, `/cv.pdf`), and a
+record of the second rewrite on 2026-11-11, which is at the end.
 
 ## How far to trust this
 
@@ -34,7 +35,7 @@ a point is my own judgement with no source behind it, it is marked *mine*.
 
 **Done:** one column, real text, bold role titles with the dates on the
 right, short bullets. Two pages, with page one able to stand alone (summary,
-skills, and the two largest streams of the current role). A stream is never
+skills, and the first three streams of the current role). A stream is never
 allowed to start at the foot of a page.
 
 ## 2. How a bullet is built
@@ -61,17 +62,20 @@ measure, then the method. The old bullets led with the method.
 - *Mine:* a number earns its place only with its baseline, what it was
   measured on, its scope, and my part in it. Otherwise leave it out.
 
-**Done:** the résumé now uses three kinds of figure and says so on the page:
+**Done:** the résumé uses four kinds of figure and says so on the page:
 
 | Kind | Examples now on the résumé |
 | --- | --- |
 | Public | 962 rules, mean constraint density 0.462, 43 rules (4.5%); 10 decision records, 219 tests |
-| Structural | three production systems; a ten-person team; four kinds of evidence; four decision states; two leakage barriers; two regulators |
+| Structural | a ten-person team; four kinds of evidence; four decision states; two leakage barriers; two regulators |
 | Already published by me | auto-accept 8.82% to 49.30% on a pilot slice (5.6×), 2.74% on the full corpus |
+| Stated by me on 2026-11-11 | 404 pages from roughly 4,000 to 5,000 to almost none; roughly 3,000 to 4,000 AEM pages checked; about 46,000 approved companies; a 30-item integration plan; four to five months for the team |
 
-Nothing internal was estimated or invented. Each stream has an empty
-`result` slot in `src/data/resume.ts` for one cleared outcome; when filled it
-prints first, in bold, on every surface.
+Nothing was estimated or invented by anyone but me, and the fourth row is in
+my own approximate words. Those figures are **pending my confirmation that
+they are cleared for a public page**. Each stream has a `result` slot in
+`src/data/resume.ts` for one measured outcome; when filled it prints first,
+in bold, on every surface. One is filled so far (the 404 pages).
 
 ## 4. What AI hiring managers look for
 
@@ -94,9 +98,10 @@ figures. Skills are on page one and limited to what a bullet evidences.
 - The signals: scope beyond your own code, direction and standards set,
   decisions and trade-offs, adoption by others, people grown.
 
-**Done in part.** Scope and decisions are now explicit. Adoption and people
-grown are not on the résumé because I do not have the facts for them. See the
-list below.
+**Done in part.** Scope and decisions are explicit, and since 2026-11-11 the
+first stream is the team itself: engineers trained to take a requirement to a
+deployed application on their own within four to five months. How many
+people, and what they have shipped, is still missing. See the list below.
 
 ## 6. India, and remote roles elsewhere
 
@@ -169,11 +174,33 @@ terms; "clearance" means it needs sign-off even in relative form.
 | Change in the manual-review rate | relative |
 | Straight-through rate, volumes, turnaround, false accepts | clearance |
 
+**Buy Journey** (in user-acceptance testing: nothing to measure yet)
+
+| Number | Status |
+| --- | --- |
+| Questions asked per journey, before and after the early bureau, IIB and duplicate-policy checks | relative |
+| Share of journeys completed without a hand-off to a person | relative |
+| Share of cases needing manual underwriting, and the issuance rate, against the existing journey | clearance |
+| Time from first message to payment | relative |
+
+**Web, SEO and tools**
+
+| Number | Status |
+| --- | --- |
+| 404 pages before and after | **supplied 2026-11-11**: roughly 4,000 to 5,000, to almost none |
+| Pages monitored | **supplied 2026-11-11**: roughly 3,000 to 4,000 AEM pages |
+| The dates of the before and after counts, and what "almost none" is today | still needed |
+| Broken backlinks found and fixed; any recovery in search visibility after the rebrand | relative |
+| VAPT findings the agent closed, and how fast | relative |
+| Leads from the gamified portal; approvals handled by the portal; users of the sales assistant | clearance |
+
 **Leading** (mostly safe to state)
 
 | Number | Status |
 | --- | --- |
-| Current team size and how many you mentor | safe |
+| How long the team took to deliver on their own | **supplied 2026-11-11**: four to five months |
+| Current team size and how many you mentor | still needed, safe |
+| Applications the team has shipped without you | still needed, safe |
 | Journeys, APIs and integrations shipped as Dev Lead; release frequency | safe |
 | People promoted or grown, and into what | safe |
 | Teams or functions using your systems | safe |
@@ -218,3 +245,43 @@ Academic CVs:
 
 Gaps: nothing reliable was found on compensation disclosure in India, on PDF
 fonts and file naming, or on CV rules for a specific AI & Law programme.
+
+## The second rewrite, 2026-11-11
+
+The first rewrite described three systems. That undersold the job. What I do
+is AI enablement: I took a sales and marketing function whose use of language
+models was a chat window to agentic systems in production, taking each
+requirement from the business head and carrying it through infrastructure,
+build, release and upkeep, and I trained the team to do the same.
+
+**What changed**
+
+- The summary and the first stream are now about that, not about any one
+  system. The thesis is stated once, plainly: the software is configured to
+  the business's workflow, not the other way round.
+- The current role has six streams, in this order: AI enablement and the
+  team; the Buy Journey; speech analytics; compliance review; document AI and
+  evaluation; web, SEO and tools for the sales teams.
+- Six streams do not fit in two pages. Each stream has a `lead` count in
+  `src/data/resume.ts`: the two-page PDF carries that many bullets from the
+  top and links to `/resume`, which carries them all, as do the academic CV
+  and the plain-text résumé. So bullets are ordered by what a reader with ten
+  seconds needs.
+
+**What was left out, and why**
+
+- *"AI maverick".* A nickname reads as self-praise on a résumé unless it was
+  a formal award. If it was one, it belongs under Awards with its date.
+- *"First of its kind in India".* I cannot verify it, and an unverifiable
+  superlative costs more credibility than it buys (section 3). The Buy
+  Journey's aims (less manual underwriting, a higher issuance rate) are
+  stated as aims, and its status (user-acceptance testing) is in the heading.
+- *Results for the Buy Journey.* There are none yet. Claiming return before
+  launch is the fastest way to fail a reference check.
+- *Names, hosts, internal system names, target dates, private repository
+  names, and the specific knock-out and underwriting rules.* Not mine to
+  publish.
+- *The lead-scoring model and the voice agent.* Named in one line. I have
+  not written down what they do or achieved, so nothing is claimed for them.
+- *Distillation* is in the summary and the skills list on my own statement;
+  no bullet evidences it yet. A line of evidence would make it stronger.

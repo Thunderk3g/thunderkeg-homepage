@@ -8,6 +8,8 @@ import { SITE } from './site';
  *
  *   resume   two pages, for industry readers. Summary, skills, experience,
  *            projects, publications, education. Page one has to stand alone.
+ *            Each stream of work prints only its lead bullets (`lead` in the
+ *            data) and the page links to /resume for the rest.
  *   cv       for academic readers. Education and research first, manuscripts
  *            with their summaries and their exact status, then the rest.
  *
@@ -210,9 +212,19 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
           write(g.heading, BODY + 0.3, 'bold', LH + 0.3);
         }
         if (g.result) bullet(g.result, 'Result:');
-        for (const p of g.points) bullet(p);
+        // two pages hold the lead bullets of each stream; the page and the CV hold them all
+        for (const p of tight && g.lead !== undefined ? g.points.slice(0, g.lead) : g.points) bullet(p);
       }
       gap(1.6);
+    }
+    if (tight && roles.some((r) => r.groups.some((g) => g.lead !== undefined && g.lead < g.points.length))) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(BODY - 0.4);
+      ink(95);
+      keep(LH);
+      doc.textWithLink(`The full account of every stream is at ${site}/resume`, M, y, { url: `${SITE.replace(/\/$/, '')}/resume` });
+      ink(35);
+      y += LH;
     }
   };
 

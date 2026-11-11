@@ -127,20 +127,55 @@ export function crosses(a: [number, number], b: [number, number], c: [number, nu
 }
 
 /**
- * Where each leader lands. A leader runs from its balloon to the edge of its
- * part, and leaders must not cross (ISO 6433). Each part offers its corners
- * and edge midpoints, nearest the balloons first. The widest parts are placed
- * first, since full plates share one clean column of corners; then any leader
- * still crossing another is re-aimed at whichever of its spots crosses least.
- * `rows` and `quads` are in the same order, top part first.
+ * Scale and offset that stand a set of points (desktop px, z up) inside
+ * `area` at a given tilt and turn: the camera for one layer's own screen.
+ * Measured the way it will be drawn, so perspective is accounted for.
  */
-export function leaderEnds(rows: ([number, number] | undefined)[], quads: [number, number][][]): ([number, number] | null)[] {
+export function frame(W: number, H: number, area: Area, rx: number, rz: number, pts: [number, number, number][], sMax = 1.15) {
+  const aw = area.x1 - area.x0;
+  const ah = area.y1 - area.y0;
+  let s = 0.5;
+  let tx = 0;
+  let ty = 0;
+  for (let i = 0; i < 6; i++) {
+    const cam = { rx, rz, s, tx, ty, g: 0 };
+    const on = pts.map((p) => project(cam, W, H, p[0], p[1], p[2]));
+    const xs = on.map((p) => p[0]);
+    const ys = on.map((p) => p[1]);
+    const bw = Math.max(1, Math.max(...xs) - Math.min(...xs));
+    const bh = Math.max(1, Math.max(...ys) - Math.min(...ys));
+    const k = Math.min(aw / bw, ah / bh, sMax / s);
+    s *= k;
+    // the offsets are in screen space before perspective: scale them with the picture, then re-centre
+    tx = tx * k + ((area.x0 + area.x1) / 2 - W / 2 - ((Math.max(...xs) + Math.min(...xs)) / 2 - W / 2) * k);
+    ty = ty * k + ((area.y0 + area.y1) / 2 - H / 2 - ((Math.max(...ys) + Math.min(...ys)) / 2 - H / 2) * k);
+  }
+  return { s, tx, ty };
+}
+
+/** The eight places a leader may land on a part: its corners, then the middle of each edge. */
+export function spots(q: [number, number][]): [number, number][] {
+  return [...q, ...q.map((c, k): [number, number] => [(c[0] + q[(k + 1) % 4][0]) / 2, (c[1] + q[(k + 1) % 4][1]) / 2])];
+}
+
+/**
+ * Which spot each leader lands on. A leader runs from its balloon to the edge
+ * of its part, and leaders must not cross (ISO 6433). Each part offers its
+ * corners and edge midpoints, nearest the balloons first. The widest parts
+ * are placed first, since full plates share one clean column of corners; then
+ * any leader still crossing another is re-aimed at whichever of its spots
+ * crosses least. `rows` and `quads` are in the same order, top part first.
+ *
+ * The answer is an index into spots(), so it can be worked out once on the
+ * stack at rest and then followed while a layer moves: a leader that changed
+ * its mind mid-movement would jump.
+ */
+export function leaderPicks(rows: ([number, number] | undefined)[], quads: [number, number][][]): (number | null)[] {
   type Pt = [number, number];
   const width = (q: Pt[]) => Math.max(...q.map((c) => c[0])) - Math.min(...q.map((c) => c[0]));
-  const spots = quads.map((q) => {
-    const mids = q.map((c, k): Pt => [(c[0] + q[(k + 1) % 4][0]) / 2, (c[1] + q[(k + 1) % 4][1]) / 2]);
-    return [...q, ...mids].sort((m, n) => m[0] - n[0]);
-  });
+  const all = quads.map(spots);
+  // each part's spots, leftmost (nearest the balloons) first
+  const tryOrder = all.map((sp) => sp.map((_, k) => k).sort((m, n) => sp[m][0] - sp[n][0]));
   const pick: (number | null)[] = quads.map(() => null);
   /** how many placed leaders part i would cross if it aimed at spot k */
   const cost = (i: number, k: number) => {
@@ -148,19 +183,20 @@ export function leaderEnds(rows: ([number, number] | undefined)[], quads: [numbe
     for (let j = 0; j < quads.length; j++) {
       const pj = pick[j];
       if (j === i || pj === null) continue;
-      if (crosses(rows[i]!, spots[i][k], rows[j]!, spots[j][pj])) n++;
+      if (crosses(rows[i]!, all[i][k], rows[j]!, all[j][pj])) n++;
     }
     return n;
   };
   const best = (i: number) => {
-    let at = 0;
+    let at = tryOrder[i][0];
     let least = Infinity;
-    for (let k = 0; k < spots[i].length && least > 0; k++) {
+    for (const k of tryOrder[i]) {
       const c = cost(i, k);
       if (c < least) {
         least = c;
         at = k;
       }
+      if (least === 0) break;
     }
     return at;
   };
@@ -180,7 +216,13 @@ export function leaderEnds(rows: ([number, number] | undefined)[], quads: [numbe
     }
     if (!changed) break;
   }
-  return quads.map((_, i) => (pick[i] === null ? null : spots[i][pick[i]!]));
+  return pick;
+}
+
+/** Where each leader lands, as points. */
+export function leaderEnds(rows: ([number, number] | undefined)[], quads: [number, number][][]): ([number, number] | null)[] {
+  const pick = leaderPicks(rows, quads);
+  return quads.map((q, i) => (pick[i] === null ? null : spots(q)[pick[i]!]));
 }
 
 /** Frame-rate independent easing toward a target. */

@@ -38,12 +38,12 @@ export const metadata: Metadata = {
     type: 'website',
     title: 'Diwakar Adhikari — Technical Lead, AI Engineering',
     description:
-      'Retrieval-grounded and speech AI, built where a wrong answer is a regulatory event. A portfolio you can boot: terminal, research tools, a real Linux VM and PostgreSQL.',
+      'AI enablement for a regulated business: agentic, retrieval-grounded and speech AI, taken from a requirement to production. A portfolio you can boot: terminal, research tools, a real Linux VM and PostgreSQL.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Diwakar Adhikari — Technical Lead, AI Engineering',
-    description: 'Retrieval-grounded and speech AI. A portfolio rendered as a Kali Linux desktop.',
+    description: 'AI enablement, agentic and speech AI. A portfolio rendered as a Kali Linux desktop.',
   },
 };
 

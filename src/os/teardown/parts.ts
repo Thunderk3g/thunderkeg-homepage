@@ -169,7 +169,7 @@ const since = (ms: number) => {
 
 /* ───────────────────────── the list ───────────────────────── */
 
-export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H: number } {
+export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H: number; years: number[] } {
   const windows = useOS((s) => s.windows);
   const focusedId = useOS((s) => s.focusedId);
   const activeWs = useOS((s) => s.activeWorkspace);
@@ -509,7 +509,7 @@ export function useTeardownModel(): { parts: Part[]; under: Under; W: number; H:
       return { ...d, anatomy, links, work: workOf(anatomy.work) };
     });
 
-    return { parts, under, W, H };
+    return { parts, under, W, H, years: board.years.map((y) => y.year) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windows, focusedId, activeWs, settings, fsInfo, storage, user, board, hz, tick, close, launch]);
 }

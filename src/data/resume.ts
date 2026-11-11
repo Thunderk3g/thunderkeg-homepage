@@ -5,16 +5,24 @@
  *
  * Editorial policy — read before adding a number.
  * ------------------------------------------------------------------
- * This repository is public. Employer-internal production metrics
- * (submission counts, latency percentiles, corpus sizes, programme spend,
- * reviewer-decision totals) are NOT published here; they need written
- * clearance and they live only in the private master résumé.
+ * This repository is public. A figure appears here only if a reader learns
+ * something from it, and only if it is one of four kinds:
  *
- * What is published: scope (what was owned), mechanism (what was built and
- * how it was verified), decisions and negative results, and numbers that
- * come from public corpora or personal repositories. Numbers that only
- * decorate (tiny sample sizes, test counts, "six-node") are left out: a
- * figure appears here only if a reader learns something from it.
+ *   public        from a public corpus or a public repository
+ *   published     already in one of my own posts
+ *   structural    how many systems, regulators, splits, teams
+ *   owner-stated  counts I supplied myself on 2026-11-11, in my own
+ *                 approximate words ("about", "roughly", a range): the 404
+ *                 pages and AEM pages of the public site, the approved-employer
+ *                 list, the integration plan, how long the team took. They
+ *                 are my statements, not audited numbers, and they stay
+ *                 PENDING my confirmation that they are cleared for a public
+ *                 page. Remove one by deleting it here; every surface follows.
+ *
+ * Still not published: business volumes and outcomes (submissions, calls,
+ * conversions, premium, cost, spend), latency, corpus sizes, reviewer-decision
+ * totals, colleagues' names, internal system names, hosts, target dates and
+ * private repository names. Nothing is estimated or rounded up.
  */
 
 export const profile = {
@@ -26,16 +34,16 @@ export const profile = {
   email: 'diwakar.adhikari0@gmail.com',
   github: 'Thunderk3g',
   githubUrl: 'https://github.com/Thunderk3g',
-  tagline: 'Retrieval-grounded and speech AI, built where a wrong answer is a regulatory event.',
+  tagline: 'AI enablement for a regulated business: from a requirement to an agentic system in production.',
   /**
-   * Three sentences, in the order a reader needs them: scope, what makes the
-   * work different, where it is going. No adjectives; every clause is backed
-   * by a bullet further down.
+   * Three sentences, in the order a reader needs them: what I did and for
+   * whom, how I work, why the work can be trusted. No adjectives; every
+   * clause is backed by a bullet further down.
    */
   summary: [
-    'AI engineering lead in regulated Indian insurance. I own three production AI systems for a life insurer (compliance review, speech analytics and document AI) from design through operation, after three and a half years leading a ten-person engineering team.',
-    'My work is making these systems safe to rely on: every answer tied to evidence, a fail-closed path to a human, and evaluation that survives a second look. When the full data did not support my own headline result, I retracted it and published why.',
-    'Preparing research in AI & Law and speech technology: one measurement paper on a public legal rule base is under revision, and a case study of the compliance system is in preparation.',
+    'I took the sales and marketing function of a life insurer from using language models only through a chat window to running agentic AI systems in production. I own each one from the business head’s requirement through infrastructure, build, release and upkeep, and I trained my team to work the same way within four to five months.',
+    'I build these hands-on (agentic applications, retrieval-grounded review, speech and document AI, fine-tuning and distillation) and configure the software to the business’s workflow, not the other way round.',
+    'I hold the work to evidence: when the full data did not support my own headline result I retracted it and published why, and a measurement paper in AI & Law is under revision.',
   ],
 };
 
@@ -43,17 +51,21 @@ export const profile = {
    How a bullet is written here (docs/resume-research.md has the sources):
 
    - Outcome or decision first, then the measure, then the method.
-   - A number appears only with what it was measured on. Numbers are either
-     public (a corpus, a repository, one of my posts) or structural (how many
-     systems, regulators, splits). Nothing internal is estimated.
-   - `result` is the slot for a cleared internal figure. It is empty until I
-     have one in writing; when filled it prints first, in bold. */
+   - A number appears only with what it was measured on, and only if it is
+     one of the four kinds in the policy above. Nothing is estimated.
+   - `result` is one measured outcome for the whole stream. It prints first,
+     in bold, on every surface. Most streams have none yet.
+   - `lead` is how many bullets, from the top, the two-page PDF carries. The
+     /resume page, the academic CV and the plain-text résumé carry them all,
+     so order the bullets by what a reader with ten seconds needs. */
 
 export interface RoleGroup {
   heading: string;
-  /** one cleared, measured outcome for the whole stream, e.g. a relative change with its baseline */
+  /** one measured outcome for the whole stream, e.g. a change with its baseline */
   result?: string;
   points: string[];
+  /** how many of `points`, from the top, go in the two-page PDF; all of them when unset */
+  lead?: number;
 }
 
 export interface Role {
@@ -72,36 +84,70 @@ export const roles: Role[] = [
     org: 'Bajaj Life Insurance',
     period: 'Dec 2025 – Present',
     blurb:
-      'Lead AI engineering for the marketing function of an IRDAI-regulated life insurer: three production systems, each owned from design and evaluation through release and operation. Internal volumes are confidential, so the figures below are public, structural, or already published in my own posts.',
+      'Brought AI engineering to the sales and marketing function of an IRDAI-regulated life insurer, where using a language model had meant a chat window. I take each requirement from the business head, then design, build, release and run the system. Counts below are public, already in my own posts, or my own approximate figures; business volumes are left out.',
     groups: [
       {
+        heading: 'AI enablement: the function and the team',
+        lead: 3,
+        points: [
+          'Started AI engineering in a function that had none: set up the infrastructure, took requirements directly from business heads, and shipped the systems below, each owned from the first conversation through release and upkeep.',
+          'Trained the team to work as forward-deployed engineers. Within four to five months each engineer could take a product owner’s requirement to a deployed application on their own.',
+          'Built every system to be configured to how the business already runs (how its data arrives, how its campaigns and sales hierarchy are organised), so no team changed its workflow to fit the software.',
+          'Worked across departments on every build: underwriting, analytics, products, IT, the database and data-warehouse teams, and information security.',
+        ],
+      },
+      {
+        heading: 'Buy Journey: buying term insurance in a conversation (in user-acceptance testing)',
+        lead: 3,
+        points: [
+          'Building the insurer’s chat-based purchase journey for term insurance with underwriting, analytics, products, IT and the data-warehouse team. Its aims are less manual underwriting and a higher issuance rate. It is in user-acceptance testing, so there is no result to report yet.',
+          'Designed the journey to ask less. Credit-bureau, industry-database (IIB), existing-policy and GSTN checks run as soon as basic details are in, so the questions they answer are skipped, knock-out cases stop early with an alternative offered, and a health answer opens its own reflex questionnaire.',
+          'Designed every conversation to be auditable: the customer’s message, the model’s response and each guardrail decision are stored, and a change-data-capture feed (Debezium, Kafka) to the data lake is being set up with the data-warehouse team.',
+          'Reworked the flow after review with the analytics team: one question at a time, personal details asked once, an employer search over about 46,000 approved companies, a tentative premium from the existing calculator, then document upload with OCR, medical scheduling and payment last.',
+          'Delivering against a 30-item integration plan, each item with an owning team: answer rules, calculators, product validations, external APIs, resuming a journey, call-backs to the lead system, and hosting.',
+        ],
+      },
+      {
+        heading: 'Speech analytics and code-switched ASR data (Hinglish and Indian English sales calls)',
+        lead: 3,
+        points: [
+          'Built call analytics for the sales teams (speaker-labelled transcripts, disposition and compliance detection) and fitted it to the business: calls are ingested by campaign and results are cut by each layer of the sales hierarchy, from head of sales to cluster manager.',
+          'Retracted my own headline result. A third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×); the full corpus gave 2.74%. Published both, with the three mechanisms that explain the gap.',
+          'Built the ASR corpus pipeline with train, validation and protected test splits, found speaker leakage in the protected split, rebuilt it so that no speaker crosses a split, and kept the pre-fix result on record.',
+          'Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer, which swapped the two speakers on whole calls.',
+          'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
+          'Built governance in: an export gate by data class under the DPDP Act 2023 and IRDAI localisation rules, PII redaction, and a text-to-speech track stopped before any spend over an unresolved vendor-terms question.',
+          'The calls feed the next system: the rules the Buy Journey assistant answers customer questions by are being derived from what customers ask on these calls.',
+        ],
+      },
+      {
         heading: 'Compliance review of marketing copy (LLM system, in production)',
+        lead: 2,
         points: [
           'Built and run the reviewer that grades marketing copy against IRDAI, SEBI and brand rules before a person sees it. Every finding cites one of four kinds of evidence (a past reviewer decision, an active rule, a product fact, a mandated disclosure), stored so it can be audited.',
-          'Removed fabricated quotes by construction: a deterministic check drops any finding whose quoted evidence is not literally in the source, with no second model call.',
-          'Made it fail closed. Anything the system has not actually evaluated goes to a human reviewer and never receives a grade.',
+          'Removed fabricated quotes by construction (a deterministic check drops any finding whose quoted evidence is not literally in the source) and made the system fail closed: anything it has not actually evaluated goes to a human and never receives a grade.',
           'Measured a safety default instead of trusting it, and found most of the corpus was untagged and bypassing the applicability check. Inverted the default; what is excluded is now shown to reviewers.',
           'Found and fixed four silent failures that tuning would have hidden: a score that saturated, disclaimers lost in DOCX headers and text boxes, a disclaimer that still passed with "not" deleted, and a rename that corrupted rules.',
           'Under it: hybrid retrieval (pgvector and BM25, fused by reciprocal rank) over typed indexes, rule reliability estimated from reviewer verdicts (Beta-Binomial), and replay evaluation protected against leakage by two independent barriers.',
         ],
       },
       {
-        heading: 'Speech analytics and code-switched ASR data (Hinglish and Indian English telephony)',
-        points: [
-          'Built call intelligence over insurance telephony (speaker-labelled transcripts, disposition and compliance detection) and the corpus pipeline behind it, with train, validation and protected test splits.',
-          'Found speaker leakage in the protected test split, rebuilt it so that no speaker crosses a split, verified zero leakage across every pair of splits, and kept the pre-fix result on record.',
-          'Retracted my own headline result. A third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×); the full corpus gave 2.74%. Published both, with the three mechanisms that explain the gap.',
-          'Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer, which swapped the two speakers on whole calls.',
-          'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
-          'Built governance in: an export gate by data class under the DPDP Act 2023 and IRDAI localisation rules, PII redaction, and a text-to-speech track stopped before any spend over an unresolved vendor-terms question.',
-        ],
-      },
-      {
         heading: 'Document AI for KYC, and evaluation practice',
+        lead: 1,
         points: [
           'Built the KYC document gate: a capture-quality check, classification, two OCR engines reconciled against each other, and four decision states, each with a reason code a person can act on.',
           'Wrote its rule engine identically in Python and Java so that any measured difference is attributable to OCR alone. Finding: upscaling and better OCR models barely moved confidence on poor captures, so the fix went to capture quality, not a new parser.',
           'Built qualityos, an evaluation harness with an append-only record of beliefs and a rule against synthetic runs, operated by role-separated agents (one diagnoses, one fixes, one documents) so that disagreement is kept, not averaged away.',
+        ],
+      },
+      {
+        heading: 'Web, SEO and tools for the sales teams',
+        result: '404 pages on the public site went from roughly 4,000 to 5,000 to almost none.',
+        lead: 3,
+        points: [
+          'Built an SEO agent that checks all of the site’s roughly 3,000 to 4,000 AEM pages for 404s and broken backlinks, hands them to the web team to fix at once, and compares the site with competitors’. The rebrand from Bajaj Allianz Life to Bajaj Life had broken many inbound links, and sifting them by hand was not practical.',
+          'Built what the sales teams asked for: a sales approval portal, a gamified portal that generates fresh leads, a chat assistant that coaches sales staff, and an agent that works through VAPT security findings and fixes them.',
+          'Also built: a lead-scoring model and a voice agent.',
         ],
       },
     ],
@@ -218,13 +264,14 @@ export const research = {
 };
 
 /* ───────────────────────── Skills ─────────────────────────
-   Only what a bullet above evidences. No self-ratings, nothing stale. */
+   Only what a bullet above evidences, with one exception that is my own
+   statement: distillation. No self-ratings, nothing stale. */
 
 export const skills: { group: string; items: string }[] = [
   {
-    group: 'LLM systems and retrieval',
+    group: 'Agentic and LLM systems',
     items:
-      'hybrid retrieval (dense + BM25, reciprocal rank fusion) · pgvector · generator and critic verification · LangGraph / LangChain · prompt-injection defence · API cost governance · LoRA / QLoRA and GRPO fine-tuning (self-directed)',
+      'agentic applications and tool-using agents (LangGraph / LangChain) · hybrid retrieval (dense + BM25, reciprocal rank fusion) · pgvector · generator and critic verification · guardrails and prompt-injection defence · API cost governance · distillation · LoRA / QLoRA and GRPO fine-tuning (self-directed)',
   },
   {
     group: 'Speech',
@@ -241,8 +288,12 @@ export const skills: { group: string; items: string }[] = [
     items: 'IRDAI and SEBI advertising obligations · DPDP Act 2023 data-class gating · PII redaction · GDPR (DAPRECO / PrOnto) · LegalRuleML analysis · append-only audit design',
   },
   {
+    group: 'Delivery',
+    items: 'requirements taken from business heads · cross-department integration · training engineers to deliver end to end · release management · running what I ship',
+  },
+  {
     group: 'Engineering',
-    items: 'Python · TypeScript · Java · SQL · FastAPI · PostgreSQL · Redis · Qdrant · Next.js · Docker / Podman · Azure OpenAI · API design · release management · test-driven development',
+    items: 'Python · TypeScript · Java · SQL · FastAPI · PostgreSQL · Redis · Qdrant · Next.js · Docker / Podman · Azure OpenAI · Debezium / Kafka change-data-capture · API design · test-driven development',
   },
 ];
 

@@ -8,7 +8,7 @@ import { SITE } from '@/content/site';
 export const metadata: Metadata = {
   title: 'Résumé — Diwakar Adhikari',
   description:
-    'Diwakar Adhikari — Technical Lead, AI Engineering. Retrieval-grounded LLM systems, evaluation, and code-switched speech; research in AI & Law.',
+    'Diwakar Adhikari — Technical Lead, AI Engineering. AI enablement for a regulated business: agentic systems, retrieval-grounded review, speech and document AI, taken from requirement to production; research in AI & Law.',
   alternates: { canonical: '/resume' },
 };
 
@@ -184,9 +184,11 @@ export default function ResumePage() {
 
       <Sec title="CAVEATS">
         <p>
-          Every figure on this page is one of three kinds: public (a corpus, a repository), structural (how many
-          systems, regulators, splits), or already published in one of my posts. My employer&rsquo;s internal volumes
-          and outcomes are not here. They are available on request, subject to clearance.
+          Every figure on this page is one of four kinds: public (a corpus, a repository), structural (how many
+          systems, regulators, teams), already published in one of my posts, or my own approximate count, given as
+          &ldquo;about&rdquo; or as a range (the pages on the public site, the 404s, the approved-employer list). My
+          employer&rsquo;s business volumes and outcomes are not here. The Buy Journey is in user-acceptance testing
+          and is described as such. More is available on request, subject to clearance.
         </p>
       </Sec>
 
