@@ -244,3 +244,30 @@ export function reach(move: Move, rect: Rect, z0: number, rise: number, boxes: R
   if (!boxes.length && rise > 0) corners(rect, 0, 0, z0 + rise);
   return pts;
 }
+
+/* ───────────────────────── fading and coming apart ───────────────────────── */
+
+/** Seconds for a layer to come apart and to close again, and to fade in and out. */
+export const TIMES = { open: 0.9, shut: 0.24, fadeIn: 0.16, fadeOut: 0.2 };
+
+/**
+ * One step of a layer's two clocks: how visible it is (`fade`) and how far it
+ * has come apart (`open`), both 0..1.
+ *
+ * The rule: a layer is only ever faded while its pieces are flat on it. Any
+ * opacity under 1 makes the browser flatten what is inside an element onto
+ * it (opacity is a grouping property, section 5 of the research notes), so a
+ * layer that was still fading in while its pieces rose showed them lying
+ * flat, and they jumped to their height in the frame the fade finished. So
+ * the two never overlap: a layer coming in fades first and then comes apart;
+ * a layer going out closes first and then fades.
+ *
+ * `isOpen`: this layer's own screen is showing. `hidden`: another layer's
+ * screen is showing, so this one steps away.
+ */
+export function clocks(fade: number, open: number, isOpen: boolean, hidden: boolean, dt: number): { fade: number; open: number } {
+  // out: only once the pieces are down. In: at once.
+  const nextFade = !hidden ? Math.min(1, fade + dt / TIMES.fadeIn) : open > 0 ? fade : Math.max(0, fade - dt / TIMES.fadeOut);
+  const nextOpen = isOpen ? (nextFade >= 1 ? Math.min(1, open + dt / TIMES.open) : open) : Math.max(0, open - dt / TIMES.shut);
+  return { fade: nextFade, open: nextOpen };
+}

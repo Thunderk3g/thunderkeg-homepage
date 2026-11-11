@@ -6,7 +6,7 @@ import { KaliMark } from '../icons';
 import { prefersReducedMotion } from '../desktop/layout';
 import { useStacksView } from '@/stacks/useBoard';
 import { LENSES } from './anatomy';
-import { BREAKDOWNS, DRAWN, MAX_SLABS, local, pose, reach, slabBox, startOf, type Move } from './breakdowns';
+import { BREAKDOWNS, DRAWN, MAX_SLABS, clocks, local, pose, reach, slabBox, startOf, type Move } from './breakdowns';
 import { FLAT, ease, fit, frame, inQuad, leaderPicks, quad, spots, type Cam, type Rect } from './camera';
 import { heights, useTeardownModel, wiring, type Part } from './parts';
 import { chainOf, livePieces, type LivePiece } from './pieces';
@@ -75,9 +75,7 @@ const RAIL_W = 332;
 const LEAF = 0.62;
 /** how far the rest of the stack steps away from an opened layer, as a share of the screen's height */
 const AWAY = 0.95;
-/** seconds for a layer to come apart, and to close again */
-const OPEN_S = 0.95;
-const SHUT_S = 0.36;
+
 
 /** The pieces of a layer that is open or closing, and what was changed on the page to move them. */
 interface Kit {
@@ -188,9 +186,10 @@ function Apart() {
     view: { ...VIEW },
     dv: { rx: 0, rz: 0 },
     cam: { ...FLAT } as Cam,
-    /** how far each layer is leafed up, stepped away, and come apart: 0..1 each */
+    /** how far each layer is leafed up, stepped away, faded in, and come apart: 0..1 each */
     leaf: new Map<string, number>(),
     away: new Map<string, number>(),
+    fade: new Map<string, number>(),
     side: new Map<string, number>(),
     openP: new Map<string, number>(),
     kits: new Map<string, Kit>(),
@@ -423,12 +422,16 @@ function Apart() {
         if (openPart && id !== openPart.id) L.side.set(id, i < openIndex ? 1 : -1);
         step(L.away, openPart && id !== openPart.id ? 1 : 0, openPart ? 0.17 : 0.14);
 
-        // coming apart runs on a clock, so its pieces can start one after another
+        // A layer is only ever faded while its pieces are flat on it: an opacity under 1
+        // flattens them onto it. clocks() keeps the two apart (breakdowns.ts has the story).
         const have = L.openP.get(id) ?? 0;
-        const want = openPart?.id === id ? 1 : 0;
-        const next = still() ? want : want > have ? Math.min(1, have + dt / OPEN_S) : Math.max(0, have - dt / SHUT_S);
-        if (next !== have) moved = true;
-        L.openP.set(id, next);
+        const faded = L.fade.get(id) ?? 1;
+        const isOpen = openPart?.id === id;
+        const hidden = !!openPart && !isOpen;
+        const next = still() ? { fade: hidden ? 0 : 1, open: isOpen ? 1 : 0 } : clocks(faded, have, isOpen, hidden, dt);
+        if (next.fade !== faded || next.open !== have) moved = true;
+        L.fade.set(id, next.fade);
+        L.openP.set(id, next.open);
       }
 
       /* ── where the camera is headed ── */
@@ -467,19 +470,31 @@ function Apart() {
       const prev = { ...cam };
       if (still()) Object.assign(cam, to);
       else {
-        const tau = openPart || L.kits.size ? 0.19 : 0.13;
+        const tau = st.closing ? 0.11 : openPart || L.kits.size ? 0.19 : 0.13;
         cam.rx = ease(cam.rx, to.rx, dt, tau);
         cam.rz = ease(cam.rz, to.rz, dt, tau);
         cam.s = ease(cam.s, to.s, dt, tau);
         cam.tx = ease(cam.tx, to.tx, dt, tau);
         cam.ty = ease(cam.ty, to.ty, dt, tau);
         cam.g = ease(cam.g, to.g, dt, 0.17);
+        // An exponential ease never arrives: it crept by fractions of a pixel for two more
+        // seconds, which shimmers and keeps every frame busy. Within half a pixel, it is there.
+        if (
+          Math.abs(cam.rx - to.rx) < 6e-4 &&
+          Math.abs(cam.rz - to.rz) < 6e-4 &&
+          Math.abs(cam.s - to.s) < 4e-4 &&
+          Math.abs(cam.tx - to.tx) < 0.4 &&
+          Math.abs(cam.ty - to.ty) < 0.4 &&
+          Math.abs(cam.g - to.g) < 0.3
+        )
+          Object.assign(cam, to);
       }
 
-      // back together: close enough to flat, or out of time. The desktop must always come back.
+      // back together: exactly flat (the snap above gets it there from half a pixel away, so
+      // nothing jumps when the transform is taken off), or out of time. The desktop must always come back.
       if (st.closing && !closingSince) closingSince = now;
-      const flat = Math.abs(cam.rx) < 0.012 && Math.abs(cam.rz) < 0.012 && Math.abs(cam.s - 1) < 0.006 && cam.g < 1;
-      if (st.closing && (flat || now - closingSince > 1500)) {
+      const flat = cam.rx === 0 && cam.rz === 0 && cam.s === 1 && cam.tx === 0 && cam.ty === 0 && cam.g === 0;
+      if (st.closing && (flat || now - closingSince > 2200)) {
         done = true;
         restore();
         const focusId = st.focusAfter;
@@ -523,7 +538,7 @@ function Apart() {
           const base = (z.get(p.id) ?? 0) * cam.g;
           const away = L.away.get(p.id) ?? 0;
           const zpx = base + (L.leaf.get(p.id) ?? 0) * LEAF * cam.g + (L.side.get(p.id) ?? 1) * away * away * AWAY * H;
-          const o = (1 - away) * (1 - away);
+          const o = L.fade.get(p.id) ?? 1;
           const isActive = (opened ?? L.selected) === p.id;
           const isWired = L.wired.has(p.id);
           const lift = `0 0 ${zpx.toFixed(1)}px`;

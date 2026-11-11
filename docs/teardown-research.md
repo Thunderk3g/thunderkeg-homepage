@@ -301,6 +301,51 @@ remains (five full-size translucent sheets drawn over one another), and the
 stack view still passes its five solid plates and each window through a
 picture of their own.
 
+## 9. The pop at the end of every layer transition
+
+Added on the fifth pass (2026-11-11). *Mine, from frames recorded here.*
+
+**What was seen.** Stepping from one layer's screen to the next, the new
+layer arrived with its pieces lying flat on it, and about 1.1 seconds in they
+all jumped to their final heights at once. The rise was never shown.
+
+**How it was found.** Not by the numbers the loop writes, which eased
+correctly. Every painted frame of each transition was recorded and the change
+from one frame to the next measured. A transition that ends well has a curve
+that falls to nothing; these had a spike of 5 to 11 (against about 0.5 around
+it) between 1.06 and 1.28 s, in nine of ten transitions. The two frames
+either side of a spike showed the pieces flat, then fully out.
+
+**Why.** `opacity` under 1 is a grouping property (section 5): the browser
+flattens everything inside the element onto it. An arriving layer was faded
+in with an eased opacity, and an exponential ease spends a long time just
+short of its target: the layer sat at 0.99 until the value was finally
+snapped to 1, a little over a second in. For that whole second its pieces
+were being moved correctly and drawn flat.
+
+**Fix.** A layer is never faded while its pieces are off it. Fading and
+coming apart are two clocks that do not overlap (`clocks()` in
+`breakdowns.ts`): a layer coming in fades in first (0.16 s, linear, so it
+ends exactly at 1) and then comes apart; a layer going out closes its pieces
+first and then fades. `scripts/teardown-breakdowns.test.mts` runs both clocks
+through arriving, leaving, both kinds of interruption and the return to the
+stack, at five frame rates, and fails if a layer is ever under full opacity
+with a piece out. Writing that test found a second fault before it shipped:
+back in the stack, every layer's opacity stepped down and up again on
+alternate frames.
+
+**Two more faults at the end of a movement, found the same way.**
+
+- *The camera never arrived.* An exponential ease only approaches its
+  target, so after a transition looked finished the picture went on moving
+  by fractions of a pixel: it was still changing 3.1 s after a step. Within
+  half a pixel the camera is now put on its target. Transitions are at rest
+  by about 1.3 s.
+- *Reassembly ended with a jump.* The desktop was declared flat when it was
+  within 0.7 degrees and 0.6 percent of flat, and the transform was then
+  removed: its corner was still 11 to 15 px from where it belonged. It now
+  eases to within half a pixel first.
+
 ## Sources
 
 Read:

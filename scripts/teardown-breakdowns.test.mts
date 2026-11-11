@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 // Run: npx tsx scripts/teardown-breakdowns.test.mts
 import { LAYERS, LENSES } from '../src/os/teardown/anatomy.ts';
-import { BREAKDOWNS, DRAWN, GROUPS, MAX_SLABS, local, pose, reach, slabBox, startOf } from '../src/os/teardown/breakdowns.ts';
+import { BREAKDOWNS, DRAWN, GROUPS, MAX_SLABS, TIMES, clocks, local, pose, reach, slabBox, startOf } from '../src/os/teardown/breakdowns.ts';
 import { frame, leaderPicks, project, quad, spots, type Cam } from '../src/os/teardown/camera.ts';
 
 const ok = (c: boolean, m: string) => { assert.ok(c, m); console.log('ok -', m); };
@@ -129,6 +129,46 @@ for (const k of kinds) {
   }
 }
 console.log('ok - every layer and its pieces fit its own screen, and fill it');
+
+// A layer is never faded while its pieces are off it: an opacity under 1 flattens them onto
+// the layer, and they would jump to their height when the fade ended. Run both clocks through
+// every kind of transition, at several frame rates, and check the two never overlap.
+{
+  type S = { fade: number; open: number };
+  const run = (from: S, isOpen: boolean, hidden: boolean, dt: number, seconds: number) => {
+    let st = from;
+    const seen: S[] = [st];
+    for (let t = 0; t < seconds; t += dt) {
+      st = clocks(st.fade, st.open, isOpen, hidden, dt);
+      seen.push(st);
+    }
+    return seen;
+  };
+  for (const dt of [1 / 144, 1 / 60, 1 / 30, 0.1, 0.25]) {
+    // arriving: hidden and closed, now the open layer
+    const arrive = run({ fade: 0, open: 0 }, true, false, dt, 3);
+    // leaving: open and visible, now another layer is open
+    const leave = run({ fade: 1, open: 1 }, false, true, dt, 3);
+    // interrupted half way through arriving, and half way through leaving
+    const turnedBack = run(arrive[Math.floor(arrive.length / 6)], false, true, dt, 3);
+    const calledBack = run(leave[Math.floor(leave.length / 12)], true, false, dt, 3);
+    // back to the whole stack from an open layer
+    const toStack = run({ fade: 1, open: 1 }, false, false, dt, 3);
+    for (const [name, seq] of Object.entries({ arrive, leave, turnedBack, calledBack, toStack })) {
+      for (const st of seq) assert.ok(st.open === 0 || st.fade === 1, `${name} at dt ${dt.toFixed(3)}: faded to ${st.fade.toFixed(2)} with its pieces ${st.open.toFixed(2)} out`);
+      for (let i = 1; i < seq.length; i++) assert.ok(Math.abs(seq[i].fade - seq[i - 1].fade) <= dt / Math.min(TIMES.fadeIn, TIMES.fadeOut) + 1e-9, `${name}: the fade jumps`);
+    }
+    assert.deepEqual(arrive.at(-1), { fade: 1, open: 1 }, 'an arriving layer ends visible and open');
+    assert.deepEqual(leave.at(-1), { fade: 0, open: 0 }, 'a leaving layer ends closed and gone');
+    assert.deepEqual(toStack.at(-1), { fade: 1, open: 0 }, 'back in the stack a layer is closed and visible');
+    assert.deepEqual(calledBack.at(-1), { fade: 1, open: 1 });
+    assert.deepEqual(turnedBack.at(-1), { fade: 0, open: 0 });
+  }
+  console.log('ok - a layer is never faded while its pieces are out, in any transition, at any frame rate');
+  // and the whole thing does not take long
+  const total = TIMES.fadeIn + TIMES.open;
+  ok(total < 1.2, `a layer is fully open ${total.toFixed(2)} s after it is picked`);
+}
 
 // a leader keeps aiming at the same corner while its layer moves: the pick is an index, not a point
 {
