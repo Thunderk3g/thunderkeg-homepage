@@ -199,7 +199,7 @@ most of the screen's width. Three things made that feel rough:
   when the camera itself is turned (`leaderPicks` returns an index; the end
   point then follows the layer).
 - *Nothing is dimmed on hover*, and opacity is written by the camera loop
-  with no CSS transition over it. The notes follow the pointer 90 ms late, so
+  with no CSS transition over it (section 8 goes further). The notes follow the pointer 90 ms late, so
   sweeping across the stack does not re-render them at every layer.
 - *Clicking a layer opens its own screen.* The rest of the stack steps away
   (up if it was above, down if below) and stops being painted; the camera
@@ -239,6 +239,67 @@ most of the screen's width. Three things made that feel rough:
 Chromium without a GPU, at roughly ten frames a second, where only jumps and
 feedback loops can be seen, not smoothness itself. Firefox and Safari have
 not been tried.
+
+## 8. Why the layer screens lagged, and what fixed it
+
+Added on the fourth pass (2026-11-11), after the layer screens were reported
+as laggy on a real machine. *All of this section is mine, from traces taken
+here.* The traces are of headless Chromium drawing in software, so the
+absolute times mean nothing; what they show reliably is what kind of work is
+done on each frame, and that is the same on any machine.
+
+**The idea that was wrong.** I had assumed that once every layer is a
+compositor layer, moving the stack is free. It is, but only for as long as
+nothing changes what a layer looks like and nothing forces a layer through an
+extra pass. Four things did.
+
+| Cause | What it cost | Fix |
+| --- | --- | --- |
+| A highlight colour animated on the plate itself (`transition: border-color`), and a child's opacity driven from the loop (`.td-body`, `.td-lip`). Both are painted into the plate, so each frame of the animation repainted the whole full-screen plate, grid background included. | One hover sweep down the stack re-drew 3,598 tiles (2.9 s of raster work); one step from File system to Kernel re-drew 762 (1.4 s), 480 of them the Kernel plate alone. | Nothing painted into a big layer is animated. The highlight is a ring beside the layer, mounted only while the layer is picked or wired. What fades on an open plate is given a layer of its own first. After: 220 ms and 150 ms of raster work for the same two actions. |
+| Per-frame values passed as custom properties (`--td-z`, `--td-o`, `--td-p`, and `--td-in` on the root). Custom properties inherit, so each write restyled everything under the element. | 2 to 5.7 ms of style work per frame while stepping between layers; whole-frame main-thread work of 19.3 ms (File system) and 15.9 ms (Kernel) against a budget of 16.7. | The loop writes `translate`, `rotate`, `opacity` and `visibility` directly, and skips a write whose value has not changed. After: 0.3 to 0.9 ms of style work, 2.1 and 4.0 ms whole-frame. |
+| Animations with `animation-fill-mode: both` (the component chips on each plate, the desktop icons, the card). A filling animation keeps its element a compositor layer for good. | 29 chip layers and 11 icon layers that should not exist, and each plate holding them drawn through an off-screen pass. The stack had 79 layers. | `backwards` only. |
+| Pieces promoted to layers one at a time as their staggered movement began. Each promotion repainted the layer the piece left. | Repeated full repaints of the open plate through the transition. | Every piece of a layer is promoted in the frame the layer opens (`will-change` under `[data-td-open]`); a closed plate's pieces are `display: none`. |
+
+**The one the specifications do not mention.** In a 3D scene Chromium draws
+every *flat* element (one without `transform-style: preserve-3d`) into an
+off-screen picture of its own size and then places that picture, on every
+frame, whether or not it has children. An element that is itself
+`preserve-3d` is painted straight to the screen, and only its children go
+through such a pass. Measured with ten bare plates and nothing else in the
+scene: 10.7 render passes a frame flat, 1.0 with `preserve-3d` on each.
+
+So the big surfaces (glass plates, slabs, rings, the wallpaper, the canvas,
+the icon layer) are now `preserve-3d` themselves, and what is left to go
+through a pass is small: a slab's label, the icon column, the card. Going
+further and making every box on the solid plates 3D was tried and dropped:
+101 passes a frame of tiny pictures for a small gain.
+
+Also removed while the desktop is apart, because each needs an off-screen
+pass on every frame the scene behind it moves: the backdrop blur on the notes
+panel and on the desktop card, the saturation filter on unfocused windows,
+the glow on the wires, and the soft shadows, gradients and hue filters on the
+pieces (flat colours cost nothing to draw).
+
+**Result, same machine, same script, before and after.**
+
+| | Before | After |
+| --- | --- | --- |
+| Raster work, one hover sweep | 2,904 ms | 220 ms |
+| Raster work, File system to Kernel | 1,393 ms | 150 ms |
+| Tiles re-drawn while turning a layer's screen | not measured | none |
+| Main-thread work per frame, step to File system | 19.3 ms | 2.1 ms |
+| Main-thread work per frame, step to Kernel | 15.9 ms | 4.0 ms |
+| Main-thread work per frame, open Panel | 10.0 ms | 3.9 ms |
+| Layers in the stack view | 79 | 37 |
+| Software frame rate, stepping to Kernel / File system / Session | 22 / 27 / 32 | 33 / 36 / 46 |
+
+`scripts/teardown-css.test.mts` checks the stylesheet and the loop for each
+of these rules, since any one of them comes back with a single line of CSS.
+
+**Still not verified.** A real GPU. The Display screen is the heaviest that
+remains (five full-size translucent sheets drawn over one another), and the
+stack view still passes its five solid plates and each window through a
+picture of their own.
 
 ## Sources
 

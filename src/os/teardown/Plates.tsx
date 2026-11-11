@@ -1,10 +1,10 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { Fragment, useLayoutEffect, useMemo, useState } from 'react';
 import { KALI_MARK_PATH } from '../icons';
 import type { Lens } from './anatomy';
 import { BREAKDOWNS, DRAWN, MAX_SLABS, slabBox } from './breakdowns';
-import { kb, useTeardownModel, type Part, type Under } from './parts';
+import { kb, useTeardownModel, wiring, type Part, type Under } from './parts';
 import { livePieces, type LiveGroup } from './pieces';
 import { useTeardown } from './store';
 
@@ -40,22 +40,44 @@ function Plates() {
   const lens = useTeardown((s) => s.lens);
   const opened = useTeardown((s) => s.opened);
   const hot = useTeardown((s) => s.piece);
+  const hovered = useTeardown((s) => s.hovered);
+  const pinned = useTeardown((s) => s.pinned);
+  const closing = useTeardown((s) => s.closing);
+  // the layer picked out in the stack, and the layers it is wired to: these, and only these, get a ring
+  const selected = closing || opened ? null : (hovered ?? pinned);
+  const wired = useMemo(() => new Set(selected ? wiring(parts, selected).map((w) => w.id) : []), [parts, selected]);
   return (
     <>
       {parts.map((p) => {
         const reading = p.anatomy[lens];
         const move = BREAKDOWNS[p.kind].move;
         const isOpen = opened === p.id;
+        // The highlight is a ring of its own, beside the layer and not inside it: changing a
+        // colour on the layer would repaint the whole layer. A ring is a picture the size of
+        // its layer, so one exists only while its layer is picked or wired.
+        const ring =
+          selected === p.id || wired.has(p.id) ? (
+            <div
+              className={'td-ring' + (selected === p.id ? ' on' : '')}
+              data-td-ring={p.id}
+              style={{ left: p.rect.x, top: p.rect.y, width: p.rect.w, height: p.rect.h }}
+              aria-hidden="true"
+            />
+          ) : null;
         // a window has no plate of its own: only somewhere to hang its flags
         if (!p.plate) {
           return (
-            <div key={p.id} className="td-plate bare" data-td-plate={p.id} aria-hidden="true">
-              <Flags part={p} lens={lens} live={isOpen} />
-            </div>
+            <Fragment key={p.id}>
+              <div className="td-plate bare" data-td-plate={p.id} aria-hidden="true">
+                <Flags part={p} lens={lens} live={isOpen} />
+              </div>
+              {ring}
+            </Fragment>
           );
         }
         return (
-          <div key={p.id} className={`td-plate ${p.plate} k-${p.kind} m-${move}`} data-td-plate={p.id} aria-hidden="true">
+          <Fragment key={p.id}>
+          <div className={`td-plate ${p.plate} k-${p.kind} m-${move}`} data-td-plate={p.id} aria-hidden="true">
             <span className="td-tab">
               <b>{String(parts.indexOf(p) + 1).padStart(2, '0')}</b>
               {reading.name}
@@ -75,6 +97,8 @@ function Plates() {
             )}
             {DRAWN.includes(move) ? <Slabs part={p} lens={lens} W={W} H={H} hot={isOpen ? hot : null} /> : <Flags part={p} lens={lens} live={isOpen} />}
           </div>
+          {ring}
+          </Fragment>
         );
       })}
     </>

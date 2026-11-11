@@ -447,7 +447,8 @@ body {
   width: 80px; height: 88px; padding: 6px 2px 4px; border: 1px solid transparent; border-radius: 6px;
   background: transparent; color: #fff; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
-  animation: kos-icon-in 0.32s var(--kos-ease) both; animation-delay: calc(var(--i, 0) * 30ms + 120ms);
+  /* backwards only: an animation that fills forwards keeps its element a compositor layer for good */
+  animation: kos-icon-in 0.32s var(--kos-ease) backwards; animation-delay: calc(var(--i, 0) * 30ms + 120ms);
   transition: background-color var(--kos-fast), border-color var(--kos-fast);
 }
 .kos-desk-icon:hover { background: rgba(255,255,255,0.08); }
@@ -469,7 +470,7 @@ body {
   background: rgba(10, 12, 26, 0.66); border: 1px solid rgba(255,255,255,0.09); border-radius: 8px;
   backdrop-filter: blur(12px) saturate(1.2); box-shadow: 0 12px 40px rgba(0,0,0,0.35);
   user-select: text; transition: opacity var(--kos-slow), visibility var(--kos-slow), transform var(--kos-slow) var(--kos-ease);
-  animation: kos-rise 0.5s var(--kos-ease) 0.3s both;
+  animation: kos-rise 0.5s var(--kos-ease) 0.3s backwards;
 }
 .kos-desktop-surface.has-windows .kos-welcome { opacity: 0; visibility: hidden; transform: translateY(6px); }
 .kos-welcome-prompt { color: #9a9da3; font-family: var(--kos-mono); font-size: 12px; }
@@ -1863,7 +1864,7 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
   position: absolute; left: 196px; bottom: 12px; max-width: calc(100% - 196px - 400px);
   display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
   font-family: var(--kos-ui); font-size: 11.5px; color: rgba(214, 222, 255, 0.76);
-  animation: kos-rise 0.5s var(--kos-ease) 0.5s both;
+  animation: kos-rise 0.5s var(--kos-ease) 0.5s backwards;
 }
 .kos-stacks-bar.veiled { padding: 8px 10px; margin: -8px -10px; border-radius: 6px; background: rgba(8, 10, 30, 0.6); }
 .kos-stacks-legend { display: flex; flex-wrap: wrap; gap: 3px 14px; margin: 0; padding: 0; list-style: none; }
@@ -2276,12 +2277,19 @@ html:has(.man) { background: #0d0f16; }
    TEARDOWN — the desktop tilted and pulled apart (src/os/teardown).
    The desktop element is the 3D scene; `.kos` supplies the perspective and
    clips it. Every layer is raised with `translate`, which composes with any
-   `transform` the layer already has. Height and opacity come from the camera
-   loop as --td-z / --td-o on each layer, already eased: nothing here adds a
-   transition of its own on top, which would make the layers lag the lines
-   drawn to them. On a layer's own screen its pieces are moved the same way,
-   and --td-p says how far it has come apart. The lens (Kali, this site, an
+   `transform` the layer already has. Height and opacity are written by the
+   camera loop straight onto each layer as `translate` and `opacity`, already
+   eased: nothing here adds a transition of its own on top. On a layer's own
+   screen its pieces are moved the same way. The lens (Kali, this site, an
    LLM system) sets --td-accent for the whole drawing.
+
+   The rule that keeps it fast: a layer is a finished picture the compositor
+   only moves and fades. So no rule here animates anything that is painted
+   INTO a big layer (a border colour, a background, a child's opacity): that
+   repaints the whole layer on every frame. Highlights are rings of their
+   own; filters, backdrop blurs and soft shadows are switched off while the
+   desktop is apart; and nothing inside a layer is left as a layer of its
+   own, because that turns the layer into an off-screen pass.
    ========================================================================== */
 .kos[data-teardown] {
   perspective: 3200px;
@@ -2301,22 +2309,40 @@ html:has(.man) { background: #0d0f16; }
 /* transform-style is not inherited: every element between the scene and a layer needs it */
 .kos[data-teardown] .kos-desktop { transform-style: preserve-3d; transform-origin: 50% 50%; will-change: transform; }
 .kos[data-teardown] .kos-windows { transform-style: preserve-3d; }
-.kos[data-teardown] [data-td-part] { translate: 0 0 var(--td-z, 0px); opacity: var(--td-o, 1); }
 .kos[data-teardown] .kos-wall { inset: 0; animation: none; border-radius: 10px; }
-.kos[data-teardown] .kos-window,
-.kos[data-teardown] .kos-panel { outline: 4px solid transparent; outline-offset: 3px; transition: outline-color 0.2s ease; }
-.kos[data-teardown] .kos-window[data-td-wired],
-.kos[data-teardown] .kos-panel[data-td-wired] { outline-color: var(--td-wire); }
-.kos[data-teardown] .kos-window[data-td-active],
-.kos[data-teardown] .kos-panel[data-td-active] { outline-color: var(--td-hot); }
-/* on its own screen a layer needs no ring round it */
-.kos[data-td-open] .kos-window[data-td-active],
-.kos[data-td-open] .kos-panel[data-td-active] { outline-color: transparent; }
+.kos[data-teardown] .kos-window { transition: none; }
+/* effects that need an off-screen pass each, on every frame the scene moves */
+.kos[data-teardown] .kos-window-body { filter: none; transition: none; }
+.kos[data-teardown] .kos-welcome { backdrop-filter: none; background: rgba(10, 12, 26, 0.92); }
+
+/* In a 3D scene a flat element is first drawn into an off-screen picture of its own size and
+   then placed, on every frame the scene moves. An element that is itself preserve-3d is
+   painted straight to the screen, and only its children go through such a pass. So the big
+   surfaces are made 3D themselves, and what is left to pass through is small: a label, an
+   icon column, a card. (Measured: ten bare plates, 10.7 passes a frame flat, 1.0 this way.) */
+.kos[data-teardown] .kos-wall,
+.kos[data-teardown] .kos-stacks,
+.kos[data-teardown] .kos-desktop-surface,
+.td-plate.glass, .td-plate.bare, .td-ring, .td-slab { transform-style: preserve-3d; }
+
+/* a layer's own screen has its name at the top of the sheet, so its index tab is put away */
+.kos[data-td-open] .td-tab { visibility: hidden; }
+
+/* the highlight: a ring beside a layer, at its height, there only while the layer is picked or wired */
+.td-ring {
+  position: absolute; z-index: 6000; margin: -4px; box-sizing: content-box; pointer-events: none;
+  border: 4px solid var(--td-wire); border-radius: 12px; animation: td-ring 0.16s ease;
+}
+.td-ring.on { border-color: var(--td-hot); }
+@keyframes td-ring { from { opacity: 0; } }
 
 /* a layer's own screen: its pieces lift out of it, so it and everything between it and a
    piece must keep children in 3D, and must not clip them */
 .kos[data-teardown] [data-td-open],
 .kos[data-teardown] [data-td-chain] { transform-style: preserve-3d; overflow: visible; contain: none; }
+/* every piece gets a picture of its own in the frame the layer opens, not one by one as it
+   starts to move: each late promotion would repaint the layer it leaves */
+.kos[data-teardown] [data-td-piece] { will-change: transform; }
 .kos[data-teardown] [data-td-piece='stand'] { transform-origin: 50% 100%; }
 .kos[data-teardown] .kos-window[data-td-open] { box-shadow: 0 0 0 2px rgba(var(--td-accent-rgb), 0.7); }
 .kos[data-teardown] .kos-window[data-td-open] > .kos-titlebar,
@@ -2330,47 +2356,43 @@ html:has(.man) { background: #0d0f16; }
 .td-plate {
   position: absolute; inset: 0; pointer-events: none; border-radius: 10px;
   font-family: var(--kos-mono); color: var(--td-ink);
-  opacity: calc(var(--td-o, 1) * var(--td-in, 0));
+  /* the loop fades each plate in as the stack opens */
+  opacity: 0;
 }
-.kos[data-teardown] .td-plate[data-td-part] { opacity: calc(var(--td-o, 1) * var(--td-in, 0)); }
-.td-plate.glass { border: 2px solid rgba(var(--td-accent-rgb), 0.5); background: rgba(var(--td-accent-rgb), 0.025); transition: border-color 0.3s; }
+.td-plate.glass { border: 2px solid rgba(var(--td-accent-rgb), 0.5); background: rgba(var(--td-accent-rgb), 0.025); }
 .td-plate.k-nowindows { border-style: dashed; display: grid; place-items: center; }
 .td-plate-empty { font-size: 2.6vw; letter-spacing: 0.08em; color: rgba(200, 212, 255, 0.5); }
 .td-plate.solid {
-  border: 2px solid rgba(var(--td-accent-rgb), 0.7); transition: border-color 0.3s;
+  border: 2px solid rgba(var(--td-accent-rgb), 0.7);
   background:
     linear-gradient(rgba(140, 160, 255, 0.06) 1px, transparent 1px) 0 0 / 100% 2.8vw,
     linear-gradient(90deg, rgba(140, 160, 255, 0.06) 1px, transparent 1px) 0 0 / 2.8vw 100%,
     linear-gradient(160deg, #151b4c, #0a0d2a);
 }
 .td-plate.bare { border: 0; }
-.td-plate[data-td-wired] { border-color: var(--td-wire); }
-.td-plate[data-td-active] { border-color: var(--td-hot); }
-.td-plate.glass[data-td-active] { background: rgba(255, 200, 87, 0.045); }
-.kos[data-td-open] .td-plate[data-td-active] { border-color: rgba(var(--td-accent-rgb), 0.7); }
-.kos[data-td-open] .td-plate.glass[data-td-active] { background: rgba(var(--td-accent-rgb), 0.025); }
 
 /* the index tab: hangs off the right-hand corner, the one side of the stack nothing else covers */
 .td-tab {
   position: absolute; left: 100%; bottom: 1.4vw; padding: 0 0.6vw 0.35vw 1vw; white-space: nowrap;
   font-size: 2.25vw; font-weight: 700; letter-spacing: 0.01em; color: var(--td-ink);
-  border-bottom: 3px solid rgba(var(--td-accent-rgb), 0.85); transition: border-color 0.3s, opacity 0.25s;
+  border-bottom: 3px solid rgba(var(--td-accent-rgb), 0.85);
   text-shadow: 0 0 1.2vw rgba(6, 8, 23, 0.9);
 }
-/* a layer's own screen has its name at the top of the sheet instead */
-.kos[data-td-open] .td-tab { opacity: 0; }
-.td-tab b { margin-right: 0.9vw; color: var(--td-accent); transition: color 0.3s; }
-.td-plate[data-td-wired] .td-tab { border-color: var(--td-wire); }
-.td-plate[data-td-active] .td-tab { border-color: var(--td-hot); }
-.td-plate[data-td-active] .td-tab b { color: var(--td-hot); }
+.td-tab b { margin-right: 0.9vw; color: var(--td-accent); }
 
 /* flags: on a live layer's own screen, a label beside each real piece that lifts out.
    The loop raises each one to the height of its group. The fade is on the flag, not on
    the container, because an opacity on the container would flatten them to the plate. */
 .td-plate[data-td-open], .td-flags, .td-slabs { transform-style: preserve-3d; }
 .td-flags, .td-slabs { position: absolute; inset: 0; }
+/* a closed plate's pieces are not there at all; an open plate's pieces, and what they rise
+   from, each get a picture of their own at once, so the loop only moves and fades them */
+.td-slabs, .td-flags { display: none; }
+.td-plate[data-td-open] .td-slabs, .td-plate[data-td-open] .td-flags { display: block; }
+.td-plate[data-td-open] .td-slab { will-change: transform, opacity; }
+.td-plate[data-td-open] .td-body, .td-plate[data-td-open] .td-lip, .td-plate[data-td-open] .td-flag { will-change: opacity; }
 .td-flag {
-  position: absolute; white-space: nowrap; padding: 0.25vw 0.7vw; opacity: var(--td-p, 0);
+  position: absolute; white-space: nowrap; padding: 0.25vw 0.7vw; opacity: 0;
   font-size: 1.45vw; font-weight: 700; color: #f1f4ff;
   border: 2px solid rgba(var(--td-accent-rgb), 0.85); border-radius: 0.45vw; background: rgba(6, 8, 23, 0.86);
 }
@@ -2390,12 +2412,11 @@ html:has(.man) { background: #0d0f16; }
 .td-slab {
   position: absolute; opacity: 0; color: #f1f4ff;
   border: 2px solid rgba(var(--td-accent-rgb), 0.85); border-radius: 0.8vw; background: rgba(var(--td-accent-rgb), 0.14);
-  transition: border-color 0.15s, background-color 0.15s;
 }
-.td-slab span { position: absolute; left: 1.2vw; bottom: 0.9vw; display: flex; align-items: center; gap: 0.8vw; white-space: nowrap; font-size: 1.9vw; font-weight: 700; line-height: 1.1; }
+.td-slab span { translate: 0 0 1px; position: absolute; left: 1.2vw; bottom: 0.9vw; display: flex; align-items: center; gap: 0.8vw; white-space: nowrap; font-size: 1.9vw; font-weight: 700; line-height: 1.1; }
 .td-slab b {
   display: grid; place-items: center; width: 2.5vw; height: 2.5vw; flex: none; border-radius: 50%;
-  font-size: 1.35vw; color: #06101e; background: var(--td-accent); transition: background-color 0.15s;
+  font-size: 1.35vw; color: #06101e; background: var(--td-accent);
 }
 .td-slab.hot { border-color: var(--td-hot); }
 .td-slab.hot b { background: var(--td-hot); }
@@ -2406,11 +2427,12 @@ html:has(.man) { background: #0d0f16; }
 .m-sheets .td-slab:nth-child(2) { border-color: #6fe08f; background: rgba(80, 220, 120, 0.07); }
 .m-sheets .td-slab:nth-child(3) { border-color: #74a2ff; background: rgba(90, 140, 255, 0.07); }
 /* cascade: little windows, each with a title strip */
-.m-cascade .td-slab { background: rgba(11, 15, 46, 0.9); border-radius: 0.7vw 0.7vw 0.3vw 0.3vw; box-shadow: 0 1.2vw 2.4vw rgba(0, 0, 0, 0.35); }
+/* flat colours throughout: a gradient, a soft shadow or a filter has to be drawn, a flat fill does not */
+.m-cascade .td-slab { background: rgba(11, 15, 46, 0.92); border-radius: 0.7vw 0.7vw 0.3vw 0.3vw; }
 .m-cascade .td-slab::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4.2vw; border-radius: 0.5vw 0.5vw 0 0; background: rgba(var(--td-accent-rgb), 0.34); }
 .m-cascade .td-slab span { top: 0.85vw; bottom: auto; }
 /* drawers: solid, with a front lip to carry the label */
-.m-drawers .td-slab { background: linear-gradient(180deg, #17215c, #0c1238); border-bottom-width: 4.4vw; border-bottom-color: rgba(var(--td-accent-rgb), 0.5); border-radius: 0.5vw; }
+.m-drawers .td-slab { background: #111a4a; border-bottom-width: 4.4vw; border-bottom-color: rgba(var(--td-accent-rgb), 0.5); border-radius: 0.5vw; }
 .m-drawers .td-slab span { bottom: -3.6vw; }
 /* rings: each one a step of the ziggurat, named on the band the next ring leaves showing */
 .m-rings .td-slab { background: rgba(11, 15, 46, 0.86); border-radius: 1.4vw; }
@@ -2419,7 +2441,7 @@ html:has(.man) { background: #0d0f16; }
 .m-rings .td-slab:first-child { background: rgba(var(--td-accent-rgb), 0.3); }
 /* chips: packages on a board, with their legs showing */
 .m-chips .td-slab {
-  border-color: #eaa93a; border-radius: 0.5vw; background: linear-gradient(145deg, #1c2233, #0b0e18);
+  border-color: #eaa93a; border-radius: 0.5vw; background: #121726;
   outline: 0.55vw dashed rgba(234, 169, 58, 0.55); outline-offset: 0.35vw;
 }
 .m-chips .td-slab span { left: 50%; bottom: 50%; transform: translate(-50%, 50%); font-size: 2.3vw; }
@@ -2427,16 +2449,19 @@ html:has(.man) { background: #0d0f16; }
 /* fan: paint swatches, colour above and name below, turning about a pin under the hand */
 .m-fan .td-slab {
   transform-origin: 50% 185%; border-color: #eef1ff; border-radius: 0.5vw; color: #0a0d26;
-  background: linear-gradient(180deg, rgba(var(--td-accent-rgb), 0.92) 0 70%, #eef1ff 70%);
-  filter: hue-rotate(calc(var(--i) * 26deg - 30deg)); box-shadow: 0 0.8vw 1.8vw rgba(0, 0, 0, 0.4);
+  --sw: #3fa7d6; background: linear-gradient(180deg, var(--sw) 0 70%, #eef1ff 70%);
 }
+.m-fan .td-slab:nth-child(2) { --sw: #4f8df5; }
+.m-fan .td-slab:nth-child(3) { --sw: #7b7cf7; }
+.m-fan .td-slab:nth-child(4) { --sw: #b06ae8; }
+.m-fan .td-slab:nth-child(5) { --sw: #e06aa8; }
+.m-fan .td-slab:nth-child(6) { --sw: #eaa93a; }
 .m-fan .td-slab span { left: 0.9vw; bottom: 1.1vw; font-size: 1.35vw; white-space: normal; }
 .m-fan .td-slab b { display: none; }
 
 /* under the wallpaper: live figures in the body, the layer's components along the near lip */
-.td-body { position: absolute; inset: 2vw 2vw 11.4vw 2vw; opacity: calc(1 - var(--td-p, 0) * 0.86); }
+.td-body { position: absolute; inset: 2vw 2vw 11.4vw 2vw; }
 .td-lip {
-  opacity: calc(1 - var(--td-p, 0));
   position: absolute; left: 0; right: 0; bottom: 0; height: 9.6vw; margin: 0; padding: 1.1vw 1.3vw; list-style: none;
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.9vw;
   border-top: 2px solid rgba(var(--td-accent-rgb), 0.5); background: rgba(var(--td-accent-rgb), 0.07);
@@ -2445,7 +2470,7 @@ html:has(.man) { background: #0d0f16; }
   display: grid; place-items: center; padding: 0 0.5vw; text-align: center; line-height: 1.15; overflow: hidden;
   font-size: 1.85vw; font-weight: 700; color: #f1f4ff;
   border: 2px solid rgba(var(--td-accent-rgb), 0.65); border-radius: 0.8vw; background: rgba(var(--td-accent-rgb), 0.14);
-  animation: td-piece 0.35s ease both; animation-delay: calc(var(--i, 0) * 45ms);
+  animation: td-piece 0.35s ease backwards; animation-delay: calc(var(--i, 0) * 45ms);
 }
 @keyframes td-piece { from { opacity: 0; transform: translateY(1.2vw); } }
 
@@ -2514,7 +2539,8 @@ html:has(.man) { background: #0d0f16; }
 .td-hud.closing > :not(.td-stage) { opacity: 0; transition-duration: 0.15s; }
 .td-stage { position: absolute; inset: 0; cursor: grab; touch-action: none; }
 .td-stage:active { cursor: grabbing; }
-.td-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+/* its own picture, so redrawing a leader does not redraw the list and the notes beside it */
+.td-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; will-change: transform; }
 /* a layer's own screen has no stack to draw lines to */
 .td-hud.ready.opened > .td-lines { opacity: 0; transition-duration: 0.18s; }
 .td-hud.opened .td-parts { display: none; }
@@ -2525,11 +2551,11 @@ html:has(.man) { background: #0d0f16; }
 .td-leader.on { stroke: var(--td-hot); fill: var(--td-hot); stroke-width: 1.5; }
 .td-wire {
   fill: none; stroke: var(--td-wire); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 2 9;
-  filter: drop-shadow(0 0 5px rgba(111, 233, 255, 0.7)); animation: td-flow 0.9s linear infinite, td-wire-in 0.28s ease 0.14s both;
+  animation: td-flow 0.9s linear infinite, td-wire-in 0.28s ease 0.14s backwards;
 }
 .td-wire.in { animation-direction: reverse; }
 @keyframes td-flow { to { stroke-dashoffset: -22; } }
-.td-wire-end { fill: var(--td-wire); filter: drop-shadow(0 0 5px rgba(111, 233, 255, 0.8)); animation: td-wire-in 0.28s ease 0.14s both; }
+.td-wire-end { fill: var(--td-wire); animation: td-wire-in 0.28s ease 0.14s backwards; }
 /* wires wait a beat, so sweeping the pointer down the stack does not flash them */
 @keyframes td-wire-in { from { opacity: 0; } }
 
@@ -2560,7 +2586,7 @@ html:has(.man) { background: #0d0f16; }
 .td-btn:disabled { opacity: 0.35; pointer-events: none; }
 
 /* the name of a layer's own screen, across the top of the sheet */
-.td-screen { position: absolute; left: 396px; right: 40px; top: 18px; pointer-events: none; animation: td-screen 0.5s ease 0.12s both; }
+.td-screen { position: absolute; left: 396px; right: 40px; top: 18px; pointer-events: none; animation: td-screen 0.5s ease 0.12s backwards; }
 .td-screen p:first-child { font-family: var(--kos-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--td-accent); transition: color 0.3s; }
 .td-screen p:first-child b { margin-right: 10px; padding: 1px 7px; border-radius: 999px; background: var(--td-hot); color: #1a1303; letter-spacing: 0.04em; }
 .td-screen h1 { margin-top: 4px; font-size: clamp(22px, 2.4vw, 34px); font-weight: 700; line-height: 1.12; color: #fff; text-shadow: 0 2px 18px rgba(6, 8, 23, 0.9); }
@@ -2598,9 +2624,10 @@ html:has(.man) { background: #0d0f16; }
 
 .td-detail {
   flex: 1 1 auto; min-height: 96px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(170, 188, 255, 0.3) transparent;
-  padding: 12px 14px 14px; background: rgba(8, 10, 28, 0.88); border: 1px solid rgba(170, 188, 255, 0.24); border-radius: 8px;
-  border-top: 2px solid var(--td-accent); transition: border-color 0.3s;
-  backdrop-filter: blur(10px); font-size: 12.5px; line-height: 1.5; user-select: text;
+  /* nearly opaque, and no backdrop blur: a blur over a scene that moves is redone on every frame */
+  padding: 12px 14px 14px; background: rgba(8, 10, 28, 0.95); border: 1px solid rgba(170, 188, 255, 0.24); border-radius: 8px;
+  border-top: 2px solid var(--td-accent);
+  font-size: 12.5px; line-height: 1.5; user-select: text;
 }
 .td-card { animation: td-card 0.22s ease; }
 @keyframes td-card { from { opacity: 0; transform: translateY(5px); } }
@@ -2690,6 +2717,6 @@ html:has(.man) { background: #0d0f16; }
 }
 @media (prefers-reduced-motion: reduce) {
   .td-hud > :not(.td-stage), .kos[data-teardown] .kos-window, .kos[data-teardown] .kos-panel, .td-tab { transition: none; }
-  .td-wire, .td-wire-end, .td-lip li, .td-card, .td-crumb, .td-screen { animation: none; }
+  .td-wire, .td-wire-end, .td-lip li, .td-card, .td-crumb, .td-screen, .td-ring { animation: none; }
   .td-wire { stroke-dasharray: none; }
 }

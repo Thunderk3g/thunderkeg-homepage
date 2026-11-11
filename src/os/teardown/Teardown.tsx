@@ -54,6 +54,15 @@ import { SPREAD_MAX, SPREAD_MIN, useTeardown } from './store';
  *
  * The camera runs in one requestAnimationFrame loop and writes styles
  * directly: no React render per frame.
+ *
+ * What keeps it fast (docs/teardown-research.md, section 8, has the traces):
+ * a layer is a finished picture that the compositor only moves and fades.
+ * So nothing here may change what a big layer looks like while it is moving:
+ * no colour is animated on a plate (the highlight is a ring of its own), the
+ * loop writes `translate` and `opacity` and nothing else, every piece of a
+ * layer is given its own picture in the frame the layer opens instead of one
+ * by one as it starts to move, and each write is skipped when the value has
+ * not changed.
  */
 
 const RAD = Math.PI / 180;
@@ -83,7 +92,29 @@ interface Kit {
   /** when each piece starts, 0..1 */
   starts: number[];
   chain: HTMLElement[];
+  /** what was on the plate before its pieces rose: the live figures and the lip, which make way */
+  body: HTMLElement | null;
+  lip: HTMLElement | null;
 }
+
+/**
+ * Write a style only when it has changed. A settled drawing is rewritten on
+ * every frame the camera moves, and most of what is written is the same as
+ * the frame before; the browser should not have to find that out.
+ */
+const written = new WeakMap<HTMLElement, Map<string, string>>();
+function put(el: HTMLElement, prop: string, value: string) {
+  let have = written.get(el);
+  if (!have) written.set(el, (have = new Map()));
+  if (have.get(prop) === value) return;
+  have.set(prop, value);
+  if (value) el.style.setProperty(prop, value);
+  else el.style.removeProperty(prop);
+}
+const clear = (el: HTMLElement, ...props: string[]) => {
+  for (const prop of props) el.style.removeProperty(prop);
+  written.delete(el);
+};
 
 export function Teardown() {
   const on = useTeardown((s) => s.on);
@@ -274,12 +305,7 @@ function Apart() {
     const untag = (els: HTMLElement[]) => {
       for (const e of els) {
         delete e.dataset.tdPart;
-        delete e.dataset.tdActive;
-        delete e.dataset.tdWired;
-        e.style.removeProperty('--td-z');
-        e.style.removeProperty('--td-o');
-        e.style.removeProperty('--td-p');
-        e.style.removeProperty('visibility');
+        clear(e, 'translate', 'opacity', 'visibility');
       }
     };
 
@@ -291,7 +317,9 @@ function Apart() {
       const plate = desk.querySelector<HTMLElement>(`[data-td-plate="${p.id}"]`);
       const W = desk.clientWidth;
       const H = desk.clientHeight;
-      const kit: Kit = { move: bd.move, rise: bd.rise, layer, plate, live: [], slabs: [], starts: [], chain: [] };
+      const kit: Kit = { move: bd.move, rise: bd.rise, layer, plate, live: [], slabs: [], starts: [], chain: [], body: null, lip: null };
+      kit.body = plate?.querySelector<HTMLElement>('.td-body') ?? null;
+      kit.lip = plate?.querySelector<HTMLElement>('.td-lip') ?? null;
       if (DRAWN.includes(bd.move)) {
         const els = plate ? [...plate.querySelectorAll<HTMLElement>('[data-td-slab]')] : [];
         kit.slabs = els.map((el, i) => ({ el, box: slabBox(bd.move, i, els.length, W, H) }));
@@ -311,17 +339,14 @@ function Apart() {
     };
     const dropKit = (kit: Kit) => {
       for (const q of kit.live) {
-        q.el.style.removeProperty('translate');
-        q.el.style.removeProperty('rotate');
+        clear(q.el, 'translate', 'rotate');
         delete q.el.dataset.tdPiece;
       }
-      for (const s of kit.slabs) {
-        s.el.style.removeProperty('translate');
-        s.el.style.removeProperty('rotate');
-        s.el.style.removeProperty('opacity');
-      }
+      for (const s of kit.slabs) clear(s.el, 'translate', 'rotate', 'opacity');
       for (const c of kit.chain) delete c.dataset.tdChain;
-      for (const f of kit.plate?.querySelectorAll<HTMLElement>('[data-td-flag]') ?? []) f.style.removeProperty('translate');
+      for (const f of kit.plate?.querySelectorAll<HTMLElement>('[data-td-flag]') ?? []) clear(f, 'translate', 'opacity');
+      if (kit.body) clear(kit.body, 'opacity', 'visibility');
+      if (kit.lip) clear(kit.lip, 'opacity', 'visibility');
       if (kit.layer) delete kit.layer.dataset.tdOpen;
       if (kit.plate) delete kit.plate.dataset.tdOpen;
     };
@@ -336,16 +361,22 @@ function Apart() {
         const q = kit.live[i];
         const el = q ? q.el : kit.slabs[i].el;
         const at = pose(kit.move, i, n, local(P, kit.starts[i] ?? 0), kit.rise, W, H, q?.role);
-        el.style.translate = `${at.x.toFixed(2)}px ${at.y.toFixed(2)}px ${at.z.toFixed(2)}px`;
-        el.style.rotate = at.rx ? `x ${at.rx.toFixed(2)}deg` : at.rz ? `${at.rz.toFixed(2)}deg` : '';
-        if (!q) el.style.opacity = at.o.toFixed(3);
+        put(el, 'translate', `${at.x.toFixed(1)}px ${at.y.toFixed(1)}px ${at.z.toFixed(1)}px`);
+        put(el, 'rotate', at.rx ? `x ${at.rx.toFixed(1)}deg` : at.rz ? `${at.rz.toFixed(1)}deg` : '');
+        if (!q) put(el, 'opacity', at.o.toFixed(2));
         else top[q.group] = Math.max(top[q.group] ?? 0, at.z);
       }
-      // a flag rides at the height of the group it names
+      // a flag rides at the height of the group it names, and appears as the layer opens
       for (const f of kit.plate?.querySelectorAll<HTMLElement>('[data-td-flag]') ?? []) {
-        f.style.translate = `0 0 ${(top[+f.dataset.tdFlag!] ?? 0).toFixed(2)}px`;
+        put(f, 'translate', `0 0 ${(top[+f.dataset.tdFlag!] ?? 0).toFixed(1)}px`);
+        put(f, 'opacity', P.toFixed(2));
       }
-      kit.plate?.style.setProperty('--td-p', P.toFixed(3));
+      // what was on the plate makes way for the pieces, and once gone is not drawn at all
+      for (const e of [kit.body, kit.lip]) {
+        if (!e) continue;
+        put(e, 'opacity', Math.max(0, 1 - P * 1.6).toFixed(2));
+        put(e, 'visibility', P * 1.6 >= 1 ? 'hidden' : '');
+      }
     };
 
     const restore = () => {
@@ -357,7 +388,6 @@ function Apart() {
       desk.inert = false;
       delete root.dataset.teardown;
       delete root.dataset.tdOpen;
-      root.style.removeProperty('--td-in');
     };
 
     const frameFn = (now: number) => {
@@ -467,10 +497,12 @@ function Apart() {
       if (moved) {
         L.dirty = false;
         desk.style.transform = `translate(${cam.tx.toFixed(2)}px, ${cam.ty.toFixed(2)}px) rotateX(${cam.rx.toFixed(5)}rad) rotateZ(${cam.rz.toFixed(5)}rad) scale3d(${cam.s.toFixed(5)}, ${cam.s.toFixed(5)}, ${cam.s.toFixed(5)})`;
-        root.style.setProperty('--td-in', String(Math.min(1, cam.g / Math.max(1, f.g * 0.5))));
-        if (opened) root.dataset.tdOpen = '';
-        else delete root.dataset.tdOpen;
-        if (scaleEl.current) scaleEl.current.textContent = cam.s.toFixed(2) + ' : 1';
+        // the plates fade in as the stack opens
+        const plateIn = Math.min(1, cam.g / Math.max(1, f.g * 0.5));
+        if (opened && root.dataset.tdOpen === undefined) root.dataset.tdOpen = '';
+        else if (!opened && root.dataset.tdOpen !== undefined) delete root.dataset.tdOpen;
+        const scale = cam.s.toFixed(2) + ' : 1';
+        if (scaleEl.current && scaleEl.current.textContent !== scale) scaleEl.current.textContent = scale;
 
         const ids = new Set(L.parts.map((p) => p.id));
         for (const [id, els] of tagged) {
@@ -494,15 +526,18 @@ function Apart() {
           const o = (1 - away) * (1 - away);
           const isActive = (opened ?? L.selected) === p.id;
           const isWired = L.wired.has(p.id);
+          const lift = `0 0 ${zpx.toFixed(1)}px`;
+          // a layer that has stepped right away is not painted at all
+          const hide = o < 0.02 && openPart?.id !== p.id ? 'hidden' : '';
           for (const e of elementsOf(p)) {
-            e.style.setProperty('--td-z', zpx.toFixed(2) + 'px');
-            e.style.setProperty('--td-o', o.toFixed(3));
-            // a layer that has stepped right away is not painted at all
-            e.style.visibility = o < 0.02 && openPart?.id !== p.id ? 'hidden' : '';
-            if (isActive) e.dataset.tdActive = '';
-            else delete e.dataset.tdActive;
-            if (isWired) e.dataset.tdWired = '';
-            else delete e.dataset.tdWired;
+            put(e, 'translate', lift);
+            put(e, 'visibility', hide);
+            put(e, 'opacity', (e.dataset.tdPlate !== undefined ? o * plateIn : o).toFixed(2));
+          }
+          // the highlight ring exists only while its layer is picked or wired (Plates.tsx): keep it at the layer's height
+          if (isActive || isWired) {
+            const ring = desk.querySelector<HTMLElement>(`[data-td-ring="${p.id}"]`);
+            if (ring) put(ring, 'translate', lift);
           }
 
           // its own pieces, while it is open or closing
@@ -531,60 +566,63 @@ function Apart() {
         }
         L.hits = opened ? [] : hits;
 
-        // the leaders: from each balloon to its part, never crossing. Which corner each one
-        // aims at is decided on the stack at rest and only when the camera has really moved,
-        // so a leader follows its layer and never changes its mind mid-movement
-        const rows = L.parts.map((p) => L.rows.get(p.id));
-        const key = [L.parts.map((p) => p.id).join(), L.rows.size, to.rx.toFixed(2), to.rz.toFixed(2), to.s.toFixed(2), (to.g / 8).toFixed(0)].join('|');
-        if (key !== picksKey || picks.length !== L.parts.length) {
-          picks = leaderPicks(rows, rest);
-          picksKey = key;
-        }
-        L.parts.forEach((p, i) => {
-          const path = leaderEls.current.get(p.id);
-          const row = rows[i];
-          const k = picks[i];
-          if (!path || !row || k === null || k === undefined) return;
-          const a = spots(outlines.get(p.id)!)[k];
-          path.setAttribute(
-            'd',
-            `M${row[0].toFixed(1)} ${row[1].toFixed(1)}L${a[0].toFixed(1)} ${a[1].toFixed(1)}` +
-              `M${(a[0] + 3).toFixed(1)} ${a[1].toFixed(1)}a3 3 0 1 0 -6 0a3 3 0 1 0 6 0`,
-          );
-        });
-
-        // the wiring: from the picked part to each part it depends on, or that depends on it.
-        // A wire leaves the middle of the picked part and lands on the near corner of the other,
-        // the corner that is in view while it sits in the stack.
-        const from = L.selected ? outlines.get(L.selected) : undefined;
-        for (const [id, path] of wireEls.current) {
-          const to2 = outlines.get(id);
-          if (!from || !to2) {
-            path.setAttribute('d', '');
-            wireEnds.current.get(id)?.setAttribute('cy', '-99');
-            continue;
+        // a layer's own screen has no stack to draw lines to: leave them alone, they are not shown
+        if (!opened) {
+          // the leaders: from each balloon to its part, never crossing. Which corner each one
+          // aims at is decided on the stack at rest and only when the camera has really moved,
+          // so a leader follows its layer and never changes its mind mid-movement
+          const rows = L.parts.map((p) => L.rows.get(p.id));
+          const key = [L.parts.map((p) => p.id).join(), L.rows.size, to.rx.toFixed(2), to.rz.toFixed(2), to.s.toFixed(2), (to.g / 8).toFixed(0)].join('|');
+          if (key !== picksKey || picks.length !== L.parts.length) {
+            picks = leaderPicks(rows, rest);
+            picksKey = key;
           }
-          const a: [number, number] = [(from[0][0] + from[2][0]) / 2, (from[0][1] + from[2][1]) / 2];
-          const b = to2.reduce((best, c) => (c[1] > best[1] ? c : best), to2[0]);
-          const bend = Math.min(90, Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.22);
-          path.setAttribute(
-            'd',
-            `M${a[0].toFixed(1)} ${a[1].toFixed(1)}Q${((a[0] + b[0]) / 2 + bend).toFixed(1)} ${((a[1] + b[1]) / 2 + bend * 0.4).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,
-          );
-          const end = wireEnds.current.get(id);
-          end?.setAttribute('cx', b[0].toFixed(1));
-          end?.setAttribute('cy', b[1].toFixed(1));
-        }
+          L.parts.forEach((p, i) => {
+            const path = leaderEls.current.get(p.id);
+            const row = rows[i];
+            const k = picks[i];
+            if (!path || !row || k === null || k === undefined) return;
+            const a = spots(outlines.get(p.id)!)[k];
+            path.setAttribute(
+              'd',
+              `M${row[0].toFixed(1)} ${row[1].toFixed(1)}L${a[0].toFixed(1)} ${a[1].toFixed(1)}` +
+                `M${(a[0] + 3).toFixed(1)} ${a[1].toFixed(1)}a3 3 0 1 0 -6 0a3 3 0 1 0 6 0`,
+            );
+          });
 
-        // the explosion axis: one dashed line up each corner of the stack
-        if (rodsEl.current) {
-          const full = { x: 0, y: 0, w: W, h: H };
-          const lo = quad(cam, W, H, full, 0, 0);
-          const hi = quad(cam, W, H, full, 0, units * cam.g);
-          rodsEl.current.setAttribute(
-            'd',
-            lo.map((c, i) => `M${c[0].toFixed(1)} ${c[1].toFixed(1)}L${hi[i][0].toFixed(1)} ${hi[i][1].toFixed(1)}`).join(''),
-          );
+          // the wiring: from the picked part to each part it depends on, or that depends on it.
+          // A wire leaves the middle of the picked part and lands on the near corner of the other,
+          // the corner that is in view while it sits in the stack.
+          const from = L.selected ? outlines.get(L.selected) : undefined;
+          for (const [id, path] of wireEls.current) {
+            const to2 = outlines.get(id);
+            if (!from || !to2) {
+              path.setAttribute('d', '');
+              wireEnds.current.get(id)?.setAttribute('cy', '-99');
+              continue;
+            }
+            const a: [number, number] = [(from[0][0] + from[2][0]) / 2, (from[0][1] + from[2][1]) / 2];
+            const b = to2.reduce((best, c) => (c[1] > best[1] ? c : best), to2[0]);
+            const bend = Math.min(90, Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.22);
+            path.setAttribute(
+              'd',
+              `M${a[0].toFixed(1)} ${a[1].toFixed(1)}Q${((a[0] + b[0]) / 2 + bend).toFixed(1)} ${((a[1] + b[1]) / 2 + bend * 0.4).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,
+            );
+            const end = wireEnds.current.get(id);
+            end?.setAttribute('cx', b[0].toFixed(1));
+            end?.setAttribute('cy', b[1].toFixed(1));
+          }
+
+          // the explosion axis: one dashed line up each corner of the stack
+          if (rodsEl.current) {
+            const full = { x: 0, y: 0, w: W, h: H };
+            const lo = quad(cam, W, H, full, 0, 0);
+            const hi = quad(cam, W, H, full, 0, units * cam.g);
+            rodsEl.current.setAttribute(
+              'd',
+              lo.map((c, i) => `M${c[0].toFixed(1)} ${c[1].toFixed(1)}L${hi[i][0].toFixed(1)} ${hi[i][1].toFixed(1)}`).join(''),
+            );
+          }
         }
       }
       raf = requestAnimationFrame(frameFn);
