@@ -66,7 +66,7 @@ measure, then the method. The old bullets led with the method.
 
 | Kind | Examples now on the résumé |
 | --- | --- |
-| Public | 962 rules, mean constraint density 0.462, 43 rules (4.5%); 10 decision records, 219 tests |
+| Public | 962 rules, mean constraint density 0.462, 43 rules (4.5%); 11 decision records, 219 tests |
 | Structural | a ten-person team; four kinds of evidence; four decision states; two leakage barriers; two regulators |
 | Already published by me | auto-accept 8.82% to 49.30% on a pilot slice (5.6×), 2.74% on the full corpus |
 | Stated by me on 2026-11-11 | 404 pages from roughly 4,000 to 5,000 to almost none; roughly 3,000 to 4,000 AEM pages checked; about 46,000 approved companies; a 30-item integration plan; four to five months for the team |

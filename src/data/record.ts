@@ -147,6 +147,7 @@ export const SUBJECTS: Subject[] = [
   { id: 'local-models', field: 'models', name: 'Local models', blurb: 'Running models on my own machine behind the same interface as hosted ones.', keywords: ['ollama', 'local model', 'on-device', 'llama.cpp'] },
   { id: 'cost', field: 'models', name: 'Cost governance', blurb: 'Paid model APIs under a budget that holds.', keywords: ['cost', 'budget', 'token usage', 'pricing'] },
   { id: 'document-ai', field: 'models', name: 'Document AI', blurb: 'Reading identity documents and returning a decision with a reason.', keywords: ['ocr', 'document understanding', 'kyc', 'layout'] },
+  { id: 'predictive-models', field: 'models', name: 'Predictive models', blurb: 'Scoring tabular business data, validated forward in time.', keywords: ['lightgbm', 'gradient boost', 'lead scoring', 'tabular', 'pr-auc'] },
 ];
 
 /* ───────────────────────── cubes ─────────────────────────
@@ -210,11 +211,21 @@ export const RECORD: RecordEntry[] = [
   e('document-ai', 'built', '2026', 'A KYC validation gate: capture-quality pre-gate, classification, dual-engine OCR, decisions with reason codes'),
   e('document-ai', 'built', '2026', 'The rule engine written identically in Python and Java, so differences are attributable to OCR alone'),
   e('document-ai', 'measured', '2026', 'Upscaling and better OCR models barely moved confidence on degraded captures; the fix was capture quality'),
-  e('eval-design', 'built', '2026', 'qualityos: an evaluation harness with an append-only belief graph and no synthetic runs'),
+  e('document-ai', 'measured', '2026', 'False accepts on a 72-case synthetic benchmark cut from 30 to between 7 and 9 by the full gate'),
+  e('eval-design', 'built', '2026', 'qualityos: an evaluation harness with an append-only belief graph'),
+  e('eval-design', 'measured', '2026', 'A qualityos probe found an LLM outage recorded as a clean compliance pass; the failure path was fixed'),
   e('multi-agent', 'built', '2026', 'Role-separated agents: judges diagnose, a separate agent fixes, a librarian documents'),
   e('multi-agent', 'built', '2026', 'Orchestration with LangGraph and LangChain'),
   e('cost', 'built', '2026', 'Budget guards and metering for paid model APIs'),
   e('apis-backend', 'built', '2026', 'The services around the models: FastAPI, PostgreSQL and queues'),
+  e('apis-backend', 'built', '2026', 'A shared Podman stack on RHEL 9 (PostgreSQL, Redis, Qdrant, nginx) hosting five AI applications'),
+
+  // buy journey, voice and lead scoring
+  e('eval-design', 'measured', '2026', 'Seven eval suites for a trilingual purchase advisor; retrieval rose from 72% to 79% top-1'),
+  e('cost', 'measured', '2026', 'An eval-set A/B chose a model 4.8× cheaper per passing answer at equal behaviour'),
+  e('asr-pipelines', 'built', '2026', 'A realtime speech-to-speech voice agent for sales calls'),
+  e('predictive-models', 'built', '2026', 'A LightGBM lead-scoring model with time-based validation and a point-in-time leakage gate'),
+  e('predictive-models', 'measured', '2026', 'PR-AUC 0.348 and 30× lift in the top 1% on a later-period holdout'),
 
   /* ── résumé: the constraint-density paper (public data) ── */
   e('rule-bases', 'measured', '2026', 'Constraint density over the DAPRECO GDPR knowledge base: 962 rules, mean density 0.462'),
@@ -225,15 +236,16 @@ export const RECORD: RecordEntry[] = [
   e('web', 'built', '2025-03', 'This site rebuilt on Next.js', GH + 'thunderkeg-homepage'),
   e('local-models', 'built', '2025-03', 'A browser extension for local models through Ollama', GH + 'ollama-extension'),
   e('fine-tuning', 'built', '2025-08', 'ForgeLM: 4-bit loading, LoRA adapters and a GRPO trainer for consumer GPUs', GH + 'ForgeLM'),
-  e('fine-tuning', 'built', '2026-03', 'A Qwen fine-tune for compliance text', GH + 'qwen-compliance-finetune'),
+  e('fine-tuning', 'built', '2026-03', 'A QLoRA fine-tune of a small Qwen model for compliance rewrites, set up but not yet trained or evaluated', GH + 'qwen-compliance-finetune'),
   e('web', 'built', '2026-05', 'A desktop in the browser: window manager, terminal, file system', GH + 'thunderkeg-homepage'),
-  e('web', 'built', '2026-05', 'Client sites and a storefront, in TypeScript'),
+  e('web', 'built', '2026-04', 'Client sites and a multi-tenant storefront in TypeScript, April to November 2026'),
   e('knowledge-compilation', 'built', '2026-06', 'Mneme: a staged compiler from sources to a cross-referenced, cited wiki', GH + 'Mneme'),
   e('knowledge-compilation', 'built', '2026-06', 'Content-hash dedupe, and a lint that finds orphan pages and broken links', GH + 'Mneme'),
   e('local-models', 'built', '2026-06', 'Hosted and local model backends behind one interface, in Mneme', GH + 'Mneme'),
-  e('agent-governance', 'built', '2026-06', 'Arbor: human sign-off for irreversible actions, an immutable audit chain, credential-free sandboxes', GH + 'Arbor'),
-  e('agent-governance', 'wrote', '2026-06', 'Arbor written up as an RFC with ten decision records', GH + 'Arbor'),
-  e('prompt-injection', 'built', '2026-06', "Layered prompt-injection defence in Arbor's tool gateway", GH + 'Arbor'),
+  e('agent-governance', 'built', '2026-06', 'Arbor: single-use approval tokens for irreversible actions and a hash-chained audit log; sandboxes designed, not yet built', GH + 'Arbor'),
+  e('agent-governance', 'wrote', '2026-06', 'Arbor written up as a 16-section RFC with eleven decision records', GH + 'Arbor'),
+  e('prompt-injection', 'built', '2026-06', "A taint firewall that runs before approval in Arbor's tool gateway", GH + 'Arbor'),
+  e('fine-tuning', 'measured', '2026-11', 'Small task models against a local LLM on public data: 87.5% vs 66.9% on Banking77 at a fraction of the latency', GH + 'ForgeLM'),
   e('web', 'built', '2026-11', 'A paper-study workbench in this site: three-pass notes, highlights, spaced recall, a literature matrix', GH + 'thunderkeg-homepage'),
   e('databases', 'built', '2026-11', 'PostgreSQL compiled to WebAssembly as an in-tab research workspace', GH + 'thunderkeg-homepage'),
 
@@ -242,8 +254,8 @@ export const RECORD: RecordEntry[] = [
         not show. ── */
   e('transformer-internals', 'built', '2026-03', 'A transformer architecture visualiser, built to see the internals'),
   e('web-platform', 'measured', '2026-09', 'A Core Web Vitals audit of production pages'),
-  e('web-platform', 'built', '2026-10', 'Calculator pages migrated onto Adobe Experience Manager components'),
-  e('web-platform', 'built', '2026-10', 'Analytics data-layer events wired through purchase forms'),
+  e('web-platform', 'built', '2026-06', 'A handoff from Adobe Experience Manager to the calculators through an encrypted (AES-256-GCM) redirect token'),
+  e('web-platform', 'built', '2025-07', 'An Adobe Analytics data layer for the purchase forms'),
   e('apis-backend', 'built', '2026-10', 'Pending-state handling for a payment-gateway integration'),
   e('hybrid-retrieval', 'built', '2026-11', 'Query routing across Hindi, Hinglish and English, scored offline'),
 ];
