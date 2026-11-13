@@ -100,7 +100,7 @@ export function Greeter({ mode }: { mode: 'login' | 'lock' }) {
             <SysIcon name="forward" size={16} />
           </button>
         </div>
-        <div className="kos-greeter-hint">Any password works. Press Enter.</div>
+        <div className="kos-greeter-hint">Any password works: press Enter or tap the arrow.</div>
       </form>
 
       {mode === 'login' && (

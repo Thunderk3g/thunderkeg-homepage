@@ -142,7 +142,7 @@ export const SUBJECTS: Subject[] = [
   { id: 'trading-agents', field: 'agents', name: 'Trading agents', blurb: 'Multi-agent LLM systems against a simple systematic baseline.', rqIds: ['rq-m2'], keywords: ['trading agent', 'portfolio', 'position sizing', 'market making', 'execution'], following: true },
 
   /* Models & documents */
-  { id: 'fine-tuning', field: 'models', name: 'Fine-tuning & quantization', blurb: 'Adapting and shrinking models on hardware I own.', keywords: ['fine-tun', 'lora', 'qlora', 'quantiz', 'quantis', 'adapter', 'grpo'] },
+  { id: 'fine-tuning', field: 'models', name: 'Fine-tuning & quantization', blurb: 'Adapting and shrinking models on hardware I own.', keywords: ['fine-tun', 'lora', 'qlora', 'quantiz', 'quantis', 'adapter'] },
   { id: 'transformer-internals', field: 'models', name: 'Transformer internals', blurb: 'The architecture, taken apart to see it.', keywords: ['attention', 'transformer', 'scaling law', 'positional', 'kv cache'] },
   { id: 'local-models', field: 'models', name: 'Local models', blurb: 'Running models on my own machine behind the same interface as hosted ones.', keywords: ['ollama', 'local model', 'on-device', 'llama.cpp'] },
   { id: 'cost', field: 'models', name: 'Cost governance', blurb: 'Paid model APIs under a budget that holds.', keywords: ['cost', 'budget', 'token usage', 'pricing'] },
@@ -229,13 +229,13 @@ export const RECORD: RecordEntry[] = [
 
   /* ── résumé: the constraint-density paper (public data) ── */
   e('rule-bases', 'measured', '2026', 'Constraint density over the DAPRECO GDPR knowledge base: 962 rules, mean density 0.462'),
-  e('rule-bases', 'wrote', '2026', 'Manuscript under revision: Coverage is not constraint'),
+  e('rule-bases', 'wrote', '2026', 'Working paper: Coverage is not constraint'),
 
   /* ── public repositories, dated by their commits ── */
   e('web', 'built', '2022-01', 'The first version of this site', GH + 'thunderkeg-homepage'),
   e('web', 'built', '2025-03', 'This site rebuilt on Next.js', GH + 'thunderkeg-homepage'),
   e('local-models', 'built', '2025-03', 'A browser extension for local models through Ollama', GH + 'ollama-extension'),
-  e('fine-tuning', 'built', '2025-08', 'ForgeLM: 4-bit loading, LoRA adapters and a GRPO trainer for consumer GPUs', GH + 'ForgeLM'),
+  e('fine-tuning', 'built', '2025-08', 'ForgeLM: 4-bit loading and LoRA adapters for consumer GPUs', GH + 'ForgeLM'),
   e('fine-tuning', 'built', '2026-03', 'A QLoRA fine-tune of a small Qwen model for compliance rewrites, set up but not yet trained or evaluated', GH + 'qwen-compliance-finetune'),
   e('web', 'built', '2026-05', 'A desktop in the browser: window manager, terminal, file system', GH + 'thunderkeg-homepage'),
   e('web', 'built', '2026-04', 'Client sites and a multi-tenant storefront in TypeScript, April to November 2026'),
@@ -245,7 +245,7 @@ export const RECORD: RecordEntry[] = [
   e('agent-governance', 'built', '2026-06', 'Arbor: single-use approval tokens for irreversible actions and a hash-chained audit log; sandboxes designed, not yet built', GH + 'Arbor'),
   e('agent-governance', 'wrote', '2026-06', 'Arbor written up as a 16-section RFC with eleven decision records', GH + 'Arbor'),
   e('prompt-injection', 'built', '2026-06', "A taint firewall that runs before approval in Arbor's tool gateway", GH + 'Arbor'),
-  e('fine-tuning', 'measured', '2026-11', 'Small task models against a local LLM on public data: 87.5% vs 66.9% on Banking77 at a fraction of the latency', GH + 'ForgeLM'),
+  e('fine-tuning', 'measured', '2026-11', 'Small task models against a few-shot local LLM on public data: 87.5% vs 66.9% on Banking77 at a fraction of the latency', GH + 'ForgeLM'),
   e('web', 'built', '2026-11', 'A paper-study workbench in this site: three-pass notes, highlights, spaced recall, a literature matrix', GH + 'thunderkeg-homepage'),
   e('databases', 'built', '2026-11', 'PostgreSQL compiled to WebAssembly as an in-tab research workspace', GH + 'thunderkeg-homepage'),
 

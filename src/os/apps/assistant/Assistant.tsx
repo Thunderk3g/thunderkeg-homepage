@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, Square, Volume2 } from 'lucide-react';
 import type { AppDefinition } from '../../types';
+import { InlineText } from '@/content/Markdown';
 import { streamChat, type ChatMsg } from '../../ai/stream';
 
 const SUGGESTIONS = [
@@ -207,7 +208,7 @@ function AssistantApp() {
         {messages.map((m, i) => (
           <div key={i} className={'kos-assistant-msg ' + m.role}>
             <span className="kos-assistant-role">{m.role === 'user' ? '🧑' : '🤖'}</span>
-            <div className="kos-assistant-bubble">{m.content}</div>
+            <div className="kos-assistant-bubble">{m.role === 'assistant' ? <InlineText text={m.content} /> : m.content}</div>
             {m.role === 'assistant' && canSpeak && (
               <button
                 type="button"
@@ -225,7 +226,7 @@ function AssistantApp() {
           <div className="kos-assistant-msg assistant">
             <span className="kos-assistant-role">🤖</span>
             <div className="kos-assistant-bubble">
-              {streaming}
+              <InlineText text={streaming} />
               <span className="kos-assistant-caret">▋</span>
             </div>
           </div>

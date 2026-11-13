@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppDefinition, AppProps } from '../../types';
 import { getDb, useDbStatus } from '../../db/workspace';
-import { mirrorSettled, startResearchMirror } from '../../db/mirror';
+import { mirrorSettled, startResearchMirror, syncResearchNow } from '../../db/mirror';
+import { ensureSeeded } from '@/research/store';
 import {
   cellText,
   errorText,
@@ -138,7 +139,20 @@ function PsqlApp({ args }: AppProps) {
   }, []);
 
   useEffect(() => {
-    if (status.phase === 'ready') void refreshTables();
+    if (status.phase !== 'ready') return;
+    let live = true;
+    void (async () => {
+      await refreshTables(); // what is in the tables now
+      // Opened before Research, nothing has imported the published paper
+      // notes yet, and the mirror may still be writing: wait for both, or the
+      // sidebar counts rows that are about to exist as zero.
+      await ensureSeeded().catch(() => {});
+      await syncResearchNow();
+      if (live) await refreshTables();
+    })();
+    return () => {
+      live = false;
+    };
   }, [status.phase, refreshTables]);
 
   const run = useCallback(

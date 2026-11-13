@@ -1019,7 +1019,7 @@ function Apart() {
                 running. Under the wallpaper are the layers that hold it up, read from this tab as it is right now.
               </p>
               <p className="td-detail-gist">
-                <b>Reading it as {lensInfo.label.toLowerCase()}.</b> {lensInfo.blurb}
+                <b>Reading it as {lensInfo.label.replace(/^(This|An)\b/, (w) => w.toLowerCase())}.</b> {lensInfo.blurb}
               </p>
               <p className="td-detail-gist">
                 Point at a layer and the stack opens above it. <b>Click it</b> and it gets a screen of its own, where

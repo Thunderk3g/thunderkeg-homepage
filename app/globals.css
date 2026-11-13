@@ -1170,6 +1170,8 @@ button.kos-tray-item:hover, .kos-tray-item.open { background: var(--kos-hover); 
 .kos-assistant-role { font-size: 18px; }
 .kos-assistant-bubble { max-width: 80%; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); color: #e9eef2; font-size: 0.88rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; user-select: text; }
 .kos-assistant-msg.user .kos-assistant-bubble { background: var(--kos-accent); color: #04121f; }
+.kos-assistant-bubble a { color: inherit; text-decoration: underline; }
+.kos-assistant-bubble code { font-family: var(--kos-mono, ui-monospace, monospace); font-size: 0.92em; padding: 0 3px; border-radius: 3px; background: rgba(255,255,255,0.08); }
 .kos-assistant-caret { animation: kos-blink 1s step-end infinite; color: var(--kos-accent); }
 .kos[data-reduced='true'] .kos-assistant-caret { animation: none; }
 .kos-assistant-input { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--kos-border); background: #11141a; }

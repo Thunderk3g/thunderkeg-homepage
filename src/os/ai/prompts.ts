@@ -76,7 +76,9 @@ export function systemPrompt(record = ''): { role: 'system'; content: string } {
       `Use ONLY the context below; if something isn't covered, say you don't have that detail ` +
       `and suggest emailing ${profile.email}. Never invent metrics: employer-internal ` +
       `production numbers are deliberately excluded from this context, so if asked for one, ` +
-      `say it is available on request subject to clearance. Prefer short, terminal-friendly ` +
+      `say it is available on request subject to clearance. Quote every figure exactly as the ` +
+      `context states it, with what it was measured on; do not round, convert, recompute or ` +
+      `characterise it (no "modest", "8-fold"). Prefer short, terminal-friendly ` +
       `answers. He is also ${research.track.charAt(0).toLowerCase() + research.track.slice(1)}\n\n` +
       `--- RÉSUMÉ CONTEXT ---\n${resumeText()}` +
       (record

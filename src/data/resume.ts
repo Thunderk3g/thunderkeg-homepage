@@ -48,12 +48,12 @@ export const profile = {
   summary: [
     'I took the sales and marketing function of a life insurer from using language models only through a chat window to running agentic AI systems in production. I own each one from the business head’s requirement through infrastructure, build, release and upkeep, and I trained my team to work the same way within four to five months.',
     'I build these hands-on (agentic applications, retrieval-grounded review, speech and document AI, predictive models, fine-tuning and distillation) and configure the software to the business’s workflow, not the other way round.',
-    'I hold the work to evidence: when the full data did not support my own headline result I retracted it and published why, and a measurement paper in AI & Law is under revision.',
+    'I hold the work to evidence: when the full corpus did not support my own pilot result I withdrew the claim and wrote up why, and I have a working paper in AI & Law on measuring how selective formalised regulatory rules are.',
   ],
 };
 
 /* ───────────────────────── Experience ─────────────────────────
-   How a bullet is written here (docs/resume-research.md has the sources):
+   How a bullet is written here:
 
    - Outcome or decision first, then the measure, then the method.
    - A number appears only with what it was measured on, and only if it is
@@ -89,11 +89,11 @@ export const roles: Role[] = [
     org: 'Bajaj Life Insurance',
     period: 'Dec 2025 – Present',
     blurb:
-      'Brought AI engineering to the sales and marketing function of an IRDAI-regulated life insurer, where using a language model had meant a chat window. I take each requirement from the business head, then design, build, release and run the system. Figures below are offline evaluations, structural counts, my own posts or my own approximate figures; business volumes are left out.',
+      'Brought AI engineering to the sales and marketing function of an IRDAI-regulated life insurer, where using a language model had meant a chat window. I take each requirement from the business head, then design, build, release and run the system.',
     groups: [
       {
         heading: 'AI enablement: the function and the team',
-        lead: 2,
+        lead: 3,
         points: [
           'Started AI engineering in a function that had none: set up the infrastructure, took requirements directly from business heads, and shipped the systems below, each owned from the first conversation through release and upkeep.',
           'Trained the team to work as forward-deployed engineers. Within four to five months each engineer could take a product owner’s requirement to a deployed application on their own.',
@@ -104,17 +104,17 @@ export const roles: Role[] = [
       },
       {
         heading: 'Buy Journey: buying term insurance in a conversation (in user-acceptance testing)',
-        lead: 3,
+        lead: 4,
         points: [
-          'Leading the insurer’s chat-based purchase journey for term insurance, in English, Hindi and Hinglish, with underwriting, analytics, products, IT and the data-warehouse team. Its aims are less manual underwriting and a higher issuance rate; it is in user-acceptance testing, so there is no business result yet.',
-          'Led its rebuild so that one piece of code decides every next step. The product is versioned data (119 rules, 62 flow steps, 6 rate tables) published by a second person with rollback; the model only reads and phrases text; calls to 18 of the insurer’s APIs go through a ledger written before each send.',
+          'Leading the insurer’s chat-based purchase journey for term insurance, in English, Hindi and Hinglish, with underwriting, analytics, products, IT and the data-warehouse team. Its aims are less manual underwriting and a higher issuance rate.',
+          'Led its rebuild as a deterministic state machine: code decides every next step, product logic is versioned data (119 rules, 62 flow steps, 6 rate tables) published by a second person with rollback, the model only reads and phrases text, and calls to 18 of the insurer’s APIs go through a ledger written before each send.',
           'Held the rebuild to evaluation: 7 suites, 393 cases in English, Hindi and Hinglish, and recorded golden conversations. Retrieval rose from 72% to 79% top-1 and 90% to 97% hit@4; Hindi FAQ answers were precise on 34 of 34 turns.',
+          'Shipped the first version in 16 days. An A/B on its eval set chose the smaller model: both passed 40 of 40 behaviour checks, and the smaller one cost 4.8× less per passing answer.',
           'Designed the journey to ask less. Credit-bureau, industry-database (IIB), existing-policy and GSTN checks run as soon as basic details are in, so the questions they answer are skipped, knock-out cases stop early with an alternative offered, and a health answer opens its own reflex questionnaire.',
           'In a review of 75 test journeys during user-acceptance testing, the price arrived by the fourth turn (median) and no fact was asked for twice.',
           'Designed every conversation to be auditable: the customer’s message, the model’s response and each guardrail decision are stored, and a change-data-capture feed (Debezium, Kafka) to the data lake is being set up with the data-warehouse team.',
           'Reworked the flow after review with the analytics team: one question at a time, personal details asked once, an employer search over about 46,000 approved companies, a tentative premium from the existing calculator, then document upload with OCR, medical scheduling and payment last.',
           'Delivering against a 30-item integration plan, each item with an owning team: answer rules, calculators, product validations, external APIs, resuming a journey, call-backs to the lead system, and hosting.',
-          'Shipped the first version in 16 days. An A/B on its eval set chose the smaller model: both passed 40 of 40 behaviour checks, and the smaller one cost 4.8× less per passing answer.',
         ],
       },
       {
@@ -122,8 +122,8 @@ export const roles: Role[] = [
         lead: 3,
         points: [
           'Co-built call analytics for the sales teams (speaker-labelled transcripts, disposition and compliance detection, six languages) and fitted it to the business: calls are ingested by campaign and results are cut by each layer of the sales hierarchy.',
-          'Built its realtime speech-to-speech voice agent and its speech-to-text layer, and raised the share of calls attributed to an acquisition channel from about 14% to about 92%.',
-          'Retracted my own headline result. A third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×); the full corpus gave 2.74%. Published both, with the three mechanisms that explain the gap.',
+          'Built its realtime speech-to-speech voice agent and its speech-to-text layer. Separately, remapping call records to acquisition channels raised the share of attributed calls from about 14% to about 92%.',
+          'Falsified my own headline result before anything was built on it. A third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×); the full corpus gave 2.74%. Wrote up both, with the three mechanisms that explain the gap.',
           'Built the ASR corpus pipeline with train, validation and protected test splits, found speaker leakage in the protected split, rebuilt it so that no speaker crosses a split, and kept the pre-fix result on record.',
           'Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer, which swapped the two speakers on whole calls.',
           'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
@@ -133,13 +133,13 @@ export const roles: Role[] = [
       },
       {
         heading: 'Compliance review of marketing copy (LLM system, in production)',
-        lead: 2,
+        lead: 3,
         points: [
           'Co-built and run the reviewer that grades marketing copy against IRDAI, SEBI and brand rules before a person sees it; I designed its precedent engine and replay harness. Every finding cites one of four kinds of evidence (a past reviewer decision, an active rule, a product fact, a mandated disclosure), stored for audit.',
           'Removed fabricated quotes by construction (a deterministic check drops any finding whose quoted evidence is not literally in the source) and made the system fail closed: anything it has not evaluated goes to a human and never receives a grade.',
+          'Built on hybrid retrieval (pgvector and BM25, fused by reciprocal rank) over typed indexes, rule reliability estimated from reviewer verdicts (Beta-Binomial), and replay evaluation protected against leakage by two independent barriers.',
           'Measured a safety default instead of trusting it, and found most of the corpus was untagged and bypassing the applicability check. Inverted the default; what is excluded is now shown to reviewers.',
           'Found and fixed four silent failures that tuning would have hidden: a score that saturated, disclaimers lost in DOCX headers and text boxes, a disclaimer that still passed with "not" deleted, and a rename that corrupted rules.',
-          'Under it: hybrid retrieval (pgvector and BM25, fused by reciprocal rank) over typed indexes, rule reliability estimated from reviewer verdicts (Beta-Binomial), and replay evaluation protected against leakage by two independent barriers.',
         ],
       },
       {
@@ -155,19 +155,18 @@ export const roles: Role[] = [
         heading: 'Document AI for KYC, and evaluation practice',
         lead: 1,
         points: [
-          'Built the KYC document gate: a capture-quality check, classification, two OCR engines reconciled against each other, and four decision states with reason codes. On a 72-case synthetic benchmark it cut false accepts from 30 to between 7 and 9.',
+          'Built the KYC document gate: a capture-quality check, classification, two OCR engines reconciled against each other, and four decision states with reason codes. On a 72-case synthetic benchmark it cut false accepts from 30 to 7 in the first gated version and 9 in the latest.',
           'Wrote its rule engine identically in Python and Java so that any measured difference is attributable to OCR alone. Finding: upscaling and better OCR models barely moved confidence on poor captures, so the fix went to capture quality, not a new parser.',
           'Built qualityos, an evaluation harness with an append-only record of beliefs, operated by role-separated agents (one diagnoses, one fixes, one documents). Its probe found an LLM outage on a voice call being recorded as a clean compliance pass, and the failure path was fixed.',
         ],
       },
       {
-        heading: 'Web, SEO and tools for the sales teams',
-        result: '404 pages on the public site went from roughly 4,000 to 5,000 to almost none.',
+        heading: 'Tools for the sales teams, and the public site',
         lead: 2,
         points: [
-          'Contributed the site-audit crawler to the team’s SEO agent, which checks the site’s roughly 3,000 to 4,000 AEM pages for 404s and broken backlinks and hands them to the web team. The rebrand from Bajaj Allianz Life to Bajaj Life had broken many inbound links, too many to sift by hand.',
-          'Founded the gamified lead-generation portal: an Angular shell that loads React games through module federation (57 games registered; I built the shell and five games), wired to the lead system for lead capture and call-back booking.',
           'Built a role-based sales reconciliation and approval portal (6 roles, 39 tables, 1,370 tests); moving workbook parsing to a calamine service cut it from about 74 s to 0.3 s.',
+          'Founded the gamified lead-generation portal: an Angular shell that loads React games through module federation (57 games registered; I built the shell and five games), wired to the lead system for lead capture and call-back booking.',
+          'Contributed the site-audit crawler to the team’s SEO agent, which checks the site’s roughly 3,000 to 4,000 AEM pages for 404s and broken backlinks after the rebrand from Bajaj Allianz Life. 404 pages on the public site fell from roughly 4,000–5,000 to almost none.',
           'Upgraded the public site’s search to Solr 9.10.1 in user-acceptance testing (1,334 pages and PDFs indexed, no failures) and audited its AEM integration, which found three security issues. The production cut-over has not started.',
         ],
       },
@@ -189,7 +188,6 @@ export const roles: Role[] = [
           'Closed the critical authentication findings raised by VAPT security assessments on the production journeys.',
           'Introduced the Adobe Analytics data layer to the purchase forms (now used in 35 files) and a bundle-optimisation pass: lazy-loaded routes, a service worker and lazy images.',
         ],
-        lead: 2,
       },
     ],
   },
@@ -204,6 +202,8 @@ export interface Project {
   caveat?: string;
   /** Public repository or page for the project. */
   url?: string;
+  /** false keeps it off the two-page PDF; the page and the CV still carry it */
+  pdf?: boolean;
 }
 
 export const projects: Project[] = [
@@ -219,7 +219,7 @@ export const projects: Project[] = [
     name: 'Mneme',
     kind: 'LLM knowledge compiler',
     blurb:
-      'Compiles PDF, HTML and text into a cross-referenced, cited wiki that is queried directly, instead of paying retrieval cost on every question. A seven-stage compiler (decompose, extract, align, critic, write, index, graph), content-hash dedupe, hosted and local models behind one interface, and a lint that finds orphan pages and broken links.',
+      'Compiles PDF, HTML and text into a cross-referenced, cited wiki that is queried directly, instead of paying retrieval cost on every question. A five-stage compiler (decompose, extract, align, write, index) with seams left for a critic and a graph builder, content-hash dedupe, hosted and local models behind one interface, and a lint that finds orphan pages and broken links.',
     caveat: 'No baseline against RAG yet.',
     url: 'https://github.com/Thunderk3g/Mneme',
   },
@@ -227,8 +227,8 @@ export const projects: Project[] = [
     name: 'ForgeLM',
     kind: 'fine-tuning and small task models',
     blurb:
-      'A fine-tuning platform (4-bit QLoRA and a GRPO trainer for 8 GB GPUs), then CPU experiments on public data. On Banking77 at 8 labels per class, a frozen encoder with a linear head scored 87.5% at ~3 ms against 66.9% at ~770 ms for a 1.5B LLM; a LoRA of a 360M model went from 1.3% to 89.0% in 19 minutes.',
-    caveat: 'Self-directed; the 2025 platform with two collaborators.',
+      'A fine-tuning platform (4-bit QLoRA on 8 GB GPUs, built with two collaborators), then CPU experiments on public data. On Banking77 at 8 labels per class, a frozen encoder with a linear head scored 87.5% at ~3 ms against 66.9% at ~770 ms for a few-shot 1.5B LLM. A LoRA of a 360M model reached 89.0% on the 10 most frequent intents, from 1.3%, in 19 minutes.',
+    caveat: 'Self-directed; not published benchmarks.',
     url: 'https://github.com/Thunderk3g/ForgeLM',
   },
   {
@@ -237,6 +237,8 @@ export const projects: Project[] = [
     blurb:
       'A Kali-style desktop in the browser with 13 apps, a real Linux 6.8 kernel (v86) and PostgreSQL 18 (PGlite), around a paper-study workbench. The desktop can be taken apart in 3D and read as a Kali machine, this codebase or an LLM system.',
     url: 'https://github.com/Thunderk3g/thunderkeg-homepage',
+    // the site's address is already in the PDF header
+    pdf: false,
   },
 ];
 
@@ -246,7 +248,7 @@ export const research = {
   inPreparation: [
     {
       title: 'Coverage is not constraint: measuring constraint density in formalised regulatory rule bases',
-      venue: 'Manuscript under revision for resubmission (preprint available on request)',
+      venue: 'Working paper (preprint available on request)',
       /** the one line an industry reader needs */
       brief:
         'A measurement on the public DAPRECO GDPR rule base: 962 rules, a mean constraint density of 0.462, and 43 rules (4.5%) that cannot tell any two scenarios apart.',
@@ -300,7 +302,7 @@ export const skills: { group: string; items: string }[] = [
   {
     group: 'Machine learning',
     items:
-      'gradient-boosted models (LightGBM, CatBoost) · time-based validation and point-in-time leakage gates · PR-AUC and lift evaluation · small task models against LLM baselines · distillation · LoRA / QLoRA and GRPO fine-tuning (self-directed)',
+      'gradient-boosted models (LightGBM, CatBoost) · time-based validation and point-in-time leakage gates · PR-AUC and lift evaluation · small task models against LLM baselines · distillation · LoRA / QLoRA fine-tuning (self-directed)',
   },
   {
     group: 'Speech',
@@ -310,7 +312,7 @@ export const skills: { group: string; items: string }[] = [
   {
     group: 'Evaluation and research methods',
     items:
-      'benchmark design with declared confounds · leakage-safe splitting · threshold-sensitivity analysis · correlated-error analysis of ASR ensembles · Beta-Binomial reliability estimation · negative results reported as results',
+      'benchmark design with declared confounds · leakage-safe splitting · threshold-sensitivity analysis · correlated-error analysis of ASR ensembles · Beta-Binomial reliability estimation',
   },
   {
     group: 'Regulation and governance',
@@ -318,7 +320,7 @@ export const skills: { group: string; items: string }[] = [
   },
   {
     group: 'Delivery',
-    items: 'requirements taken from business heads · cross-department integration · training engineers to deliver end to end · release management · running what I ship',
+    items: 'requirements taken from business heads · cross-department integration · training engineers to deliver end to end · release management',
   },
   {
     group: 'Engineering',

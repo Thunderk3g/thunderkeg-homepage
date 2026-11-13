@@ -135,10 +135,6 @@ for f in scripts/*.test.mts; do npx tsx "$f" || break; done
 - [`docs/teardown-research.md`](docs/teardown-research.md): prior art for
   exploded views, what CSS 3D does and does not do, and the traces behind
   each performance fix.
-- [`docs/resume-research.md`](docs/resume-research.md): what the evidence
-  says about résumés, and which figures are still missing.
-- [`docs/role-benchmark.md`](docs/role-benchmark.md): the roles this work is
-  measured against.
 
 ## Deploying
 

@@ -223,6 +223,16 @@ const debounced = () => {
   timer = setTimeout(schedule, 400);
 };
 
+/** Sync now, skipping the typing debounce, and resolve once it has run (psql's table list on open). */
+export function syncResearchNow(): Promise<void> {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  schedule();
+  return chain;
+}
+
 /** Idempotent. Cheap to call before the db exists: it just waits for it. */
 export function startResearchMirror(): void {
   if (started || typeof window === 'undefined') return;

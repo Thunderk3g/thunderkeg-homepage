@@ -47,6 +47,25 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
 
 /* ───────────────────────── blocks ───────────────────────── */
 
+/**
+ * Inline Markdown only (bold, italic, code, links) with the line breaks kept,
+ * for text that arrives a token at a time and is shown in a pre-wrapped box:
+ * the assistant's replies. Model output is untrusted, so a link is rendered
+ * only when it points at this site or at http(s).
+ */
+export function InlineText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split('\n').map((line, i) => (
+        <span key={i}>
+          {i > 0 && '\n'}
+          {inline(line.replace(/\]\((?!https?:\/\/|\/)[^)]*\)/g, ']'), `l${i}`)}
+        </span>
+      ))}
+    </>
+  );
+}
+
 const HEADINGS: Record<number, 'h2' | 'h3' | 'h4' | 'h5'> = { 1: 'h2', 2: 'h2', 3: 'h3', 4: 'h4', 5: 'h5' };
 
 function tableRow(line: string): string[] {

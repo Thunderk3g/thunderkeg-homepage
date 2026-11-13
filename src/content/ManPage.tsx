@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/', label: 'desktop' },
   { href: '/resume', label: 'résumé' },
   { href: '/writing', label: 'writing' },
+  { href: '/stacks', label: 'stacks' },
   { href: '/hire', label: 'hire' },
 ];
 

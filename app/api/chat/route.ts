@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { clientAddress, MAX_BODY_BYTES, sameOrigin, withinRate, withinSize } from '@/os/ai/guard';
 import { isLlmConfigured, streamChatCompletion, thinkStripper } from '@/os/ai/llm';
 import { digestSystemPrompt, newsSystemPrompt, paperSystemPrompt, systemPrompt } from '@/os/ai/prompts';
 import { allEntries } from '@/content/writing';
@@ -30,12 +31,31 @@ export async function POST(req: NextRequest) {
     return Response.json({ llm: 'unconfigured' });
   }
 
-  const body = (await req.json()) as {
+  // This endpoint spends a paid key, so it answers only this site, only
+  // requests the size its own apps send, and only at a visitor's pace
+  // (src/os/ai/guard.ts). A refusal is JSON, which the client already treats
+  // as "no model" and answers offline.
+  const refuse = (status: number, reason: string, retryAfter?: number) =>
+    Response.json({ llm: 'refused', reason }, { status, headers: retryAfter ? { 'retry-after': String(retryAfter) } : undefined });
+  if (!sameOrigin(req.headers)) return refuse(403, 'origin');
+  if (Number(req.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return refuse(413, 'size');
+
+  let body: {
     messages?: ChatMessage[];
     /** swaps the system prompt: résumé grounding, news digest, or paper reading */
     mode?: 'resume' | 'news' | 'digest' | 'paper';
   };
-  const userMessages = Array.isArray(body.messages) ? body.messages.slice(-12) : [];
+  try {
+    const raw = await req.text();
+    if (raw.length > MAX_BODY_BYTES) return refuse(413, 'size');
+    body = JSON.parse(raw);
+  } catch {
+    return refuse(400, 'json');
+  }
+  const userMessages = Array.isArray(body?.messages) ? body.messages.slice(-12) : [];
+  if (!userMessages.length || !userMessages.every((m) => m && typeof m === 'object') || !withinSize(userMessages)) return refuse(413, 'size');
+  const rate = withinRate(clientAddress(req.headers));
+  if (!rate.ok) return refuse(rate.status, rate.reason, rate.retryAfter);
   const system =
     body.mode === 'news'
       ? newsSystemPrompt()

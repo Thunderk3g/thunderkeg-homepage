@@ -13,7 +13,7 @@ import { SITE } from './site';
  *   cv       for academic readers. Education and research first, manuscripts
  *            with their summaries and their exact status, then the rest.
  *
- * Why it looks the way it does (docs/resume-research.md): one column, real
+ * Why it looks the way it does: one column, real
  * selectable text, bold titles over short bullets, dates on the right where
  * the eye checks for them, and nothing that is only decoration. It is built
  * from src/data/resume.ts like every other surface, so the PDF cannot drift
@@ -231,8 +231,10 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
   const projectsBlock = () => {
     section(tight ? 'Selected projects' : 'Selected independent projects');
     for (const p of projects) {
+      if (tight && p.pdf === false) continue;
       headline(p.name, p.kind, 9.8);
-      write(p.blurb + (p.caveat ? ' ' + p.caveat : ''), BODY, 'normal', LH);
+      // caveats stay on the page and the CV; two pages say what exists
+      write(p.blurb + (!tight && p.caveat ? ' ' + p.caveat : ''), BODY, 'normal', LH);
       if (p.url) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(BODY - 0.5);
@@ -247,7 +249,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
 
   const publications = () => {
     if (tight) {
-      section('Publications');
+      section('Publications and working papers');
       // an industry reader needs the status and one line; "in preparation" is left for the CV
       for (const r of [...research.published, ...research.inPreparation.filter((i) => !/in preparation/i.test(i.venue))]) {
         keep(LH * 3);
@@ -269,7 +271,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
       write(r.venue, BODY, 'italic', LH);
       gap(1.2);
     }
-    section('Manuscripts: under revision, and in preparation');
+    section('Working papers and manuscripts in preparation');
     for (const r of research.inPreparation) {
       keep(LH * 4);
       write(r.title, BODY, 'bold', LH);

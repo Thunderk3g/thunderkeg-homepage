@@ -50,7 +50,7 @@ disagree.
 It would be comfortable to write this up as "we built a consensus pseudo-labelling
 pipeline for low-resource code-switched ASR". That paper does not exist to be written.
 ROVER is from 1997. Rangappa et al. (Interspeech 2025) published multi-ASR consensus
-filtering on call-centre data at 7,500 hours — 50× my scale — and showed that filtering
+filtering on call-centre data at 7,500 hours, far beyond my scale, and showed that filtering
 down to **1.4% of the pseudo-labelled data matches the full set**, which retires "we
 generated silver labels at scale" as a contribution outright. Prakash et al., same venue
 and year, open by naming multi-stage consensus pipelines as *the problem their work
