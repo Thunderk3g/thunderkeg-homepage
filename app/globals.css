@@ -2233,17 +2233,57 @@ html:has(.man) { background: #0d0f16; }
 .man-hire .hire-btn { min-height: 2.75rem; }
 .man-hire .hire-chip { padding: 0.45rem 0.85rem; font-size: 0.86rem; }
 
+/* /stacks inside the manual frame: the record set as manual sections and rows, not a grid of cards */
+.man .stk {
+  margin-top: 0; color: var(--m-text);
+  --doc-text: var(--m-text); --doc-dim: var(--m-dim); --doc-border: var(--m-rule); --doc-accent: var(--m-link); --doc-panel: transparent;
+}
+.man .stk .man-sec:first-child { margin-top: 2.9rem; }
+.man .stk .man-sec:first-child > h2 { padding-top: 0.42rem; }
+.man .stk-sum { font-size: 0.95rem; font-style: italic; line-height: 1.6; max-width: none; }
+.man .stk-filters { margin: 0.85rem 0 0; gap: 0.5rem; }
+.man .stk-chip { font: 600 0.78rem var(--m-mono); border-radius: 4px; border-color: #3a4157; padding: 0.4rem 0.75rem; cursor: pointer; }
+.man .stk-chip:hover { border-color: var(--m-link); color: var(--m-bright); }
+.man .stk-chip.on { background: transparent; border-color: var(--m-bright); color: var(--m-bright); }
+.man .stk-field > h2 { margin: 0; padding-bottom: 0; border: 0; }
+.man .stk-field-body > .stk-blurb { font-size: 0.95rem; font-style: italic; }
+.man .stk-stacks { display: block; margin-top: 1.3rem; }
+.man .stk-stack, .man .stk-stack.empty { border: 0; border-top: 1px solid var(--m-rule); border-radius: 0; background: none; padding: 1.15rem 0; }
+.man .stk-stack.focus { box-shadow: none; border-top-color: var(--m-signal); }
+.man .stk-stack header { gap: 0.3rem 0.8rem; }
+.man .stk-stack h3 { font-size: 1.22rem; color: var(--m-bright); }
+.man .stk-count { font-family: var(--m-mono); font-size: 0.78rem; }
+.man .stk-stack .stk-blurb { font-size: 0.95rem; font-style: italic; margin-top: 0.3rem; }
+.man .stk ol.stk-cubes { margin-top: 0.7rem; padding: 0; border-top: 0; }
+.man .stk ol.stk-cubes li {
+  grid-template-columns: 5.4rem 4.6rem minmax(0, 1fr); gap: 0 1rem; margin: 0; padding: 0.4rem 0;
+  font-size: 0.98rem; line-height: 1.5; border-bottom: 0;
+}
+.man .stk-when, .man .stk-kind { font-family: var(--m-mono); font-size: 0.78rem; padding-top: 0.28rem; }
+.man .stk-kind { font-weight: 600; }
+.man .stk-detail, .man .stk-note { font-size: 0.86rem; font-style: italic; }
+.man .stk a.stk-link { color: var(--m-link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+.man .stk a.stk-link:hover { color: var(--m-bright); }
+
 @media (max-width: 760px) {
   .man { --m-gutter: 0rem; padding: 0 1.1rem; font-size: 1rem; }
   .man-sec { display: block; margin-top: 2.3rem; }
   .man-sec > h2 { padding: 0 0 0.5rem; }
   .man-sec:first-child > h2 { padding-top: 0; }
   .man-top > .man-id:last-child { display: none; }
-  .man-top nav { gap: 1rem; }
+  .man-top { flex-wrap: wrap; gap: 0.1rem 1rem; }
+  .man-top nav { gap: 1rem; flex-wrap: wrap; }
   .man-options > div, .man-row { grid-template-columns: 1fr; }
   .man-row > time { padding: 0 0 0.2rem; }
+  .man-entry header span { white-space: normal; }
   .man-pager { grid-template-columns: 1fr; }
   .man-pager .next { text-align: left; }
+  .man .stk .man-sec:first-child { margin-top: 2.3rem; }
+  .man .stk .man-sec:first-child > h2 { padding: 0 0 0.5rem; }
+  .man .stk-field > h2 { padding: 0 0 0.5rem; }
+  .man .stk ol.stk-cubes li { grid-template-columns: 5.4rem minmax(0, 1fr); }
+  .man .stk-cubes .stk-title { grid-column: 1 / -1; }
+  .man .stk-count { margin-left: 0; flex-basis: 100%; }
 }
 
 @media print {

@@ -41,6 +41,9 @@ export function StacksRecord({
     return () => cancelAnimationFrame(id);
   }, [subjectId]);
 
+  // on the plain page the record is set as manual sections, like every other plain page (ManPage.tsx)
+  const sec = embedded ? '' : ' man-sec';
+  const body = embedded ? '' : ' man-body';
   const t = board.totals;
   const first = board.years[0]?.year;
   // areas I only follow, with nothing studied yet, belong to the desktop's research tools, not the public record
@@ -50,6 +53,9 @@ export function StacksRecord({
   return (
     <div className={'stk' + (embedded ? ' embedded' : '')} ref={root}>
       <div className="stk-body">
+        <section className={'stk-head' + sec}>
+          {!embedded && <h2>SYNOPSIS</h2>}
+          <div className={'stk-head-body' + body}>
         <p className="stk-sum">
           {t.cubes} things on {t.subjects} subjects in {t.fields} fields{first ? `, from ${first} to now` : ''}. Each line
           is one thing I built, measured, studied or wrote, newest first, so every subject reads as how I came to know
@@ -74,18 +80,22 @@ export function StacksRecord({
             </button>
           ))}
         </div>
+          </div>
+        </section>
 
         {board.lanes.map((lane) => {
           const stacks = lane.stacks.filter(visible);
           if (!stacks.length) return null;
           return (
-            <section key={lane.field.id} className="stk-field" aria-labelledby={'stk-f-' + lane.field.id}>
+            <section key={lane.field.id} className={'stk-field' + sec} aria-labelledby={'stk-f-' + lane.field.id}>
               <h2 id={'stk-f-' + lane.field.id}>{lane.field.name}</h2>
-              <p className="stk-blurb">{lane.field.blurb}</p>
-              <div className="stk-stacks">
-                {stacks.map((s) => (
-                  <StackCard key={s.subject.id} stack={s} kind={kind} focus={s.subject.id === subjectId} onOpen={onOpen} />
-                ))}
+              <div className={'stk-field-body' + body}>
+                <p className="stk-blurb">{lane.field.blurb}</p>
+                <div className="stk-stacks">
+                  {stacks.map((s) => (
+                    <StackCard key={s.subject.id} stack={s} kind={kind} focus={s.subject.id === subjectId} onOpen={onOpen} />
+                  ))}
+                </div>
               </div>
             </section>
           );
