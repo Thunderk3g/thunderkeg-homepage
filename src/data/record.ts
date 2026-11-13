@@ -88,7 +88,7 @@ export const FIELDS: Field[] = [
   { id: 'speech', name: 'Speech', blurb: 'Code-switched Hinglish and Indian English telephony, from audio to scored transcript.' },
   { id: 'law', name: 'Law & governance', blurb: 'Regulation as an engineering constraint: compliance review, rule bases, data rules.' },
   { id: 'agents', name: 'Agents & security', blurb: 'Systems that act, what stops them, and the tracks I follow around them.' },
-  { id: 'models', name: 'Models & documents', blurb: 'Below the API: fine-tuning, local models, cost, and reading documents.' },
+  { id: 'models', name: 'Models', blurb: 'Below the API: fine-tuning, local models, predictive models and cost.' },
 ];
 
 /* ───────────────────────── subjects ───────────────────────── */
@@ -141,12 +141,11 @@ export const SUBJECTS: Subject[] = [
   { id: 'adversarial', field: 'agents', name: 'Adversarial robustness', blurb: 'Staying reliable when the environment is working against you.', rqIds: ['rq-d1'], keywords: ['adversarial', 'robust', 'jamming', 'poison', 'backdoor', 'spoof'], following: true },
   { id: 'trading-agents', field: 'agents', name: 'Trading agents', blurb: 'Multi-agent LLM systems against a simple systematic baseline.', rqIds: ['rq-m2'], keywords: ['trading agent', 'portfolio', 'position sizing', 'market making', 'execution'], following: true },
 
-  /* Models & documents */
+  /* Models */
   { id: 'fine-tuning', field: 'models', name: 'Fine-tuning & quantization', blurb: 'Adapting and shrinking models on hardware I own.', keywords: ['fine-tun', 'lora', 'qlora', 'quantiz', 'quantis', 'adapter'] },
   { id: 'transformer-internals', field: 'models', name: 'Transformer internals', blurb: 'The architecture, taken apart to see it.', keywords: ['attention', 'transformer', 'scaling law', 'positional', 'kv cache'] },
   { id: 'local-models', field: 'models', name: 'Local models', blurb: 'Running models on my own machine behind the same interface as hosted ones.', keywords: ['ollama', 'local model', 'on-device', 'llama.cpp'] },
   { id: 'cost', field: 'models', name: 'Cost governance', blurb: 'Paid model APIs under a budget that holds.', keywords: ['cost', 'budget', 'token usage', 'pricing'] },
-  { id: 'document-ai', field: 'models', name: 'Document AI', blurb: 'Reading identity documents and returning a decision with a reason.', keywords: ['ocr', 'document understanding', 'kyc', 'layout'] },
   { id: 'predictive-models', field: 'models', name: 'Predictive models', blurb: 'Scoring tabular business data, validated forward in time.', keywords: ['lightgbm', 'gradient boost', 'lead scoring', 'tabular', 'pr-auc'] },
 ];
 
@@ -164,16 +163,17 @@ const e = (subject: string, kind: CubeKind, when: string, title: string, href?: 
 const GH = 'https://github.com/Thunderk3g/';
 
 export const RECORD: RecordEntry[] = [
-  /* ── résumé: education and the Dev Lead years (2018–2025) ── */
+  /* ── résumé: education, then intern to Senior Software Engineer to team lead (2018–2025) ── */
   e('cs-foundations', 'studied', '2018–22', 'B.Tech in Computer Science and Engineering, SRM University'),
-  e('apis-backend', 'built', '2022–25', 'Term-insurance purchase-journey APIs for an insurance marketplace'),
-  e('apis-backend', 'built', '2022–25', 'The integration with the insurer on the other side of those journeys'),
-  e('leading', 'built', '2022–25', 'Led a ten-person engineering team and owned its releases'),
-  e('appsec', 'built', '2022–25', 'Fixed critical authentication findings from VAPT assessments on production journeys'),
+  e('web', 'built', '2022–25', 'Acquisition journeys for motor insurance, mutual funds and an AMC new-fund-offer launch, with server-side rendering and RxJS state caching'),
+  e('apis-backend', 'built', '2022–25', 'REST APIs and partner underwriting integrations for an insurance marketplace'),
+  e('apis-backend', 'built', '2025', 'The integration with the insurer on the other side of the term, ULIP and Smart Wealth Goal journeys'),
+  e('leading', 'built', '2025', 'Promoted to lead a ten-person engineering team embedded with the insurer, and owned its releases'),
+  e('appsec', 'built', '2025', 'Fixed critical authentication findings from VAPT assessments on production journeys'),
   e('research-practice', 'wrote', '2023', 'SustainAI: sustainable energy forecasting, presented at CSEAI 2023'),
 
   /* ── résumé: Technical Lead, AI Engineering (Dec 2025 – present) ── */
-  e('leading', 'built', '2025-12', 'Took on AI engineering for a life insurer: compliance review, speech analytics, document AI'),
+  e('leading', 'built', '2025-12', 'Recruited in-house to start AI engineering for a life insurer: a purchase journey, compliance review, speech analytics, lead scoring'),
 
   // compliance review
   e('compliance-review', 'built', '2026', 'An LLM reviewer that grades insurance marketing copy against IRDAI, SEBI and brand obligations'),
@@ -207,11 +207,7 @@ export const RECORD: RecordEntry[] = [
   e('data-governance', 'built', '2026', 'A data-class export gate under the DPDP Act 2023 and IRDAI localisation rules'),
   e('data-governance', 'built', '2026', 'PII redaction for BFSI transcripts, labelled engineering-clean and not DPO-verified'),
 
-  // document AI and evaluation practice
-  e('document-ai', 'built', '2026', 'A KYC validation gate: capture-quality pre-gate, classification, dual-engine OCR, decisions with reason codes'),
-  e('document-ai', 'built', '2026', 'The rule engine written identically in Python and Java, so differences are attributable to OCR alone'),
-  e('document-ai', 'measured', '2026', 'Upscaling and better OCR models barely moved confidence on degraded captures; the fix was capture quality'),
-  e('document-ai', 'measured', '2026', 'False accepts on a 72-case synthetic benchmark cut from 30 to between 7 and 9 by the full gate'),
+  // evaluation practice
   e('eval-design', 'built', '2026', 'qualityos: an evaluation harness with an append-only belief graph'),
   e('eval-design', 'measured', '2026', 'A qualityos probe found an LLM outage recorded as a clean compliance pass; the failure path was fixed'),
   e('multi-agent', 'built', '2026', 'Role-separated agents: judges diagnose, a separate agent fixes, a librarian documents'),
@@ -223,6 +219,7 @@ export const RECORD: RecordEntry[] = [
   // buy journey, voice and lead scoring
   e('eval-design', 'measured', '2026', 'Seven eval suites for a trilingual purchase advisor; retrieval rose from 72% to 79% top-1'),
   e('cost', 'measured', '2026', 'An eval-set A/B chose a model 4.8× cheaper per passing answer at equal behaviour'),
+  e('eval-design', 'built', '2026', 'A pricing-parity harness that checks the purchase engine against the existing calculator across 100,000 combinations'),
   e('asr-pipelines', 'built', '2026', 'A realtime speech-to-speech voice agent for sales calls'),
   e('predictive-models', 'built', '2026', 'A LightGBM lead-scoring model with time-based validation and a point-in-time leakage gate'),
   e('predictive-models', 'measured', '2026', 'PR-AUC 0.348 and 30× lift in the top 1% on a later-period holdout'),
@@ -235,7 +232,7 @@ export const RECORD: RecordEntry[] = [
   e('web', 'built', '2022-01', 'The first version of this site', GH + 'thunderkeg-homepage'),
   e('web', 'built', '2025-03', 'This site rebuilt on Next.js', GH + 'thunderkeg-homepage'),
   e('local-models', 'built', '2025-03', 'A browser extension for local models through Ollama', GH + 'ollama-extension'),
-  e('fine-tuning', 'built', '2025-08', 'ForgeLM: 4-bit loading and LoRA adapters for consumer GPUs', GH + 'ForgeLM'),
+  e('fine-tuning', 'built', '2025-08', 'ForgeLM: 4-bit QLoRA fine-tuning for consumer GPUs', GH + 'ForgeLM'),
   e('fine-tuning', 'built', '2026-03', 'A QLoRA fine-tune of a small Qwen model for compliance rewrites, set up but not yet trained or evaluated', GH + 'qwen-compliance-finetune'),
   e('web', 'built', '2026-05', 'A desktop in the browser: window manager, terminal, file system', GH + 'thunderkeg-homepage'),
   e('web', 'built', '2026-04', 'Client sites and a multi-tenant storefront in TypeScript, April to November 2026'),

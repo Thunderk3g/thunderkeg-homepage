@@ -174,22 +174,12 @@ export default function ResumePage() {
         ))}
       </Sec>
 
-      <Sec title="AWARDS">
+      <Sec title="CERTIFICATIONS AND AWARDS">
         <ul>
           {awards.map((a) => (
             <li key={a}>{a}</li>
           ))}
         </ul>
-      </Sec>
-
-      <Sec title="CAVEATS">
-        <p>
-          Every figure on this page is one of four kinds: public (a corpus, a repository), structural (how many
-          systems, regulators, teams), already published in one of my posts, or my own approximate count, given as
-          &ldquo;about&rdquo; or as a range (the pages on the public site, the 404s, the approved-employer list). My
-          employer&rsquo;s business volumes and outcomes are not here. The Buy Journey is in user-acceptance testing
-          and is described as such. More is available on request, subject to clearance.
-        </p>
       </Sec>
 
       <Sec title="SEE ALSO">

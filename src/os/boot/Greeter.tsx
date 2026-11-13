@@ -101,6 +101,11 @@ export function Greeter({ mode }: { mode: 'login' | 'lock' }) {
           </button>
         </div>
         <div className="kos-greeter-hint">Any password works: press Enter or tap the arrow.</div>
+        {mode === 'login' && (
+          <button type="submit" className="kos-greeter-continue">
+            Continue to the desktop
+          </button>
+        )}
       </form>
 
       {mode === 'login' && (

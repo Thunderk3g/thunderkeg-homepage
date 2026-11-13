@@ -79,7 +79,7 @@ export function systemPrompt(record = ''): { role: 'system'; content: string } {
       `say it is available on request subject to clearance. Quote every figure exactly as the ` +
       `context states it, with what it was measured on; do not round, convert, recompute or ` +
       `characterise it (no "modest", "8-fold"). Prefer short, terminal-friendly ` +
-      `answers. He is also ${research.track.charAt(0).toLowerCase() + research.track.slice(1)}\n\n` +
+      `answers. In his own words: ${research.track}\n\n` +
       `--- RÉSUMÉ CONTEXT ---\n${resumeText()}` +
       (record
         ? `\n\n--- WHAT HE HAS LEARNT, BY SUBJECT (date · built/measured/studied/wrote · item) ---\n${record}`

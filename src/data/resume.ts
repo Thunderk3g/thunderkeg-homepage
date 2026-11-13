@@ -6,28 +6,25 @@
  * Editorial policy — read before adding a number.
  * ------------------------------------------------------------------
  * This repository is public. A figure appears here only if a reader learns
- * something from it, and only if it is one of four kinds:
+ * something from it, and only if it is one of these kinds:
  *
  *   public        from a public corpus or a public repository
  *   published     already in one of my own posts
- *   structural    how many systems, regulators, splits, teams
- *   owner-stated  counts I supplied myself on 2026-11-11, in my own
- *                 approximate words ("about", "roughly", a range): the 404
- *                 pages and AEM pages of the public site, the approved-employer
- *                 list, the integration plan, how long the team took. They
- *                 are my statements, not audited numbers, and they stay
- *                 PENDING my confirmation that they are cleared for a public
- *                 page. Remove one by deleting it here; every surface follows.
- *   measured      engineering figures measured from the repositories on
- *                 2026-11-12 (docs: the resume-numbers audit): structural
- *                 counts (roles, tables, tests, API integrations), offline
- *                 evaluation and benchmark results, and my own commit share.
- *                 Each is stated with what it was measured on.
+ *   structural    how many systems, rules, roles, tables, tests, teams
+ *   measured      offline evaluation and benchmark results, each stated with
+ *                 what it was measured on (audited from the code, 2026-11-12)
+ *   owner-stated  my own approximate counts ("about", a range): the
+ *                 approved-employer list, the integration plan, how long the
+ *                 team took; and my own career history (titles, dates, awards)
  *
  * Still not published: business volumes and outcomes (submissions, calls,
- * conversions, premium, cost, spend), latency, corpus sizes, reviewer-decision
- * totals, colleagues' names, internal system names, hosts, target dates and
- * private repository names. Nothing is estimated or rounded up.
+ * conversions, premium, cost, spend), latency of production systems, corpus
+ * sizes, reviewer-decision totals, colleagues' names, internal hosts, target
+ * dates and private repository names. Nothing is estimated or rounded up.
+ *
+ * Two build rules (scripts/resume-pdf.test.mts): every bullet is at most 330
+ * characters, and /resume.pdf is exactly two pages. `lead` on a group sets
+ * how many of its bullets the PDF prints; the page and the CV print them all.
  */
 
 export const profile = {
@@ -39,16 +36,11 @@ export const profile = {
   email: 'diwakar.adhikari0@gmail.com',
   github: 'Thunderk3g',
   githubUrl: 'https://github.com/Thunderk3g',
-  tagline: 'AI enablement for a regulated business: from a requirement to an agentic system in production.',
-  /**
-   * Three sentences, in the order a reader needs them: what I did and for
-   * whom, how I work, why the work can be trusted. No adjectives; every
-   * clause is backed by a bullet further down.
-   */
+  tagline: 'Production agentic, retrieval-grounded and speech AI systems for regulated financial services.',
+  /** Two paragraphs: what I do and own, then how I got here and how the work is held to account. */
   summary: [
-    'I took the sales and marketing function of a life insurer from using language models only through a chat window to running agentic AI systems in production. I own each one from the business head’s requirement through infrastructure, build, release and upkeep, and I trained my team to work the same way within four to five months.',
-    'I build these hands-on (agentic applications, retrieval-grounded review, speech and document AI, predictive models, fine-tuning and distillation) and configure the software to the business’s workflow, not the other way round.',
-    'I hold the work to evidence: when the full corpus did not support my own pilot result I withdrew the claim and wrote up why, and I have a working paper in AI & Law on measuring how selective formalised regulatory rules are.',
+    'I started and lead AI engineering for the sales and marketing function of an IRDAI-regulated life insurer, taking it from language models in a chat window to agentic, retrieval-grounded and speech systems in production. I own each system from the business head’s brief through architecture, infrastructure, security and release, and trained my team to deliver end to end within four to five months.',
+    'Four years in regulated financial-services engineering: intern to Senior Software Engineer, then lead of a ten-engineer team, then recruited in-house by the insurer to start its AI engineering. I build deterministic state machines around LLMs, applicability-constrained hybrid retrieval, Hinglish speech pipelines and time-validated models, and hold each to evaluation that can fail: when the full corpus did not support my own pilot result, I withdrew the claim and wrote up why.',
   ],
 };
 
@@ -57,9 +49,9 @@ export const profile = {
 
    - Outcome or decision first, then the measure, then the method.
    - A number appears only with what it was measured on, and only if it is
-     one of the four kinds in the policy above. Nothing is estimated.
+     one of the kinds in the policy above. Nothing is estimated.
    - `result` is one measured outcome for the whole stream. It prints first,
-     in bold, on every surface. Most streams have none yet.
+     in bold, on every surface. No stream uses it at the moment.
    - `lead` is how many bullets, from the top, the two-page PDF carries. The
      /resume page, the academic CV and the plain-text résumé carry them all,
      so order the bullets by what a reader with ten seconds needs. */
@@ -89,104 +81,91 @@ export const roles: Role[] = [
     org: 'Bajaj Life Insurance',
     period: 'Dec 2025 – Present',
     blurb:
-      'Brought AI engineering to the sales and marketing function of an IRDAI-regulated life insurer, where using a language model had meant a chat window. I take each requirement from the business head, then design, build, release and run the system.',
+      'Recruited in-house to start and lead AI engineering for the sales and marketing function of an IRDAI-regulated life insurer. I take each requirement from the business head, then design, build, release and run the system.',
     groups: [
       {
-        heading: 'AI enablement: the function and the team',
-        lead: 3,
-        points: [
-          'Started AI engineering in a function that had none: set up the infrastructure, took requirements directly from business heads, and shipped the systems below, each owned from the first conversation through release and upkeep.',
-          'Trained the team to work as forward-deployed engineers. Within four to five months each engineer could take a product owner’s requirement to a deployed application on their own.',
-          'Stood up the hosting the systems run on: one shared Podman stack on RHEL 9 (PostgreSQL, Redis, Qdrant, nginx) serving five applications, with a runbook for adding a new agent.',
-          'Built every system to be configured to how the business already runs (how its data arrives, how its campaigns and sales hierarchy are organised), so no team changed its workflow to fit the software.',
-          'Worked across departments on every build: underwriting, analytics, products, IT, the database and data-warehouse teams, and information security.',
-        ],
-      },
-      {
-        heading: 'Buy Journey: buying term insurance in a conversation (in user-acceptance testing)',
-        lead: 4,
-        points: [
-          'Leading the insurer’s chat-based purchase journey for term insurance, in English, Hindi and Hinglish, with underwriting, analytics, products, IT and the data-warehouse team. Its aims are less manual underwriting and a higher issuance rate.',
-          'Led its rebuild as a deterministic state machine: code decides every next step, product logic is versioned data (119 rules, 62 flow steps, 6 rate tables) published by a second person with rollback, the model only reads and phrases text, and calls to 18 of the insurer’s APIs go through a ledger written before each send.',
-          'Held the rebuild to evaluation: 7 suites, 393 cases in English, Hindi and Hinglish, and recorded golden conversations. Retrieval rose from 72% to 79% top-1 and 90% to 97% hit@4; Hindi FAQ answers were precise on 34 of 34 turns.',
-          'Shipped the first version in 16 days. An A/B on its eval set chose the smaller model: both passed 40 of 40 behaviour checks, and the smaller one cost 4.8× less per passing answer.',
-          'Designed the journey to ask less. Credit-bureau, industry-database (IIB), existing-policy and GSTN checks run as soon as basic details are in, so the questions they answer are skipped, knock-out cases stop early with an alternative offered, and a health answer opens its own reflex questionnaire.',
-          'In a review of 75 test journeys during user-acceptance testing, the price arrived by the fourth turn (median) and no fact was asked for twice.',
-          'Designed every conversation to be auditable: the customer’s message, the model’s response and each guardrail decision are stored, and a change-data-capture feed (Debezium, Kafka) to the data lake is being set up with the data-warehouse team.',
-          'Reworked the flow after review with the analytics team: one question at a time, personal details asked once, an employer search over about 46,000 approved companies, a tentative premium from the existing calculator, then document upload with OCR, medical scheduling and payment last.',
-          'Delivering against a 30-item integration plan, each item with an owning team: answer rules, calculators, product validations, external APIs, resuming a journey, call-backs to the lead system, and hosting.',
-        ],
-      },
-      {
-        heading: 'Speech analytics and code-switched ASR data (Hinglish and Indian English sales calls)',
-        lead: 3,
-        points: [
-          'Co-built call analytics for the sales teams (speaker-labelled transcripts, disposition and compliance detection, six languages) and fitted it to the business: calls are ingested by campaign and results are cut by each layer of the sales hierarchy.',
-          'Built its realtime speech-to-speech voice agent and its speech-to-text layer. Separately, remapping call records to acquisition channels raised the share of attributed calls from about 14% to about 92%.',
-          'Falsified my own headline result before anything was built on it. A third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×); the full corpus gave 2.74%. Wrote up both, with the three mechanisms that explain the gap.',
-          'Built the ASR corpus pipeline with train, validation and protected test splits, found speaker leakage in the protected split, rebuilt it so that no speaker crosses a split, and kept the pre-fix result on record.',
-          'Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer, which swapped the two speakers on whole calls.',
-          'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
-          'Built governance in: an export gate by data class under the DPDP Act 2023 and IRDAI localisation rules, PII redaction, and a text-to-speech track stopped before any spend over an unresolved vendor-terms question.',
-          'The calls feed the next system: the rules the Buy Journey assistant answers customer questions by are being derived from what customers ask on these calls.',
-        ],
-      },
-      {
-        heading: 'Compliance review of marketing copy (LLM system, in production)',
-        lead: 3,
-        points: [
-          'Co-built and run the reviewer that grades marketing copy against IRDAI, SEBI and brand rules before a person sees it; I designed its precedent engine and replay harness. Every finding cites one of four kinds of evidence (a past reviewer decision, an active rule, a product fact, a mandated disclosure), stored for audit.',
-          'Removed fabricated quotes by construction (a deterministic check drops any finding whose quoted evidence is not literally in the source) and made the system fail closed: anything it has not evaluated goes to a human and never receives a grade.',
-          'Built on hybrid retrieval (pgvector and BM25, fused by reciprocal rank) over typed indexes, rule reliability estimated from reviewer verdicts (Beta-Binomial), and replay evaluation protected against leakage by two independent barriers.',
-          'Measured a safety default instead of trusting it, and found most of the corpus was untagged and bypassing the applicability check. Inverted the default; what is excluded is now shown to reviewers.',
-          'Found and fixed four silent failures that tuning would have hidden: a score that saturated, disclaimers lost in DOCX headers and text boxes, a disclaimer that still passed with "not" deleted, and a rename that corrupted rules.',
-        ],
-      },
-      {
-        heading: 'Predictive models: lead scoring',
-        lead: 1,
-        points: [
-          'Built a LightGBM model that ranks every sales lead by its chance of buying within 90 days, with time-based validation and a point-in-time leakage gate that blocks a training run. On a later-period holdout: PR-AUC 0.348 and 30× lift in the top 1%.',
-          'Kept LightGBM over CatBoost, which gained 0.0013 PR-AUC at 9.9× the training time, and showed that a “stop after six calls” rule rested on a broken attempt counter.',
-          'Built the pipeline that joins WhatsApp, RCS and email campaign events to the lead master; it became the model’s training data.',
-        ],
-      },
-      {
-        heading: 'Document AI for KYC, and evaluation practice',
-        lead: 1,
-        points: [
-          'Built the KYC document gate: a capture-quality check, classification, two OCR engines reconciled against each other, and four decision states with reason codes. On a 72-case synthetic benchmark it cut false accepts from 30 to 7 in the first gated version and 9 in the latest.',
-          'Wrote its rule engine identically in Python and Java so that any measured difference is attributable to OCR alone. Finding: upscaling and better OCR models barely moved confidence on poor captures, so the fix went to capture quality, not a new parser.',
-          'Built qualityos, an evaluation harness with an append-only record of beliefs, operated by role-separated agents (one diagnoses, one fixes, one documents). Its probe found an LLM outage on a voice call being recorded as a clean compliance pass, and the failure path was fixed.',
-        ],
-      },
-      {
-        heading: 'Tools for the sales teams, and the public site',
+        heading: 'AI engineering function, platform and team',
         lead: 2,
         points: [
-          'Built a role-based sales reconciliation and approval portal (6 roles, 39 tables, 1,370 tests); moving workbook parsing to a calamine service cut it from about 74 s to 0.3 s.',
-          'Founded the gamified lead-generation portal: an Angular shell that loads React games through module federation (57 games registered; I built the shell and five games), wired to the lead system for lead capture and call-back booking.',
-          'Contributed the site-audit crawler to the team’s SEO agent, which checks the site’s roughly 3,000 to 4,000 AEM pages for 404s and broken backlinks after the rebrand from Bajaj Allianz Life. 404 pages on the public site fell from roughly 4,000–5,000 to almost none.',
-          'Upgraded the public site’s search to Solr 9.10.1 in user-acceptance testing (1,334 pages and PDFs indexed, no failures) and audited its AEM integration, which found three security issues. The production cut-over has not started.',
+          'Started AI engineering in a function that had none: took requirements directly from business heads and worked with underwriting, analytics, products, IT, the data-warehouse team and information security to ship the systems below, with no team changing its workflow to fit the software.',
+          'Trained the team to work as forward-deployed engineers who ship on their own within four to five months, ran a paper reading group (intent routing, agentic query caching, memory-augmented retrieval, agent threat models), and stood up one shared Podman stack on RHEL 9 (PostgreSQL, Redis, Qdrant, nginx) serving five applications.',
+          'Set the group’s engineering standards: one owner per system, design reviews, and budget guards with metering on every paid model API.',
+        ],
+      },
+      {
+        heading: 'Conversational purchase journey for term insurance (in user-acceptance testing)',
+        lead: 2,
+        points: [
+          'Architected the insurer’s chat-based term-insurance purchase journey (English, Hindi, Hinglish) as a deterministic state machine: the model only reads and phrases text, 119 versioned rules, 62 flow steps and 6 rate tables (maker-checker, with rollback) decide every step, and a write-ahead ledger gates calls to 18 insurer APIs.',
+          'Held it to evaluation: 7 suites and 393 cases took retrieval from 72% to 79% top-1 and from 90% to 97% hit@4, with Hindi FAQ answers precise on 34 of 34 turns. Shipped the first version in 16 days, and an A/B on its eval set chose a model 4.8× cheaper per passing answer at equal behaviour (40 of 40 checks).',
+          'Designed the journey to ask less: credit-bureau, IIB, GSTN and existing-policy checks run as soon as basic details are in, knock-out cases stop early with an alternative, and a health answer opens a reflex questionnaire. In 75 test journeys the price arrived by the fourth turn (median) with no fact asked twice.',
+          'Built a pricing-parity harness that checks the engine against the insurer’s existing calculator across 100,000 input combinations.',
+          'Designed every conversation to be auditable: the customer’s message, the model’s response and each guardrail decision are stored, and a change-data-capture feed (Debezium, Kafka) to the data lake is being set up with the data-warehouse team.',
+          'Delivering a 30-item integration plan, each item with an owning team: an employer search over about 46,000 approved companies, document intake, medical scheduling, resuming a journey, call-backs to the lead system and payment.',
+        ],
+      },
+      {
+        heading: 'Compliance review of marketing copy (LangGraph, in production)',
+        lead: 2,
+        points: [
+          'Co-built and run the reviewer that grades marketing copy against IRDAI, SEBI and brand rules; I designed its precedent engine and replay harness. Hybrid retrieval (pgvector and BM25, reciprocal rank fusion) over typed indexes, four kinds of cited evidence, and Beta-Binomial rule reliability from reviewer verdicts.',
+          'Removed fabricated quotes by construction (a deterministic check drops any finding whose quoted evidence is not literally in the source) and made it fail closed. Measured the applicability filter’s permissive default, found most of the corpus untagged and bypassing it, and inverted the default, showing exclusions to reviewers.',
+          'Found and fixed four silent failures that tuning would have hidden: a score that saturated, disclaimers lost in DOCX headers and text boxes, a disclaimer that still passed with "not" deleted, and a rename that corrupted rules.',
+          'Kept reviewer scores out of training so the evaluation channel stays independent, and protected replay evaluation against leakage with two independent barriers.',
+        ],
+      },
+      {
+        heading: 'Speech analytics and code-switched Hinglish ASR',
+        lead: 2,
+        points: [
+          'Co-built call analytics for the sales teams in six languages (speaker-labelled transcripts, dispositions, compliance detection) and built its realtime speech-to-speech voice agent. Remapping call records to acquisition channels raised the share of attributed calls from about 14% to about 92%.',
+          'Falsified my own headline result before anything was built on it: a third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×), and the full corpus gave 2.74%. Wrote up both, with the three mechanisms that explain the gap.',
+          'Built the ASR corpus pipeline with protected test splits, found speaker leakage in the protected split and rebuilt it so no speaker crosses a split. Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer.',
+          'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
+          'Built governance in: an export gate by data class under the DPDP Act 2023 and IRDAI localisation rules, PII redaction, and a text-to-speech track stopped before any spend over an unresolved vendor-terms question.',
+        ],
+      },
+      {
+        heading: 'Lead scoring, attribution and data platforms',
+        lead: 2,
+        points: [
+          'Built a LightGBM model that ranks every sales lead by its chance of buying within 90 days, with time-based validation and a point-in-time leakage gate that blocks a training run: PR-AUC 0.348 and 30× lift in the top 1% on a later-period holdout. Kept it over CatBoost, which gained 0.0013 PR-AUC at 9.9× the training time.',
+          'Built a role-based sales reconciliation and approval portal (6 roles, 39 tables, 1,370 tests), where moving workbook parsing to a calamine service cut it from about 74 s to 0.3 s, and founded the lead-generation portal: an Angular shell that loads React games through module federation.',
+          'Built the pipeline that joins WhatsApp, RCS and email campaign events to the lead master, which became the model’s training data, and showed that a “stop after six calls” rule rested on a broken attempt counter.',
         ],
       },
     ],
   },
   {
-    id: 'finserv',
-    title: 'Dev Lead',
-    org: 'Bajaj Finserv Direct Ltd',
-    period: 'Jun 2022 – Nov 2025',
-    blurb: 'Term-insurance purchase journeys for an insurance marketplace.',
+    id: 'finserv-lead',
+    title: 'Web Development Lead',
+    org: 'Bajaj Finserv Direct Ltd (embedded at Bajaj Allianz Life)',
+    period: 'Feb 2025 – Nov 2025',
+    blurb:
+      'Promoted to lead the ten-engineer team building the insurer’s online purchase journeys. The insurer then recruited me in-house to start its AI engineering.',
     groups: [
       {
         heading: '',
         points: [
-          'Led a ten-person engineering team delivering term-insurance purchase journeys end to end.',
-          'Set up the insurer’s ULIP and Smart Wealth Goal purchase apps (Angular 17) with payment, Aadhaar and resume flows.',
-          'Owned API design, release management and the integration with the insurer, Bajaj Allianz Life.',
-          'Closed the critical authentication findings raised by VAPT security assessments on the production journeys.',
-          'Introduced the Adobe Analytics data layer to the purchase forms (now used in 35 files) and a bundle-optimisation pass: lazy-loaded routes, a service worker and lazy images.',
+          'Led a ten-person engineering team delivering the term-insurance, ULIP and Smart Wealth Goal purchase applications (Angular 17) end to end, owning API design, the integration with the insurer, the payment, Aadhaar and journey-resume flows, and release management.',
+          'Introduced the Adobe Analytics data layer to the purchase forms (now used in 35 files), ran a bundle-optimisation pass (lazy-loaded routes, a service worker, lazy images), and closed the critical authentication findings raised by VAPT security assessments.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'finserv-swe',
+    title: 'Senior Software Engineer',
+    org: 'Bajaj Finserv Direct Ltd',
+    period: 'Apr 2022 – Feb 2025',
+    blurb:
+      'Joined as an intern and was promoted to Software Engineer, then Senior Software Engineer, on consumer journeys for insurance, mutual funds and asset management.',
+    groups: [
+      {
+        heading: '',
+        points: [
+          'Built customer acquisition journeys for motor insurance, mutual funds and the Bajaj Finserv AMC new-fund-offer launch (Angular, TypeScript, Java and Spring Boot, REST APIs, Redis, Kafka), integrating video KYC and partner underwriting APIs.',
+          'Implemented server-side rendering (Angular Universal), RxJS state caching that removed repeated API calls, and lazy-loaded routes and assets for Core Web Vitals. Received the Deployment Star Award and the Esteemed Contributor to Financial Innovation Award.',
         ],
       },
     ],
@@ -199,6 +178,7 @@ export interface Project {
   name: string;
   kind: string;
   blurb: string;
+  /** shown on the page and the CV; the two-page PDF says what exists and stops */
   caveat?: string;
   /** Public repository or page for the project. */
   url?: string;
@@ -209,11 +189,26 @@ export interface Project {
 export const projects: Project[] = [
   {
     name: 'Arbor',
-    kind: 'agent-governance architecture',
+    kind: 'agent-governance and safety kernel',
     blurb:
       'For agents that act on real systems, enforced by the architecture and not by policy: single-use Ed25519 approval tokens for irreversible actions, a hash-chained audit log with Merkle roots, and a tool gateway that runs a taint firewall before approval. Written up as a 16-section RFC with 11 decision records; 219 passing tests.',
     caveat: 'A kernel with working vertical slices, not a platform; sandboxing is designed, not built.',
     url: 'https://github.com/Thunderk3g/Arbor',
+  },
+  {
+    name: 'qualityos',
+    kind: 'evaluation harness with a belief record',
+    blurb:
+      'An evaluation harness that keeps an append-only record of beliefs (observe, hypothesise, experiment, revise) and is run by role-separated agents: one diagnoses, one fixes, one documents. Its probe found an LLM outage on a voice call being recorded as a clean compliance pass, and the failure path was fixed.',
+    caveat: 'Built inside my work at the insurer; its recorded runs are on synthetic data.',
+  },
+  {
+    name: 'ForgeLM',
+    kind: 'small task models against LLMs',
+    blurb:
+      'A 4-bit QLoRA fine-tuning platform (built with two collaborators), then CPU experiments with paired-bootstrap and McNemar gates. On Banking77 at 8 labels per class, a frozen encoder with a linear head scored 87.5% at ~3 ms against 66.9% at ~770 ms for a few-shot 1.5B LLM. A LoRA of a 360M model reached 89.0% on the 10 most frequent intents, from 1.3%, in 19 minutes.',
+    caveat: 'Self-directed; not published benchmarks.',
+    url: 'https://github.com/Thunderk3g/ForgeLM',
   },
   {
     name: 'Mneme',
@@ -222,14 +217,7 @@ export const projects: Project[] = [
       'Compiles PDF, HTML and text into a cross-referenced, cited wiki that is queried directly, instead of paying retrieval cost on every question. A five-stage compiler (decompose, extract, align, write, index) with seams left for a critic and a graph builder, content-hash dedupe, hosted and local models behind one interface, and a lint that finds orphan pages and broken links.',
     caveat: 'No baseline against RAG yet.',
     url: 'https://github.com/Thunderk3g/Mneme',
-  },
-  {
-    name: 'ForgeLM',
-    kind: 'fine-tuning and small task models',
-    blurb:
-      'A fine-tuning platform (4-bit QLoRA on 8 GB GPUs, built with two collaborators), then CPU experiments on public data. On Banking77 at 8 labels per class, a frozen encoder with a linear head scored 87.5% at ~3 ms against 66.9% at ~770 ms for a few-shot 1.5B LLM. A LoRA of a 360M model reached 89.0% on the 10 most frequent intents, from 1.3%, in 19 minutes.',
-    caveat: 'Self-directed; not published benchmarks.',
-    url: 'https://github.com/Thunderk3g/ForgeLM',
+    pdf: false,
   },
   {
     name: 'This site',
@@ -256,11 +244,10 @@ export const research = {
         'Measured over the DAPRECO GDPR knowledge base, the largest freely available LegalRuleML corpus: 962 rules with a median of 12 antecedent predicates each, yet a mean constraint density of 0.462, and 43 rules (4.5%) whose antecedents consist entirely of predicates that fire on any scenario the corpus can describe. Antecedent length is not selectivity, so a coverage-style audit cannot tell a faithfully general principle from a rule that discriminates nothing. The six ubiquitous predicates are identical across a 25–50% threshold plateau, so the finding does not depend on the cut-off. The measurement script is standard-library Python and ships with the paper; all data is public (Robaldo et al.).',
     },
     {
-      title:
-        'Grounded regulatory compliance review: an engineering case study of a precedent-imitating retrieval system in insurance marketing',
+      title: 'Grounded, fail-closed compliance review in production: what broke, and why the filter was not the problem',
       venue: 'Manuscript in preparation (pending employer clearance)',
       summary:
-        'The grounding-tier taxonomy, fail-closed persistence, precedent canonicalisation with leakage barriers, bounded Beta-Binomial feedback and deterministic applicability and disclosure adjudication, with the negative results, bypassed quality gates and exonerated suspects reported as contributions.',
+        'An operational study of a precedent-imitating compliance reviewer in insurance marketing: applicability metadata starved under a permissive default, a bulk rename that acted as an unmigrated schema change, a score metric that saturated, and fail-closed audit provenance, with the negative results and exonerated suspects reported as contributions.',
     },
   ],
   published: [
@@ -284,9 +271,9 @@ export const research = {
     'Autonomous operation of large, configuration-heavy AI applications: coding and SWE agents, CI/CD and build repair, configuration validation and drift, incident root-cause analysis, and regression-testing LLM apps as prompts, models and configs change.',
     'AI and LLMs in trading and markets: financial LLMs and multi-agent trading systems, reinforcement learning for execution and portfolios, alpha mining, and the look-ahead and backtest biases that make results look better than they are.',
   ],
-  /** Openly stated: this portfolio is part of a research-master's application. */
+  /** One sentence on where the research sits beside the engineering. */
   track:
-    'Applying for research-oriented master’s programmes in AI & Law and speech technology in Europe (Erasmus Mundus joint masters and Dutch, German and UK programmes) for the 2027 intake.',
+    'My research interests are AI & Law (regulatory compliance, formalised rule bases) and code-switched speech technology, pursued alongside applied AI engineering.',
 };
 
 /* ───────────────────────── Skills ─────────────────────────
@@ -297,34 +284,27 @@ export const skills: { group: string; items: string }[] = [
   {
     group: 'Agentic and LLM systems',
     items:
-      'agentic applications and tool-using agents (LangGraph / LangChain) · hybrid retrieval (dense + BM25, reciprocal rank fusion) · pgvector · generator and critic verification · guardrails and prompt-injection defence · offline eval suites and regression gates · multilingual assistants (English, Hindi, Hinglish) · API cost governance',
+      'tool-using agents (LangGraph / LangChain) · deterministic state-machine orchestration · hybrid retrieval (pgvector + BM25, reciprocal rank fusion) · evidence grounding and verbatim-quote critics · prompt-injection defence · offline eval suites and regression gates · API cost governance',
   },
   {
-    group: 'Machine learning',
+    group: 'Machine learning and evaluation',
     items:
-      'gradient-boosted models (LightGBM, CatBoost) · time-based validation and point-in-time leakage gates · PR-AUC and lift evaluation · small task models against LLM baselines · distillation · LoRA / QLoRA fine-tuning (self-directed)',
+      'gradient-boosted models (LightGBM, CatBoost) · time-based validation and leakage gates · PR-AUC and lift · paired-bootstrap and McNemar model selection · small task models against LLM baselines · distillation · LoRA / QLoRA fine-tuning · Beta-Binomial reliability',
   },
   {
     group: 'Speech',
     items:
-      'ASR pipelines · speaker diarization and channel-based attribution · WER/CER with script-normalised scoring · code-switched Hinglish and Indic · faster-whisper · corpus construction and dataset cards',
-  },
-  {
-    group: 'Evaluation and research methods',
-    items:
-      'benchmark design with declared confounds · leakage-safe splitting · threshold-sensitivity analysis · correlated-error analysis of ASR ensembles · Beta-Binomial reliability estimation',
+      'telephony ASR pipelines · channel-split and diarization-based speaker attribution · script-normalised WER/CER · code-switched Hinglish and Indic · faster-whisper · speaker-disjoint corpus construction',
   },
   {
     group: 'Regulation and governance',
-    items: 'IRDAI and SEBI advertising obligations · DPDP Act 2023 data-class gating · PII redaction · GDPR (DAPRECO / PrOnto) · LegalRuleML analysis · append-only audit design',
+    items:
+      'IRDAI and SEBI advertising obligations · fail-closed human routing · DPDP Act 2023 data-class gating · PII redaction · GDPR and LegalRuleML analysis · append-only audit design',
   },
   {
-    group: 'Delivery',
-    items: 'requirements taken from business heads · cross-department integration · training engineers to deliver end to end · release management',
-  },
-  {
-    group: 'Engineering',
-    items: 'Python · TypeScript · Java · SQL · FastAPI · PostgreSQL · Redis · Celery · Qdrant · Next.js · Angular and module federation · Docker / Podman on RHEL · Azure OpenAI · Debezium / Kafka change-data-capture · API design · test-driven development',
+    group: 'Engineering and delivery',
+    items:
+      'Python · TypeScript · Java · SQL · FastAPI · Celery · Next.js · React · Angular · Spring Boot · PostgreSQL · Redis · Qdrant · Kafka · Docker / Podman on RHEL · nginx · Azure OpenAI · AWS · release management',
   },
 ];
 
@@ -339,9 +319,12 @@ export const education = [
   },
 ];
 
+/** Certifications first, then awards. */
 export const awards = [
-  'COMPEX Indian Embassy Scholarship Scheme Awardee',
+  'AWS Certified Developer – Associate',
+  'Deployment Star Award (Bajaj Finserv Direct)',
   'Esteemed Contributor to Financial Innovation Award',
+  'COMPEX Indian Embassy Scholarship Scheme Awardee',
 ];
 
 /* ───────────────────────── Working together ───────────────────────── */
@@ -367,45 +350,45 @@ export interface Service {
 
 export const hire = {
   open: true,
-  status: 'Open to freelance projects and new roles',
+  status: 'Open to senior and lead AI engineering roles, technical advisory and research collaborations',
   /** shown beside the status; facts only */
   facts: ['Based in Pune, India', 'IST, UTC+5:30', 'Replies by email'],
   engagements: [
-    { id: 'project', label: 'A freelance project', blurb: 'A scoped build or audit with a fixed outcome.' },
-    { id: 'consult', label: 'Consulting or a review', blurb: 'A second pair of eyes on a system, a metric or a plan.' },
-    { id: 'role', label: 'A full-time or contract role', blurb: 'AI engineering, applied research or a technical lead seat.' },
+    { id: 'role', label: 'A full-time or contract lead role', blurb: 'Technical lead, staff AI engineer or forward-deployed AI architect.' },
+    { id: 'project', label: 'A scoped AI build', blurb: 'From the requirement to an audited system in production.' },
+    { id: 'consult', label: 'An evaluation or architecture review', blurb: 'A second pair of eyes on grounding, leakage, an eval harness or unit cost.' },
     { id: 'research', label: 'A research collaboration', blurb: 'AI & Law, retrieval evaluation or code-switched speech.' },
   ],
   services: [
     {
       id: 'grounded-llm',
-      name: 'Retrieval-grounded LLM systems',
+      name: 'Applicability-constrained, grounded LLM systems',
       outcome:
-        'An assistant or reviewer that cites its evidence or declines to answer: hybrid dense and BM25 retrieval, a verification step that drops unsupported claims, and a fail-closed path to a human.',
-      proof: 'Built in production for regulatory compliance review at an IRDAI-regulated insurer.',
+        'An assistant or reviewer that keeps hard applicability apart from semantic similarity, checks every quote against its source deterministically, and fails closed to a human.',
+      proof: 'Co-built and run in production for regulatory compliance review at an IRDAI-regulated insurer.',
       link: { label: 'A permissive default is a claim', href: '/writing/a-permissive-default-is-a-claim' },
     },
     {
-      id: 'evaluation',
-      name: 'Evaluation and audits of AI systems',
+      id: 'deterministic-agents',
+      name: 'Deterministic state machines around LLMs',
       outcome:
-        'A written answer to “does this actually work?”: leakage-safe splits, declared confounds, sample sizes with every figure, and the failure cases your current metric hides.',
-      proof: 'Found and reported speaker leakage, a saturating metric and a headline result that did not survive the full corpus.',
+        'A customer-facing conversation where versioned rules and calculators decide every step, price and API write, and the model only reads and phrases, in more than one language.',
+      proof: 'Architected a trilingual term-insurance purchase journey: 119 versioned rules, 62 flow steps and 18 insurer APIs behind a ledger.',
+    },
+    {
+      id: 'evaluation',
+      name: 'Evaluation harnesses, leakage audits and cost gates',
+      outcome:
+        'A written answer to “does this actually work?”: leakage-safe splits, model-selection gates that cut spend without changing behaviour, and the failure cases your current metric hides.',
+      proof: 'Chose a model 4.8× cheaper per passing answer at equal behaviour; falsified my own 5.6× pilot result on the full corpus.',
       link: { label: 'Falsifying my own headline result', href: '/writing/falsifying-my-own-result' },
     },
     {
       id: 'speech',
       name: 'Speech and ASR pipelines for Indian languages',
       outcome:
-        'Transcription, speaker attribution and scoring for code-switched Hinglish and Indian English audio, with a corpus pipeline and a test split you can trust.',
-      proof: 'Built call intelligence and an ASR corpus pipeline over Indian insurance telephony.',
-    },
-    {
-      id: 'document-ai',
-      name: 'Document AI and validation gates',
-      outcome:
-        'A document intake that classifies, reads and cross-checks, then returns a decision with a reason code instead of a confidence score nobody can act on.',
-      proof: 'Built a KYC document-validation gate with dual-engine OCR and four decision states.',
+        'Transcription, speaker attribution and scoring for code-switched Hinglish and Indian English telephony, with a corpus pipeline and a test split you can trust.',
+      proof: 'Co-built six-language call analytics and an ASR corpus pipeline over Indian insurance telephony.',
     },
     {
       id: 'agents',
@@ -414,13 +397,6 @@ export const hire = {
         'Agents that cannot do the irreversible thing without sign-off: a tool gateway, single-use approval tokens, a tamper-evident audit trail and a taint firewall against prompt injection.',
       proof: 'Designed Arbor, an agent-governance architecture with 11 decision records and 219 passing tests.',
       link: { label: 'Arbor on GitHub', href: 'https://github.com/Thunderk3g/Arbor' },
-    },
-    {
-      id: 'backend',
-      name: 'AI backends and APIs',
-      outcome:
-        'The service around the model: FastAPI, PostgreSQL and pgvector, queues, cost guards for paid model APIs, and tests.',
-      proof: 'Led a 10-person team shipping insurance purchase journeys; owns API design and releases.',
     },
   ] satisfies Service[] as Service[],
   /** how a first conversation goes */
@@ -482,14 +458,7 @@ export function resumeText(): string {
   out.push(profile.name, `${profile.title} · ${profile.company}`, profile.location);
   out.push(`${profile.email} · ${profile.phone} · github.com/${profile.github}`, '');
   out.push('## Summary', ...profile.summary.map((s) => '- ' + s), '');
-  out.push('## Research interests', ...research.directions.map((d) => '- ' + d));
-  out.push('', '## Also following', ...research.following.map((d) => '- ' + d));
-  out.push('', '## Research');
-  for (const r of [...research.inPreparation, ...research.published]) {
-    out.push('', `### ${r.title}`, r.venue, r.summary);
-  }
-  out.push('', research.track);
-  out.push('', '## Education', ...education.map((e) => `${e.degree} — ${e.org} · ${e.period} · ${e.detail}`));
+  out.push('## Skills', ...skills.map((s) => `${s.group}: ${s.items}`));
   out.push('', '## Experience');
   for (const r of roles) {
     out.push('', `### ${r.title} · ${r.org} · ${r.period}`, r.blurb);
@@ -499,13 +468,20 @@ export function resumeText(): string {
       out.push(...g.points.map((p) => '- ' + p));
     }
   }
-  out.push('', '## Selected independent projects');
+  out.push('', '## Selected projects');
   for (const p of projects) {
     out.push('', `### ${p.name} — ${p.kind}${p.url ? ` (${p.url})` : ''}`, p.blurb);
     if (p.caveat) out.push(`(${p.caveat})`);
   }
-  out.push('', '## Skills', ...skills.map((s) => `${s.group}: ${s.items}`));
-  out.push('', '## Awards', ...awards.map((a) => '- ' + a));
+  out.push('', '## Research');
+  for (const r of [...research.inPreparation, ...research.published]) {
+    out.push('', `### ${r.title}`, r.venue, r.summary);
+  }
+  out.push('', '## Research interests', ...research.directions.map((d) => '- ' + d));
+  out.push('', '## Also following', ...research.following.map((d) => '- ' + d));
+  out.push('', research.track);
+  out.push('', '## Education', ...education.map((e) => `${e.degree} — ${e.org} · ${e.period} · ${e.detail}`));
+  out.push('', '## Certifications and awards', ...awards.map((a) => '- ' + a));
   if (hire.open) {
     out.push('', '## Working together', `${hire.status}. ${hire.facts.join('. ')}.`);
     out.push(...hire.services.map((s) => `- ${s.name}: ${s.outcome}`));

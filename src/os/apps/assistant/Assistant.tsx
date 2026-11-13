@@ -10,7 +10,7 @@ const SUGGESTIONS = [
   'What does Diwakar do at Bajaj Life?',
   'What is his compliance retrieval work?',
   'What research is he doing on speech?',
-  'What is he applying to study?',
+  'Why hire him as an AI engineering lead?',
   'How do I contact him?',
 ];
 

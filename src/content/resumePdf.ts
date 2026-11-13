@@ -35,7 +35,7 @@ const BOTTOM = PAGE_H - 13;
  * jsPDF's built-in Helvetica is WinAnsi-encoded: characters outside it render
  * as garbage, so map the few this résumé uses to plain equivalents.
  */
-const safe = (text: string): string => text.replace(/→/g, '->').replace(/≥/g, '>=').replace(/≤/g, '<=');
+const safe = (text: string): string => text.replace(/→/g, '->').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/₹\s?/g, 'INR ');
 
 const titleCase = (s: string) => s.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
 
@@ -285,7 +285,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
   };
 
   const educationBlock = () => {
-    section(tight ? 'Education and awards' : 'Education');
+    section(tight ? 'Education, certifications and awards' : 'Education');
     for (const e of education) {
       headline(`${e.degree}, ${e.org}`, e.period, 9.8);
       write(e.detail, BODY, 'normal', LH);
@@ -297,7 +297,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
   };
 
   const awardsBlock = () => {
-    section('Awards');
+    section('Certifications and awards');
     for (const a of awards) bullet(a);
   };
 

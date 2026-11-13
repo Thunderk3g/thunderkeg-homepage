@@ -1,4 +1,4 @@
-import { awards, education, profile, projects, research, roles, skills } from '@/data/resume';
+import { awards, education, hire, profile, projects, research, roles, skills } from '@/data/resume';
 
 /**
  * Deterministic fallback answerer.
@@ -25,7 +25,7 @@ const STOP = new Set([
   'a', 'about', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'been', 'but', 'by', 'can', 'did',
   'do', 'does', 'for', 'from', 'has', 'have', 'he', 'her', 'him', 'his', 'how', 'i', 'in', 'is',
   'it', 'its', 'me', 'much', 'of', 'on', 'or', 'she', 'so', 'some', 'tell', 'that', 'the',
-  'their', 'them', 'they', 'this', 'to', 'was', 'were', 'what', 'when', 'where', 'which', 'who',
+  'should', 'would', 'could', 'their', 'them', 'they', 'this', 'to', 'was', 'were', 'what', 'when', 'where', 'which', 'who',
   'why', 'with', 'you', 'your', 'diwakar', 'adhikari',
 ]);
 
@@ -43,7 +43,7 @@ function corpus(): Chunk[] {
   if (cache) return cache;
   const out: Chunk[] = [];
 
-  profile.summary.forEach((s) => out.push({ source: 'Profile', text: s, hints: 'summary about who overview background' }));
+  profile.summary.forEach((s) => out.push({ source: 'Profile', text: s, hints: 'summary about who overview background hire strength fit lead role' }));
 
   for (const r of roles) {
     const where = `${r.title} · ${r.org} (${r.period})`;
@@ -63,7 +63,7 @@ function corpus(): Chunk[] {
     out.push({ source: `Research — ${r.venue}`, text: `${r.title}. ${r.summary}`, hints: 'research paper publication writing academic' });
   }
   research.directions.forEach((d) =>
-    out.push({ source: 'Research directions', text: d, hints: 'research interests directions open questions phd masters' }),
+    out.push({ source: 'Research directions', text: d, hints: 'research interests directions open questions' }),
   );
   research.following.forEach((d) =>
     out.push({
@@ -72,7 +72,7 @@ function corpus(): Chunk[] {
       hints: 'interests defense military national security cyber security hacking pentest devops ci/cd mlops config trading markets stocks finance quant llm agents',
     }),
   );
-  out.push({ source: 'Research track', text: research.track, hints: 'masters phd study europe scholarship applying' });
+  out.push({ source: 'Research track', text: research.track, hints: 'research interests study academic' });
 
   skills.forEach((s) => out.push({ source: `Skills — ${s.group}`, text: `${s.group}: ${s.items}`, hints: 'skills stack technologies tools languages' }));
 
@@ -80,7 +80,14 @@ function corpus(): Chunk[] {
     out.push({ source: 'Education', text: `${e.degree}, ${e.org}, ${e.period}, ${e.detail}`, hints: 'education degree university college study cgpa' }),
   );
 
-  out.push({ source: 'Awards', text: awards.join('. '), hints: 'awards scholarship prize recognition' });
+  out.push({ source: 'Awards', text: awards.join('. '), hints: 'awards scholarship prize recognition certification certified aws' });
+  if (hire.open) {
+    out.push({ source: 'Working together', text: hire.status + '.', hints: 'hire available open freelance consulting role job' });
+    hire.services.forEach((s) =>
+      out.push({ source: `Working together — ${s.name}`, text: `${s.outcome} ${s.proof}`, hints: 'hire services freelance consulting role build offer' }),
+    );
+  }
+
   out.push({
     source: 'Contact',
     text: `Email ${profile.email} · Phone ${profile.phone} · ${profile.location} · github.com/${profile.github}`,
