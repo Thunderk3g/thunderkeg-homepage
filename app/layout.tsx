@@ -30,7 +30,7 @@ const serifFont = Literata({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
-  title: 'Diwakar Adhikari — Kali Linux Portfolio',
+  title: 'Diwakar Adhikari — AI Engineering',
   description:
     'Technical Lead — AI Engineering. My portfolio rendered as a fully interactive, Kali-inspired Linux desktop — a working terminal, research and study tools, a real Linux VM booting in the browser, and PostgreSQL in WebAssembly. Plain résumé at /resume.',
   authors: [{ name: 'Diwakar Adhikari', url: 'https://github.com/Thunderk3g' }],

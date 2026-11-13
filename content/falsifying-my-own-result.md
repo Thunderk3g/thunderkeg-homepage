@@ -2,7 +2,7 @@
 kind: post
 title: Falsifying my own headline result
 date: 2026-08-18
-summary: A third ASR hypothesis lifted auto-accept 5.6× at pilot scale. At full corpus scale, with the coverage confound removed, almost all of it disappeared. Three separable mechanisms explain why.
+summary: A third ASR hypothesis lifted auto-accept 5.6× at pilot scale. At full corpus scale almost all of it disappeared, and coverage was not why. Three separable mechanisms are my explanation.
 tags: speech, ASR, code-switching, negative-results
 stack: pseudo-labelling
 ---
@@ -25,7 +25,8 @@ hypotheses are the easy ones. Eliminating it moved the number the *wrong* way fo
 story — 1.99% → 2.74% as coverage went 62% → 100% — which meant coverage was not the
 explanation. The pilot number was simply not the corpus number.
 
-Three mechanisms, separable and individually measurable, account for the gap.
+Three mechanisms, separable and each measurable, are my explanation for the gap. Only the
+second has a number in this post; the first and third are stated, not yet sized.
 
 **1. Orthographic divergence blocks corroboration.** In romanized Hinglish, *theek*,
 *thik* and *teek* are the same word. Two systems can transcribe an utterance perfectly and
@@ -38,12 +39,27 @@ vendor family. I measured call-level WER between a fresh pass and the existing
 vendor-derived reference at **0.035**. That is not independence; that is one system
 agreeing with itself. Audhkhasi et al.'s 2014 diversity decomposition predicts almost no
 fusion gain from a zero-diversity ensemble, and that is what the full-corpus number shows.
+Note the direction: sources that share errors agree *more*, not less. So this mechanism
+explains why their agreement is weak evidence, not why the rate fell.
 I issued this caveat the same day I recorded the positive result, which is the only reason
 the positive result never got quoted anywhere it could do damage.
 
 **3. Granularity mismatch.** The pilot measured call-level agreement; the pipeline
 consumes utterance-level labels. A call can agree on average while most of its utterances
 disagree.
+
+## What this post does not yet settle
+
+Three things a careful reader will want, and that are not here.
+
+- **The two-source rate on the full corpus.** 8.82% and 49.30% are both pilot numbers;
+  2.74% is the three-source rate on the full corpus. Whether the third source still helps
+  at scale depends on the full-corpus two-source rate, and this post does not report it.
+- **The unit of each number.** The rates above are described as per-utterance, and
+  mechanism 3 says the pilot agreed at call level. Until each number is restated with its
+  unit, part of the gap between 49.30% and 2.74% may be a change of unit and not of scale.
+- **The size of mechanism 1.** Normalising the spellings and re-running the agreement check
+  would put a number on it. That is the next measurement.
 
 ## Why this is not a paper about my pipeline
 
@@ -57,9 +73,11 @@ and year, open by naming multi-stage consensus pipelines as *the problem their w
 solves*.
 
 What survives is narrower and, I think, better: **script mismatch, not model count,
-dominates consensus yield in romanized code-switched speech.** Nobody has quantified the
-cost of the commensurable-orthography assumption failing, because nobody in that
-literature works on corpora where it fails.
+dominates consensus yield in romanized code-switched speech.** That is a hypothesis until
+mechanism 1 has its number. The closest measurement I have found is
+[SN-WER](/writing/paper-sn-wer) (arXiv:2606.02548), which sizes the scoring side: it
+attenuates romanization-induced WER inflation by 67%. I have not found a measurement of
+what the same divergence costs in consensus yield, which is the data you can obtain at all.
 
 ## The habit this is really about
 
@@ -71,5 +89,7 @@ never running the corpus pass, because the pilot number was *good* and the corpu
 The cheapest way I know to avoid that is to write down, before running anything, the
 measurement that would falsify the result — and to treat the fact that you have not run it
 yet as a property of the claim rather than a scheduling detail. Every number I report now
-carries its n inline for the same reason. A figure quoted without its sample size will
-eventually be quoted without its sample size by someone else.
+says what it was measured on, with its n wherever I am free to publish one. Here I am not:
+the corpus is my employer's, and neither its size nor the pilot's is mine to print. A
+figure quoted without its sample size will eventually be quoted without its sample size by
+someone else, so read the rates above as exactly that kind of figure.

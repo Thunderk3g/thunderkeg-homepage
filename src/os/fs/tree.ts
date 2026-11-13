@@ -21,7 +21,7 @@ ${profile.location}
 
 ${profile.summary.join('\n\n')}
 
-${profile.email} · ${profile.phone} · github.com/${profile.github}
+${profile.email} · github.com/${profile.github}
 
 Type 'help' for commands, 'neofetch' for the obligatory ASCII dragon.
 Try:  resume · blog · papers · news · research · stacks · psql · vm · ai <question>
@@ -72,7 +72,6 @@ const CONTACT = section(
   'Contact',
   [
     `Email   ${profile.email}`,
-    `Phone   ${profile.phone}`,
     `Where   ${profile.location}`,
     `GitHub  github.com/${profile.github}`,
     `Now     ${profile.title} @ ${profile.company}`,

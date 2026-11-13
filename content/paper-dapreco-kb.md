@@ -6,7 +6,7 @@ authors: Robaldo, Bartolini, Palmirani, Rossi, Martoni, Governatori
 venue: Journal of Logic, Language and Information (2020) · LREC 2020
 link: https://github.com/dapreco/daprecokb
 status: reference corpus
-summary: The GDPR formalised in reified I/O logic over the PrOnto ontology. The largest freely available LegalRuleML knowledge base, and the corpus my JURIX measurement runs on.
+summary: The GDPR formalised in reified I/O logic over the PrOnto ontology. The largest freely available LegalRuleML knowledge base, and the corpus my constraint-density measurement runs on.
 tags: legal-informatics, LegalRuleML, GDPR
 stack: rule-bases
 ---

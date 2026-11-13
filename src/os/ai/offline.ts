@@ -90,8 +90,8 @@ function corpus(): Chunk[] {
 
   out.push({
     source: 'Contact',
-    text: `Email ${profile.email} · Phone ${profile.phone} · ${profile.location} · github.com/${profile.github}`,
-    hints: 'contact email phone reach hire location where based github',
+    text: `Email ${profile.email} · ${profile.location} · github.com/${profile.github}`,
+    hints: 'contact email reach hire location where based github',
   });
 
   cache = out;

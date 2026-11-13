@@ -145,7 +145,6 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
     [profile.email, `mailto:${profile.email}`],
     [site, SITE],
     [`github.com/${profile.github}`, profile.githubUrl],
-    [profile.phone, `tel:${profile.phone.replace(/\s/g, '')}`],
   ];
   let x = M;
   contact.forEach(([label, href], i) => {
@@ -249,9 +248,9 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
 
   const publications = () => {
     if (tight) {
-      section('Publications and working papers');
+      section('Working papers and presentations');
       // an industry reader needs the status and one line; "in preparation" is left for the CV
-      for (const r of [...research.published, ...research.inPreparation.filter((i) => !/in preparation/i.test(i.venue))]) {
+      for (const r of [...research.inPreparation.filter((i) => !/in preparation/i.test(i.venue)), ...research.published]) {
         keep(LH * 3);
         write(r.title, BODY, 'bold', LH);
         doc.setTextColor(80, 80, 80);
@@ -265,7 +264,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
     }
     section('Research interests');
     for (const d of research.directions) bullet(d);
-    section('Peer-reviewed');
+    section('Conference presentations');
     for (const r of research.published) {
       write(r.title, BODY, 'bold', LH);
       write(r.venue, BODY, 'italic', LH);

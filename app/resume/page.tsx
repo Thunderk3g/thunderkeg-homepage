@@ -43,7 +43,6 @@ export default function ResumePage() {
       <Sec title="SYNOPSIS">
         <p className="man-synopsis">
           <b>diwakar</b> [<span>--email</span> <a href={`mailto:${profile.email}`}>{profile.email}</a>] [
-          <span>--phone</span> <a href={`tel:${profile.phone.replace(/\s/g, '')}`}>{profile.phone}</a>] [
           <span>--github</span>{' '}
           <a href={profile.githubUrl} target="_blank" rel="noreferrer">
             {profile.github}
@@ -135,7 +134,7 @@ export default function ResumePage() {
       </Sec>
 
       <Sec title="RESEARCH">
-        <h4>Peer-reviewed</h4>
+        <h4>Conference presentations</h4>
         {research.published.map((r) => (
           <article key={r.title} className="man-entry">
             <h3>{r.title}</h3>
@@ -147,7 +146,15 @@ export default function ResumePage() {
         {research.inPreparation.map((r) => (
           <article key={r.title} className="man-entry">
             <h3>{r.title}</h3>
-            <p className="man-aside">{r.venue}</p>
+            <p className="man-aside">
+              {r.venue}
+              {'code' in r && r.code && (
+                <>
+                  {' · '}
+                  <a href={r.code}>script</a>
+                </>
+              )}
+            </p>
             <p>{r.summary}</p>
           </article>
         ))}

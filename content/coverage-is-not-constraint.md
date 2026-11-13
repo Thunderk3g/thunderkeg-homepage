@@ -29,7 +29,7 @@ knowledge base. I picked it precisely because it is *not* mine: it is legal cont
 formalised by people whose job is legal knowledge representation, published in the
 JURIX/AI-and-Law community, for purposes entirely unrelated to anything I build.
 
-Retrieved 31 Aug 2026, `gdpr/rioKB_GDPR.xml`, 5,633,102 bytes.
+Retrieved 31 Aug 2026, `gdpr/rioKB_GDPR.xml`, 5,633,102 bytes (upstream commit `6676cd4`).
 
 ## The measure
 
@@ -43,12 +43,14 @@ constraint density    : |selective| / |domain|, per rule
 density-0 rule        : no selective predicate at all
 ```
 
-The script is 120 lines, standard library only, and ships with the paper. Reproduce it:
+The script is standard library only and public:
+[dapreco-density.py](/research/dapreco-density.py). It prints every number in this post.
+Reproduce it, with the file pinned to the commit I measured:
 
 ```
 curl -sSL -o rioKB_GDPR.xml \
-  https://raw.githubusercontent.com/dapreco/daprecokb/master/gdpr/rioKB_GDPR.xml
-python dapreco-density.py rioKB_GDPR.xml
+  https://raw.githubusercontent.com/dapreco/daprecokb/6676cd4781ed4f6dc7f8f2341295c21d25a23f22/gdpr/rioKB_GDPR.xml
+python3 dapreco-density.py rioKB_GDPR.xml
 ```
 
 ## The result
@@ -65,25 +67,32 @@ python dapreco-density.py rioKB_GDPR.xml
 | Rules with ≤2 selective predicates | 408 (42.4%) |
 | Distinct selective cores | 414 over 961 rules |
 
+(961, not 962: one rule's antecedent holds only a `rioOnto:` predicate, so it has no domain
+predicate and no density.)
+
 The six ubiquitous predicates are `PersonalData` (87.0% of rules), `DataSubject` (87.0%),
 `Controller` (85.8%), `Processor` (75.4%), `nominates` (75.2%) and
 `PersonalDataProcessing` (68.1%).
 
 The median rule carries twelve antecedent predicates. It *looks* highly specific. Six
 predicates account for most of that bulk, and between them they assert only that there is
-a controller, a processor, a data subject, and personal data being processed — which is
-true of every situation the GDPR applies to at all.
+a controller, a processor, a data subject, and personal data being processed. Most of that
+is true of every situation the GDPR applies to at all. The processor is the exception, and
+it gets its own section below.
 
-**Antecedent length is not selectivity.** Fewer than half the conjuncts in a typical rule
-do any work in deciding whether that rule fires. 414 distinct selective cores over 961
-rules: the corpus has roughly half as much discriminating power as it has rules.
+**Antecedent length is not selectivity.** By this count, fewer than half the conjuncts in a
+typical rule are selective. There are 414 distinct selective condition sets over 961 rules,
+so on average more than two rules share each one. Rules that share conditions can still
+impose different obligations, so this counts distinct triggers, not wasted rules.
 
 ## The part that matters
 
-The 43 density-0 rules are not obscure. Eight of them are Art. 80(1). Two each are
-Art. 5(1)(a) lawfulness, 5(1)(d) accuracy, 5(1)(f) integrity and confidentiality, 24(1)
-controller responsibility, 25(1) data protection by design, 28 processor obligations,
-30 records of processing, 32(1) security, 37(4) DPO designation, 77(1) right to complain.
+The 43 density-0 rules are not obscure. Thirty-four of them sit in nine articles. Eight are
+Art. 80(1). Six are Art. 5(1): two each for (a) lawfulness, (d) accuracy and (f) integrity
+and confidentiality. Six are Art. 28 processor obligations and four are Art. 30 records of
+processing. Two each are Art. 24(1) controller responsibility, 25(1) data protection by
+design, 32(1) security, 37(4) DPO designation and 77(1) right to complain. The other nine
+cite no article: they are the rules that map the legal vocabulary onto the PrOnto ontology.
 
 **This concentration is the point, and it is not a defect in the formalisation.** General
 principles *are* meant to apply universally. Article 5 governs all processing, by design.
@@ -93,6 +102,28 @@ What the measurement shows is that a corpus can be faithful and still be, struct
 mostly non-discriminating — and that no coverage-style audit can tell you which of the two
 you are looking at. Both cases produce the same coverage number. Only density separates
 them.
+
+## Frequency is not truth
+
+Everything above calls a predicate non-discriminating because it is *common across rules*.
+That is a fact about the corpus, not about the world. `PersonalData`, `DataSubject`,
+`Controller` and `PersonalDataProcessing` do hold wherever the GDPR applies. `Processor`
+and `nominates` do not: a controller that processes the data itself has no processor, and a
+rule that requires one separates that situation from the rest.
+
+So here is the same measurement with only those four scope predicates counted as
+non-discriminating:
+
+| Reading | Predicates set aside | Mean density | Density-0 rules |
+|---|---|---|---|
+| Corpus-common (≥50% of rules) | 6 | 0.462 | 43 (4.5%) |
+| Scope-only | 4 | 0.622 | 9 (0.9%) |
+
+The nine that remain are exactly the ontology-mapping rules. Every density-0 rule tied to
+an article requires a processor, so under the stricter reading it can tell two scenarios
+apart: it just does so with a predicate most of the corpus also uses. The accurate name for
+the 43 is *rules whose conditions are all corpus-common*. What survives both readings is
+the first claim: antecedent length is not selectivity.
 
 ## Being honest about the threshold
 
@@ -110,7 +141,8 @@ the sweep:
 At 90% no predicate qualifies, so density is trivially 1.000 and the metric degenerates. A
 reviewer would find that in thirty seconds, so it goes first. The defensible claim is the
 **50–25% plateau**: the ubiquitous set is the *same six predicates* across that whole band,
-so 0.462 is not an artefact of where the line was drawn. Report the plateau, not a number.
+so 0.462 holds anywhere in it. Outside the band the result moves, to 4 density-0 rules at
+75% and 81 at 10%. Report the plateau, not a number.
 
 ## What is not claimed
 
@@ -119,6 +151,8 @@ so 0.462 is not an artefact of where the line was drawn. Report the plateau, not
 - No claim about runtime behaviour. Nothing was executed against a reasoner. This is a
   static property of the rule base.
 - No claim that density *should* be high. For Article 5 it correctly should not be.
+- No claim that a corpus-common predicate is true of every scenario. The scope-only reading
+  above is the check on that, and it changes the count from 43 to 9.
 
 The claim is only this: density must be **reported**, because coverage cannot distinguish
 the two cases, and a compliance programme that reports only coverage is reporting a number
@@ -126,7 +160,12 @@ that cannot go down.
 
 ---
 
-*This is the measurement behind a short paper in preparation for JURIX 2026. The
-independently interesting part is that a curated insurance-compliance rule base built by
-practitioners, measured separately, lands at 0.433 — two rule bases with nothing in common
-but their job, converging on roughly the same density.*
+*This is the measurement behind a working paper (preprint on request). One anecdote beside
+it: a curated insurance-compliance rule base built by practitioners, measured separately,
+lands at 0.433. It is an internal rule base, so I give no size or source for it, and two
+data points do not show convergence.*
+
+*Update, November 2026:* upstream replaced `rioKB_GDPR.xml` on 29 Sep 2026. On the current
+file the same script gives 966 rules, five ubiquitous predicates, a mean density of 0.458
+and 80 density-0 rules, and the plateau no longer holds: five predicates at 50%, six at
+25%. Every number above is for the pinned commit.

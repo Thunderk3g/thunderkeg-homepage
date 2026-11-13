@@ -21,7 +21,11 @@
  * Still not published: business volumes and outcomes (submissions, calls,
  * conversions, premium, cost, spend), latency of production systems, corpus
  * sizes, reviewer-decision totals, colleagues' names, internal hosts, target
- * dates and private repository names. Nothing is estimated or rounded up.
+ * dates and private repository names. Nothing is estimated: a figure marked
+ * "about" is a measurement, rounded.
+ *
+ * No phone number either. Scrapers read public repositories, and every surface
+ * here is built from this file; email and the /hire form are the contact routes.
  *
  * Two build rules (scripts/resume-pdf.test.mts): every bullet is at most 330
  * characters, and /resume.pdf is exactly two pages. `lead` on a group sets
@@ -33,14 +37,13 @@ export const profile = {
   title: 'Technical Lead, AI Engineering',
   company: 'Bajaj Life Insurance',
   location: 'Pune, India',
-  phone: '+91 93780 67880',
   email: 'diwakar.adhikari0@gmail.com',
   github: 'Thunderk3g',
   githubUrl: 'https://github.com/Thunderk3g',
   tagline: 'Production agentic, retrieval-grounded and speech AI systems for regulated financial services.',
   /** Two paragraphs: what I do and own, then how I got here and how the work is held to account. */
   summary: [
-    'I started and lead AI engineering for the sales and marketing function of an IRDAI-regulated life insurer, taking it from language models in a chat window to agentic, retrieval-grounded and speech systems in production. I own each system from the business head’s brief through architecture, infrastructure, security and release, and trained my team to deliver end to end within four to five months.',
+    'I started and lead AI engineering for the sales and marketing function of an IRDAI-regulated life insurer, taking it from language models in a chat window to agentic, retrieval-grounded and speech systems in production. I own each system from the business head’s brief through architecture, infrastructure, security and release, and trained the team’s engineers to ship on their own within four to five months.',
     'Four years in regulated financial-services engineering: intern to Senior Software Engineer, then lead of a ten-engineer team, then recruited in-house by the insurer to start its AI engineering. I build deterministic state machines around LLMs, applicability-constrained hybrid retrieval, Hinglish speech pipelines and time-validated models, and hold each to evaluation that can fail: when the full corpus did not support my own pilot result, I withdrew the claim and wrote up why.',
   ],
 };
@@ -79,7 +82,7 @@ export const roles: Role[] = [
   {
     id: 'bajaj-life',
     title: 'Technical Lead, AI Engineering',
-    org: 'Bajaj Life Insurance',
+    org: 'Bajaj Life Insurance (formerly Bajaj Allianz Life)',
     period: 'Dec 2025 – Present',
     blurb:
       'Recruited in-house to start and lead AI engineering for the sales and marketing function of an IRDAI-regulated life insurer. I take each requirement from the business head, then design, build, release and run the system.',
@@ -96,8 +99,8 @@ export const roles: Role[] = [
         heading: 'Conversational purchase journey for term insurance (in user-acceptance testing)',
         lead: 2,
         points: [
-          'Architected the insurer’s chat-based term-insurance purchase journey (English, Hindi, Hinglish) as a deterministic state machine: the model only reads and phrases text, 119 versioned rules, 62 flow steps and 6 rate tables (maker-checker, with rollback) decide every step, and a write-ahead ledger gates calls to 18 insurer APIs.',
-          'Held it to evaluation: 7 suites and 393 cases took retrieval from 72% to 79% top-1 and from 90% to 97% hit@4, with Hindi FAQ answers precise on 34 of 34 turns. Shipped the first version in 16 days, and an A/B on its eval set chose a model 4.8× cheaper per passing answer at equal behaviour (40 of 40 checks).',
+          'Architected the chat-based term-insurance purchase journey (English, Hindi, Hinglish) as a deterministic state machine: the model only reads and phrases text, 119 versioned rules, 62 flow steps and 6 rate tables (maker-checker, with rollback) decide every step, and a write-ahead ledger gates calls to 18 of the insurer’s APIs.',
+          'Held it to evaluation: 7 suites and 393 cases took retrieval from 72% to 79% top-1 and from 90% to 97% hit@4, with Hindi FAQ answers precise on 34 of 34 turns. Shipped the first version in 16 days, and an A/B on its eval set chose a model 4.8× cheaper per passing answer, with no difference found on 40 of 40 checks.',
           'Designed the journey to ask less: IIB, GSTN and existing-policy checks run as soon as basic details are in, knock-out cases stop early with an alternative, and a health answer opens a reflex questionnaire. In 75 test journeys the price arrived by the fourth turn (median) with no fact asked twice.',
           'Built a pricing-parity harness that checks the engine against the insurer’s existing calculator across 100,000 input combinations.',
           'Designed every conversation to be auditable: the customer’s message, the model’s response, each guardrail decision and every upstream call are stored, as one scrubbed record per turn.',
@@ -107,7 +110,7 @@ export const roles: Role[] = [
         heading: 'Compliance review of marketing copy (LangGraph, in production)',
         lead: 2,
         points: [
-          'Co-built and run the reviewer that grades marketing copy against IRDAI, SEBI and brand rules; I designed its precedent engine and replay harness. Hybrid retrieval (pgvector and BM25, reciprocal rank fusion) over typed indexes, four kinds of cited evidence, and Beta-Binomial rule reliability from reviewer verdicts.',
+          'Designed the precedent engine and replay harness for the team’s reviewer of marketing copy against IRDAI, SEBI and brand rules, which I co-built and run. Hybrid retrieval (pgvector and BM25, reciprocal rank fusion) over typed indexes, four kinds of cited evidence, and Beta-Binomial rule reliability from reviewer verdicts.',
           'Removed fabricated quotes by construction (a deterministic check drops any finding whose quoted evidence is not literally in the source) and made it fail closed. Measured the applicability filter’s permissive default, found most of the corpus untagged and bypassing it, and inverted the default, showing exclusions to reviewers.',
           'Found and fixed four silent failures that tuning would have hidden: a score that saturated, disclaimers lost in DOCX headers and text boxes, a disclaimer that still passed with "not" deleted, and a rename that corrupted rules.',
           'Kept reviewer scores out of training so the evaluation channel stays independent, and protected replay evaluation against leakage with two independent barriers.',
@@ -117,7 +120,7 @@ export const roles: Role[] = [
         heading: 'Speech analytics and code-switched Hinglish ASR',
         lead: 2,
         points: [
-          'Co-built call analytics for the sales teams in six languages (speaker-labelled transcripts, dispositions, compliance detection) and built its realtime speech-to-speech voice agent. Remapping call records to acquisition channels raised the share of attributed calls from about 14% to about 92%.',
+          'Co-built call analytics for the sales teams in six languages (speaker-labelled transcripts, dispositions, compliance detection) and built its realtime speech-to-speech voice agent. Remapped call records to acquisition channels so a call can be traced to the channel its lead came from, a data fix and not a model.',
           'Falsified my own headline result before anything was built on it: a third ASR hypothesis lifted auto-accepted labels from 8.82% to 49.30% on a pilot slice (5.6×), and the full corpus gave 2.74%. Wrote up both, with the three mechanisms that explain the gap.',
           'Built the ASR corpus pipeline with protected test splits, found speaker leakage in the protected split and rebuilt it so no speaker crosses a split. Benchmarked speaker attribution against human-adjudicated calls: splitting the stereo channels beat a commercial neural diarizer.',
           'Showed that Whisper repetition loops come from the decoder, not the audio: every confirmed case cleared under a temperature-fallback ladder. That stopped a quality filter which would have thrown away usable audio.',
@@ -128,9 +131,9 @@ export const roles: Role[] = [
         heading: 'Lead scoring, attribution and data platforms',
         lead: 2,
         points: [
+          'Showed that a “stop after six calls” rule rested on a broken attempt counter, using the pipeline I built to join WhatsApp, RCS and email campaign events to the lead master, which also became the scoring model’s training data.',
           'Built a LightGBM model that ranks every sales lead by its chance of buying within 90 days, with time-based validation and a point-in-time leakage gate that blocks a training run: PR-AUC 0.348 and 30× lift in the top 1% on a later-period holdout. Kept it over CatBoost, which gained 0.0013 PR-AUC at 9.9× the training time.',
-          'Built a role-based sales reconciliation and approval portal (6 roles, 39 tables, 1,370 tests), where moving workbook parsing to a calamine service cut it from about 74 s to 0.3 s, and founded the lead-generation portal: an Angular shell that loads React games through module federation.',
-          'Built the pipeline that joins WhatsApp, RCS and email campaign events to the lead master, which became the model’s training data, and showed that a “stop after six calls” rule rested on a broken attempt counter.',
+          'Built a role-based sales reconciliation and approval portal for 6 user roles, where moving workbook parsing to a calamine service cut it from about 74 s to 0.3 s, and founded the lead-generation portal: an Angular shell that loads React games through module federation.',
         ],
       },
     ],
@@ -154,7 +157,7 @@ export const roles: Role[] = [
   },
   {
     id: 'finserv-swe',
-    title: 'Senior Software Engineer',
+    title: 'Intern → Software Engineer → Senior Software Engineer',
     org: 'Bajaj Finserv Direct Ltd',
     period: 'Apr 2022 – Feb 2025',
     blurb:
@@ -195,19 +198,19 @@ export const projects: Project[] = [
     url: 'https://github.com/Thunderk3g/Arbor',
   },
   {
-    name: 'qualityos',
-    kind: 'evaluation harness with a belief record',
+    name: 'ForgeLM',
+    kind: 'small task models against a small prompted LLM',
     blurb:
-      'An evaluation harness that keeps an append-only record of beliefs (observe, hypothesise, experiment, revise) and is run by role-separated agents: one diagnoses, one fixes, one documents. Its probe found an LLM outage on a voice call being recorded as a clean compliance pass, and the failure path was fixed.',
-    caveat: 'Built inside my work at the insurer; its recorded runs are on synthetic data.',
+      'A 4-bit QLoRA fine-tuning platform (built with two collaborators), then CPU experiments with paired-bootstrap and McNemar gates. On Banking77 at 8 labels per class, a frozen encoder with a linear head scored 85.8% ± 0.4 on the full test set, and on a 1,000-text subset beat a few-shot 1.5B LLM by 87.5% to 66.9%, at ~3 ms against ~770 ms. With all the labels it reached 93.1% after 38 s of CPU training. A LoRA of a 360M model reached 89.0% on the 10 most frequent intents (chance 10%; 1.3% untuned) in 19 minutes.',
+    caveat: 'Self-directed; not published benchmarks. The LLM baseline is one small prompted model: no larger or fine-tuned LLM was tested.',
+    url: 'https://github.com/Thunderk3g/ForgeLM',
   },
   {
-    name: 'ForgeLM',
-    kind: 'small task models against LLMs',
+    name: 'qualityos',
+    kind: 'work-internal evaluation harness with a belief record',
     blurb:
-      'A 4-bit QLoRA fine-tuning platform (built with two collaborators), then CPU experiments with paired-bootstrap and McNemar gates. On Banking77 at 8 labels per class, a frozen encoder with a linear head scored 87.5% at ~3 ms against 66.9% at ~770 ms for a few-shot 1.5B LLM. A LoRA of a 360M model reached 89.0% on the 10 most frequent intents, from 1.3%, in 19 minutes.',
-    caveat: 'Self-directed; not published benchmarks.',
-    url: 'https://github.com/Thunderk3g/ForgeLM',
+      'An evaluation harness that keeps an append-only record of beliefs (observe, hypothesise, experiment, revise) and is run by role-separated agents: one diagnoses, one fixes, one documents. Its probe found an LLM outage on a voice call being recorded as a clean compliance pass, and the failure path was fixed.',
+    caveat: 'Built inside my work at the insurer, so there is no public repository; its recorded runs are on synthetic data.',
   },
   {
     name: 'Mneme',
@@ -235,12 +238,14 @@ export const research = {
   inPreparation: [
     {
       title: 'Coverage is not constraint: measuring constraint density in formalised regulatory rule bases',
-      venue: 'Working paper (preprint available on request)',
+      venue: 'Working paper (preprint on request; the measurement script is public)',
+      /** the script that reproduces every number, served from /public */
+      code: '/research/dapreco-density.py',
       /** the one line an industry reader needs */
       brief:
-        'A measurement on the public DAPRECO GDPR rule base: 962 rules, a mean constraint density of 0.462, and 43 rules (4.5%) that cannot tell any two scenarios apart.',
+        'A measurement on the public DAPRECO GDPR rule base: 962 rules, a mean constraint density of 0.462, and 43 rules (4.5%) whose conditions are all corpus-common (9 when only the GDPR’s own scope predicates count).',
       summary:
-        'Measured over the DAPRECO GDPR knowledge base, the largest freely available LegalRuleML corpus: 962 rules with a median of 12 antecedent predicates each, yet a mean constraint density of 0.462, and 43 rules (4.5%) whose antecedents consist entirely of predicates that fire on any scenario the corpus can describe. Antecedent length is not selectivity, so a coverage-style audit cannot tell a faithfully general principle from a rule that discriminates nothing. The six ubiquitous predicates are identical across a 25–50% threshold plateau, so the finding does not depend on the cut-off. The measurement script is standard-library Python and ships with the paper; all data is public (Robaldo et al.).',
+        'Measured over the DAPRECO GDPR knowledge base, the largest freely available LegalRuleML corpus, as retrieved on 31 Aug 2026: 962 rules with a median of 12 antecedent predicates each, yet a mean constraint density of 0.462, and 43 rules (4.5%) whose antecedents consist entirely of predicates found in at least half of all rules. Frequency across rules is not truth across situations, so the paper reports a second reading: counting only the four predicates that hold wherever the GDPR applies gives a mean density of 0.622 and 9 such rules, all ontology-mapping rules. Antecedent length is not selectivity, so a coverage-style audit cannot tell a faithfully general principle from a rule that separates little. The set of six ubiquitous predicates is identical from a 25% to a 50% threshold. The measurement script is standard-library Python and public; all data is public (Robaldo et al.).',
     },
     {
       title: 'Grounded, fail-closed compliance review in production: what broke, and why the filter was not the problem',
@@ -249,6 +254,8 @@ export const research = {
         'An operational study of a precedent-imitating compliance reviewer in insurance marketing: applicability metadata starved under a permissive default, a bulk rename that acted as an unmigrated schema change, a score metric that saturated, and fail-closed audit provenance, with the negative results and exonerated suspects reported as contributions.',
     },
   ],
+  /** Presented, not yet linked to proceedings. The heading on every surface says “Conference presentations”;
+      move this under a “Peer-reviewed” heading only once a DOI is on the entry. */
   published: [
     {
       title: 'SustainAI: Enhancing Sustainable Energy Forecasting',
@@ -261,9 +268,9 @@ export const research = {
     'Whether constraint density near 0.4 is a general property of formalised regulatory rule bases, measurable across the public LegalRuleML corpora.',
     'Defaults as unverified distributional claims: a safety default adopted for a correct reason can route most of a corpus around the mechanism it protects, and only coverage measurement reveals it.',
     'When consensus pseudo-labelling fails for code-switched low-resource ASR: orthographic divergence, same-family correlated error and hypothesis-granularity mismatch, measured at two scales.',
-    'Evaluation instruments for romanized code-switched speech. WER scores spelling variants of one word as errors, and script canonicalisation is ill-posed when English tokens legitimately stay Latin; a script-aware, entity-weighted, human-validated metric for Indian financial speech does not yet exist.',
+    'Evaluation instruments for romanized code-switched speech. WER scores spelling variants of one word as errors, and script canonicalisation is ill-posed when English tokens legitimately stay Latin; I have not found a script-aware, entity-weighted, human-validated metric for Indian financial speech.',
   ],
-  /** Areas I read in and keep current on — tracked in the Research app, not claimed as my research. */
+  /** Areas I read in and keep current on. Tracked in the Research app only: not on the résumé, the CV or /stacks, and not claimed as my research. */
   following: [
     'AI in defense and national security: autonomy and counter-UAS, ISR and target recognition, LLMs for cyber operations, adversarial robustness, wargaming, and the policy around meaningful human control.',
     'AI agents in cyber security: autonomous pentesting and CTF agents, LLM-driven vulnerability discovery and fuzzing, SOC automation, and defending agents against prompt injection and tool abuse.',
@@ -272,7 +279,7 @@ export const research = {
   ],
   /** One sentence on where the research sits beside the engineering. */
   track:
-    'My research interests are AI & Law (regulatory compliance, formalised rule bases) and code-switched speech technology, pursued alongside applied AI engineering.',
+    'I study evaluation failures: checks that report success they have not earned, in formalised legal rule bases (AI & Law) and in code-switched Hinglish speech, alongside applied AI engineering.',
 };
 
 /* ───────────────────────── Skills ─────────────────────────
@@ -370,14 +377,14 @@ export const hire = {
       name: 'Deterministic state machines around LLMs',
       outcome:
         'A customer-facing conversation where versioned rules and calculators decide every step, price and API write, and the model only reads and phrases, in more than one language.',
-      proof: 'Architected a trilingual term-insurance purchase journey: 119 versioned rules, 62 flow steps and 18 insurer APIs behind a ledger.',
+      proof: 'Architected a trilingual term-insurance purchase journey: 119 versioned rules, 62 flow steps and 18 of the insurer’s APIs behind a ledger.',
     },
     {
       id: 'evaluation',
       name: 'Evaluation harnesses, leakage audits and cost gates',
       outcome:
         'A written answer to “does this actually work?”: leakage-safe splits, model-selection gates that cut spend without changing behaviour, and the failure cases your current metric hides.',
-      proof: 'Chose a model 4.8× cheaper per passing answer at equal behaviour; falsified my own 5.6× pilot result on the full corpus.',
+      proof: 'Chose a model 4.8× cheaper per passing answer with no difference found on its 40 checks; falsified my own 5.6× pilot result on the full corpus.',
       link: { label: 'Falsifying my own headline result', href: '/writing/falsifying-my-own-result' },
     },
     {
@@ -453,7 +460,7 @@ export function briefMailto(b: Brief): string {
 export function resumeText(): string {
   const out: string[] = [];
   out.push(profile.name, `${profile.title} · ${profile.company}`, profile.location);
-  out.push(`${profile.email} · ${profile.phone} · github.com/${profile.github}`, '');
+  out.push(`${profile.email} · github.com/${profile.github}`, '');
   out.push('## Summary', ...profile.summary.map((s) => '- ' + s), '');
   out.push('## Skills', ...skills.map((s) => `${s.group}: ${s.items}`));
   out.push('', '## Experience');
@@ -475,7 +482,6 @@ export function resumeText(): string {
     out.push('', `### ${r.title}`, r.venue, r.summary);
   }
   out.push('', '## Research interests', ...research.directions.map((d) => '- ' + d));
-  out.push('', '## Also following', ...research.following.map((d) => '- ' + d));
   out.push('', research.track);
   out.push('', '## Education', ...education.map((e) => `${e.degree} — ${e.org} · ${e.period} · ${e.detail}`));
   out.push('', '## Awards', ...awards.map((a) => '- ' + a));

@@ -58,7 +58,7 @@ is even eligible to be evaluated?"
 I inverted the default to fail-closed, which excluded a meaningful block of legacy rules
 from grading — and put that exclusion in the product UI, visibly, rather than hiding it
 behind a healthy-looking number. A reviewer seeing "N rules excluded: no product scope" can
-act on it. A reviewer seeing a 97% filter accept rate cannot.
+act on it. A reviewer seeing a number like a 97% filter accept rate cannot.
 
 The closest published work I have found is **Deceptive Grounding** (arXiv:2607.09349),
 which names and quantifies the failure — a RAG system citing a real document about the
@@ -67,5 +67,7 @@ post-hoc verification problem and never measures metadata coverage. **GraphCompl
 (arXiv:2510.26309) solves applicability structurally with a policy graph, but assumes the
 structure exists.
 
-Neither asks the supply-side question, which is the only part of this I think is actually
-unclaimed: *the filter was correct and starved, and its own metrics could not have told me.*
+Neither asks the supply-side question. Checking how much of a column is missing is
+standard practice in ML data validation, so the general idea is not new. What I have not
+found written down is its retrieval-time form, for applicability filters in compliance:
+*the filter was correct and starved, and its own metrics could not have told me.*

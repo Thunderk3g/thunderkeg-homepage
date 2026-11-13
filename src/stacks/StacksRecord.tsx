@@ -43,7 +43,9 @@ export function StacksRecord({
 
   const t = board.totals;
   const first = board.years[0]?.year;
-  const visible = (s: Stack) => (kind ? s.cubes.some((c) => c.kind === kind) : true);
+  // areas I only follow, with nothing studied yet, belong to the desktop's research tools, not the public record
+  const visible = (s: Stack) =>
+    kind ? s.cubes.some((c) => c.kind === kind) : embedded || s.cubes.length > 0 || !s.subject.following;
 
   return (
     <div className={'stk' + (embedded ? ' embedded' : '')} ref={root}>

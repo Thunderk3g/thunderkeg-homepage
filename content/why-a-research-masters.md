@@ -31,26 +31,26 @@ experiment behind it. ([Longer version](/writing/a-permissive-default-is-a-claim
 
 **2. Coverage is not constraint — how general is that?**
 Measured on the DAPRECO GDPR corpus: 962 rules, mean constraint density 0.462, 43 rules
-whose antecedents fire on anything the corpus can describe. A curated insurance rule base
-lands at 0.433. Two corpora with nothing in common but their job. Is 0.4-ish a property of
-formalised regulatory rule bases generally? That is a measurable question over the handful
-of public LegalRuleML corpora and it has not been asked.
+whose conditions are all corpus-common. A curated insurance rule base lands at 0.433, an
+anecdote and not a second result. Is 0.4-ish a property of formalised regulatory rule bases
+generally? That is a measurable question over the handful of public LegalRuleML corpora,
+and I have not found it asked.
 ([Longer version](/writing/coverage-is-not-constraint))
 
 **3. When does consensus pseudo-labelling fail, and why?**
 Orthographic divergence, same-family correlated error, hypothesis-granularity mismatch —
-three separable mechanisms, measured at two scales on romanized code-switched Hinglish.
-The entire Indic ASR literature assumes native-script references. Real Indian contact-centre
-transcripts are ~99.5% Latin script, which breaks the core assumption of every
-transliterate-then-score metric published so far.
+three separable mechanisms, observed at two scales on romanized code-switched Hinglish.
+Most of the Indic ASR literature I have read assumes native-script references. Real Indian
+contact-centre transcripts are ~99.5% Latin script, which breaks the core assumption of the
+transliterate-then-score metrics I have found.
 ([Longer version](/writing/falsifying-my-own-result))
 
 **4. What is the right evaluation instrument for romanized code-switched speech?**
 Not WER. `theek` / `thik` / `teek` are the same word and WER scores two of them wrong.
 SN-WER solves the monolingual Indic case by canonicalising to one script; code-switching
-makes canonicalisation ill-posed, because English tokens legitimately stay Latin. A
-script-aware, entity-weighted, human-validated metric for Indian financial speech does not
-exist, and the entity part matters more than the word part when the entities are policy
+makes canonicalisation ill-posed, because English tokens legitimately stay Latin. I have
+not found a script-aware, entity-weighted, human-validated metric for Indian financial
+speech, and the entity part matters more than the word part when the entities are policy
 IDs, premiums, and the lakh/crore numeral system.
 
 **5. Identifier stability in LLM-built knowledge bases.**
@@ -72,8 +72,8 @@ question rather than argue it later.
 
 ## What I am missing, stated plainly
 
-No peer-reviewed publication in this area yet — one short paper in preparation for JURIX
-2026, one manuscript pending employer clearance. No formal training in legal informatics.
+No peer-reviewed publication in this area yet — one working paper (the constraint-density
+measurement, preprint on request), one manuscript pending employer clearance. No formal training in legal informatics.
 No supervisor. The negative results I am proudest of are, so far, internal documents.
 
 That is the gap the degree is for.

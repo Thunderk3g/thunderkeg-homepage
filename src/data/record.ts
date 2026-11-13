@@ -201,7 +201,7 @@ export const RECORD: RecordEntry[] = [
   e('speaker-attribution', 'measured', '2026', 'Stereo channel-split attribution beat commercial neural diarization against human-adjudicated truth'),
   e('speaker-attribution', 'built', '2026', 'A confidence-ordered role voter with diarization as the fallback'),
   e('pseudo-labelling', 'measured', '2026', 'Pilot: a script-matched third ASR hypothesis looked decisive'),
-  e('pseudo-labelling', 'measured', '2026', 'Full corpus, coverage confound removed: most of the gain was gone, and three mechanisms explain why'),
+  e('pseudo-labelling', 'measured', '2026', 'Full corpus: most of the gain was gone, and coverage was not why; three mechanisms are my explanation'),
   e('whisper-decoding', 'measured', '2026', 'Whisper hallucination loops are decoder artefacts: every confirmed looper resolved under a temperature-fallback ladder'),
   e('speech-eval', 'measured', '2026', 'Tested a published tokenizer-expansion method; its premise does not hold for romanized text'),
   e('data-governance', 'built', '2026', 'A data-class export gate under the DPDP Act 2023 and IRDAI localisation rules'),
@@ -218,7 +218,7 @@ export const RECORD: RecordEntry[] = [
 
   // buy journey, voice and lead scoring
   e('eval-design', 'measured', '2026', 'Seven eval suites for a trilingual purchase advisor; retrieval rose from 72% to 79% top-1'),
-  e('cost', 'measured', '2026', 'An eval-set A/B chose a model 4.8× cheaper per passing answer at equal behaviour'),
+  e('cost', 'measured', '2026', 'An eval-set A/B chose a model 4.8× cheaper per passing answer, with no difference found on 40 checks'),
   e('eval-design', 'built', '2026', 'A pricing-parity harness that checks the purchase engine against the existing calculator across 100,000 combinations'),
   e('asr-pipelines', 'built', '2026', 'A realtime speech-to-speech voice agent for sales calls'),
   e('predictive-models', 'built', '2026', 'A LightGBM lead-scoring model with time-based validation and a point-in-time leakage gate'),
@@ -242,7 +242,7 @@ export const RECORD: RecordEntry[] = [
   e('agent-governance', 'built', '2026-06', 'Arbor: single-use approval tokens for irreversible actions and a hash-chained audit log; sandboxes designed, not yet built', GH + 'Arbor'),
   e('agent-governance', 'wrote', '2026-06', 'Arbor written up as a 16-section RFC with eleven decision records', GH + 'Arbor'),
   e('prompt-injection', 'built', '2026-06', "A taint firewall that runs before approval in Arbor's tool gateway", GH + 'Arbor'),
-  e('fine-tuning', 'measured', '2026-11', 'Small task models against a few-shot local LLM on public data: 87.5% vs 66.9% on Banking77 at a fraction of the latency', GH + 'ForgeLM'),
+  e('fine-tuning', 'measured', '2026-11', 'Small task models against a few-shot local LLM on public data: 87.5% vs 66.9% on a 1,000-text Banking77 subset (85.8% ± 0.4 on the full test set) at a fraction of the latency', GH + 'ForgeLM'),
   e('web', 'built', '2026-11', 'A paper-study workbench in this site: three-pass notes, highlights, spaced recall, a literature matrix', GH + 'thunderkeg-homepage'),
   e('databases', 'built', '2026-11', 'PostgreSQL compiled to WebAssembly as an in-tab research workspace', GH + 'thunderkeg-homepage'),
 

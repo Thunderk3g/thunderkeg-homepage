@@ -2,7 +2,7 @@
 kind: post
 title: Building a portfolio that boots
 date: 2026-08-30
-summary: This site is a Kali Linux desktop in a browser tab — window manager, shell, filesystem, arcade. Notes on what that costs and why the shell was the part worth building.
+summary: This site is a Kali Linux desktop in a browser tab — window manager, shell, filesystem. Notes on what that costs and why the shell was the part worth building.
 tags: frontend, engineering, this-site
 stack: web
 ---
@@ -26,9 +26,14 @@ decided I could not source. Fixing that meant editing one file.
 That file also carries an editorial policy in a comment at the top, because the repository
 is public and I work at an insurer:
 
-> Employer-internal production metrics are NOT published here; they need written clearance
-> and they live only in the private master résumé. What is published: architecture, method,
-> named negative results, and numbers that come from public corpora or personal repositories.
+> A figure appears here only if a reader learns something from it, and only if it is one
+> of these kinds: public, published, structural, measured, owner-stated. Still not
+> published: business volumes and outcomes, latency of production systems, corpus sizes,
+> reviewer-decision totals, colleagues' names.
+
+(That is the policy as it reads now, abridged. It was stricter when this post first went
+up; offline evaluation results, each stated with what it was measured on, were added in
+November 2026.)
 
 A policy in a comment next to the data is a policy you actually read. A policy in a
 document is a policy you remember having written.
