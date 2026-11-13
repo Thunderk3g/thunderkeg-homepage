@@ -285,7 +285,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
   };
 
   const educationBlock = () => {
-    section(tight ? 'Education, certifications and awards' : 'Education');
+    section(tight ? 'Education and awards' : 'Education');
     for (const e of education) {
       headline(`${e.degree}, ${e.org}`, e.period, 9.8);
       write(e.detail, BODY, 'normal', LH);
@@ -297,7 +297,7 @@ export function buildResumePdf(variant: Variant = 'resume'): jsPDF {
   };
 
   const awardsBlock = () => {
-    section('Certifications and awards');
+    section('Awards');
     for (const a of awards) bullet(a);
   };
 

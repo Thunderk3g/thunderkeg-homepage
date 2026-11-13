@@ -174,7 +174,7 @@ export default function ResumePage() {
         ))}
       </Sec>
 
-      <Sec title="CERTIFICATIONS AND AWARDS">
+      <Sec title="AWARDS">
         <ul>
           {awards.map((a) => (
             <li key={a}>{a}</li>

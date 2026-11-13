@@ -80,7 +80,7 @@ function corpus(): Chunk[] {
     out.push({ source: 'Education', text: `${e.degree}, ${e.org}, ${e.period}, ${e.detail}`, hints: 'education degree university college study cgpa' }),
   );
 
-  out.push({ source: 'Awards', text: awards.join('. '), hints: 'awards scholarship prize recognition certification certified aws' });
+  out.push({ source: 'Awards', text: awards.join('. '), hints: 'awards scholarship prize recognition' });
   if (hire.open) {
     out.push({ source: 'Working together', text: hire.status + '.', hints: 'hire available open freelance consulting role job' });
     hire.services.forEach((s) =>

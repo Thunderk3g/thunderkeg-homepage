@@ -303,7 +303,7 @@ export const skills: { group: string; items: string }[] = [
   {
     group: 'Engineering and delivery',
     items:
-      'Python · TypeScript · Java · SQL · FastAPI · Celery · Next.js · React · Angular · Spring Boot · PostgreSQL · Redis · Qdrant · Kafka · Docker / Podman on RHEL · nginx · Azure OpenAI · AWS · release management',
+      'Python · TypeScript · Java · SQL · FastAPI · Celery · Next.js · React · Angular · Spring Boot · PostgreSQL · Redis · Qdrant · Kafka · Docker / Podman on RHEL · nginx · Azure OpenAI · release management',
   },
 ];
 
@@ -318,9 +318,7 @@ export const education = [
   },
 ];
 
-/** Certifications first, then awards. */
 export const awards = [
-  'AWS Certified Developer – Associate',
   'Deployment Star Award (Bajaj Finserv Direct)',
   'Esteemed Contributor to Financial Innovation Award',
   'COMPEX Indian Embassy Scholarship Scheme Awardee',
@@ -480,7 +478,7 @@ export function resumeText(): string {
   out.push('', '## Also following', ...research.following.map((d) => '- ' + d));
   out.push('', research.track);
   out.push('', '## Education', ...education.map((e) => `${e.degree} — ${e.org} · ${e.period} · ${e.detail}`));
-  out.push('', '## Certifications and awards', ...awards.map((a) => '- ' + a));
+  out.push('', '## Awards', ...awards.map((a) => '- ' + a));
   if (hire.open) {
     out.push('', '## Working together', `${hire.status}. ${hire.facts.join('. ')}.`);
     out.push(...hire.services.map((s) => `- ${s.name}: ${s.outcome}`));
