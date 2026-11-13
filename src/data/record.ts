@@ -129,6 +129,7 @@ export const SUBJECTS: Subject[] = [
   { id: 'compliance-review', field: 'law', name: 'Compliance review', blurb: 'An LLM reviewer for regulated marketing copy, in production.', keywords: ['compliance', 'regnlp', 'regulatory', 'obligation', 'irdai', 'sebi'] },
   { id: 'rule-bases', field: 'law', name: 'Legal rule bases', blurb: 'How selective formalised regulatory rules really are.', rqIds: ['rq2'], keywords: ['legalruleml', 'deontic', 'rule base', 'formalis', 'formaliz', 'gdpr', 'dapreco'] },
   { id: 'data-governance', field: 'law', name: 'Data governance', blurb: 'What may leave the building, decided by a gate and not a habit.', keywords: ['dpdp', 'pii', 'redaction', 'privacy', 'data protection', 'localisation'] },
+  { id: 'insurance-white-space', field: 'law', name: 'Insurance white space', blurb: 'What an AI-run insurance product can legally be in India, and what does not exist yet: contestable claims and machine-readable policy wordings.', keywords: ['claims advocacy', 'ombudsman', 'policy wording', 'repudiat', 'insurance distribution'] },
   { id: 'human-oversight', field: 'law', name: 'Human control of AI decisions', blurb: 'Where an LLM can sit in a decision loop and stay overseeable.', rqIds: ['rq-d2'], keywords: ['human-in-the-loop', 'human oversight', 'meaningful human control', 'decision support', 'wargam', 'escalat'], following: true },
 
   /* Agents & security */

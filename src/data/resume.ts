@@ -267,6 +267,7 @@ export const research = {
     'Applicability-constrained retrieval: where a hard categorical constraint that semantic similarity cannot express should be enforced. In the embedding, the SQL filter, or a deterministic judge after retrieval.',
     'Whether constraint density near 0.4 is a general property of formalised regulatory rule bases, measurable across the public LegalRuleML corpora.',
     'Defaults as unverified distributional claims: a safety default adopted for a correct reason can route most of a corpus around the mechanism it protects, and only coverage measurement reveals it.',
+    'Contestable claim decisions and machine-readable policy wordings in Indian insurance: whether a rejection can be checked clause by clause against the wording in force, with every citation literally in the source. Nothing built yet.',
     'When consensus pseudo-labelling fails for code-switched low-resource ASR: orthographic divergence, same-family correlated error and hypothesis-granularity mismatch, measured at two scales.',
     'Evaluation instruments for romanized code-switched speech. WER scores spelling variants of one word as errors, and script canonicalisation is ill-posed when English tokens legitimately stay Latin; I have not found a script-aware, entity-weighted, human-validated metric for Indian financial speech.',
   ],
