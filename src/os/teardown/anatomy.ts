@@ -466,7 +466,7 @@ export interface AppAnatomy {
 export const APPS: Record<string, AppAnatomy> = {
   terminal: {
     twin: ['QTerminal and zsh', "Kali's terminal, with its two-line prompt. zsh has been the default shell since 2020.4."],
-    built: ['xterm.js', 'A real terminal emulator in front of a shell I wrote in TypeScript: about fifty commands over the in-memory file system, with pipes, history and completion.'],
+    built: ['A React terminal', 'A terminal written in React in front of a shell I wrote in TypeScript: about fifty commands over the in-memory file system, with pipes, history and completion.'],
     tool: ['The shell tool', "The most general tool a model can be given, and the one that most needs a sandbox and a human sign-off for anything irreversible."],
     work: ['agent-governance', 'prompt-injection'],
     links: [

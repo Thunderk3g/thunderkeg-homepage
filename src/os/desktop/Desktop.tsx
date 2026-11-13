@@ -159,7 +159,16 @@ export function Desktop() {
           </button>
           <button
             role="menuitem"
-            onClick={run(() => toast('Folder created', { description: '~/Desktop/Untitled Folder' }))}
+            onClick={run(() => {
+              // a real folder in the in-memory file system, where the file manager and the shell can see it
+              const { fs, bumpFs } = useOS.getState();
+              let name = 'Untitled Folder';
+              for (let n = 2; fs.exists('/home/kali/Desktop/' + name); n++) name = `Untitled Folder ${n}`;
+              if (fs.mkdir(name, '/home/kali/Desktop')) {
+                bumpFs();
+                toast('Folder created', { description: `~/Desktop/${name}` });
+              }
+            })}
           >
             <SysIcon name="folder-new" /> Create Folder…
           </button>

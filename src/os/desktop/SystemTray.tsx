@@ -53,8 +53,22 @@ export function SystemTray() {
   const setSessionDialog = useOS((s) => s.setSessionDialog);
   const bat = useBattery();
   const [pop, setPop] = useState<Pop>(null);
-  const [volume, setVolume] = useState(64);
-  const [muted, setMuted] = useState(false);
+  // the one real audio source is the music player, so this is its volume and not a dummy slider
+  const playerVolume = usePlayer((s) => s.volume);
+  const setPlayerVolume = usePlayer((s) => s.setVolume);
+  const beforeMute = useRef(0.8);
+  const volume = Math.round(playerVolume * 100);
+  const muted = volume === 0;
+  const setVolume = (v: number) => setPlayerVolume(v / 100);
+  const setMuted = (next: boolean | ((m: boolean) => boolean)) => {
+    const on = typeof next === 'function' ? next(muted) : next;
+    if (on && !muted) {
+      beforeMute.current = playerVolume;
+      setPlayerVolume(0);
+    } else if (!on && muted) {
+      setPlayerVolume(beforeMute.current || 0.8);
+    }
+  };
   const root = useRef<HTMLDivElement>(null);
   const launch = useOS((s) => s.launch);
   const track = usePlayer(current);
@@ -164,7 +178,7 @@ export function SystemTray() {
           className={'kos-tray-item' + (pop === 'vol' ? ' open' : '')}
           onClick={() => toggle('vol')}
           aria-label="Volume"
-          onWheel={(e) => setVolume((v) => Math.max(0, Math.min(100, v - Math.sign(e.deltaY) * 5)))}
+          onWheel={(e) => setVolume(Math.max(0, Math.min(100, volume - Math.sign(e.deltaY) * 5)))}
         >
           <SysIcon name={muted || volume === 0 ? 'mute' : 'volume'} size={15} />
         </button>
@@ -180,10 +194,7 @@ export function SystemTray() {
                 min={0}
                 max={100}
                 value={muted ? 0 : volume}
-                onChange={(e) => {
-                  setMuted(false);
-                  setVolume(+e.target.value);
-                }}
+                onChange={(e) => setVolume(+e.target.value)}
                 aria-label="Volume level"
               />
               <span className="v">{muted ? 0 : volume}%</span>

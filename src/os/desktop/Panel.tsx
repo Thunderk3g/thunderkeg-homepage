@@ -21,7 +21,6 @@ const PLACES = [
   { label: 'Desktop', path: '/home/kali/Desktop' },
   { label: 'Documents', path: '/home/kali/Documents' },
   { label: 'Downloads', path: '/home/kali/Downloads' },
-  { label: 'Projects', path: '/home/kali/projects' },
   { label: 'File System', path: '/' },
 ];
 

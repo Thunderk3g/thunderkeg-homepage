@@ -77,8 +77,8 @@ people who file bugs.
 ## Try it
 
 Open the terminal (the first desktop icon, or press `Ctrl` `Alt` `T`) and run `help`.
-`blog` lists these posts. `papers` lists what I am reading. `resume` prints the whole
-thing, `pdf` builds one. `Cmd`/`Ctrl` + `K` opens a command palette over every app.
+`blog` lists these posts. `papers` lists what I am reading. `resume` downloads the
+two-page PDF, `cv` the academic one. `Cmd`/`Ctrl` + `K` opens a command palette over every app.
 
 If something is broken, it is [on GitHub](https://github.com/Thunderk3g) and I would like
 to know.

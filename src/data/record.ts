@@ -250,9 +250,7 @@ export const RECORD: RecordEntry[] = [
         Named at the level of the technology only. Delete any I would rather
         not show. ── */
   e('transformer-internals', 'built', '2026-03', 'A transformer architecture visualiser, built to see the internals'),
-  e('web-platform', 'measured', '2026-09', 'A Core Web Vitals audit of production pages'),
   e('web-platform', 'built', '2026-06', 'A handoff from Adobe Experience Manager to the calculators through an encrypted (AES-256-GCM) redirect token'),
   e('web-platform', 'built', '2025-07', 'An Adobe Analytics data layer for the purchase forms'),
-  e('apis-backend', 'built', '2026-10', 'Pending-state handling for a payment-gateway integration'),
   e('hybrid-retrieval', 'built', '2026-11', 'Query routing across Hindi, Hinglish and English, scored offline'),
 ];

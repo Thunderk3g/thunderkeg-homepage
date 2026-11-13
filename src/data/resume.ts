@@ -13,9 +13,10 @@
  *   structural    how many systems, rules, roles, tables, tests, teams
  *   measured      offline evaluation and benchmark results, each stated with
  *                 what it was measured on (audited from the code, 2026-11-12)
- *   owner-stated  my own approximate counts ("about", a range): the
- *                 approved-employer list, the integration plan, how long the
- *                 team took; and my own career history (titles, dates, awards)
+ *   owner-stated  how long the team took, and my own career history
+ *                 (titles, dates, awards, the reading group). Nothing else
+ *                 rests on my word alone: a claim the code, a post or a
+ *                 public repository does not back is not on this page.
  *
  * Still not published: business volumes and outcomes (submissions, calls,
  * conversions, premium, cost, spend), latency of production systems, corpus
@@ -89,7 +90,6 @@ export const roles: Role[] = [
         points: [
           'Started AI engineering in a function that had none: took requirements directly from business heads and worked with underwriting, analytics, products, IT, the data-warehouse team and information security to ship the systems below, with no team changing its workflow to fit the software.',
           'Trained the team to work as forward-deployed engineers who ship on their own within four to five months, ran a paper reading group (intent routing, agentic query caching, memory-augmented retrieval, agent threat models), and stood up one shared Podman stack on RHEL 9 (PostgreSQL, Redis, Qdrant, nginx) serving five applications.',
-          'Set the group’s engineering standards: one owner per system, design reviews, and budget guards with metering on every paid model API.',
         ],
       },
       {
@@ -98,10 +98,9 @@ export const roles: Role[] = [
         points: [
           'Architected the insurer’s chat-based term-insurance purchase journey (English, Hindi, Hinglish) as a deterministic state machine: the model only reads and phrases text, 119 versioned rules, 62 flow steps and 6 rate tables (maker-checker, with rollback) decide every step, and a write-ahead ledger gates calls to 18 insurer APIs.',
           'Held it to evaluation: 7 suites and 393 cases took retrieval from 72% to 79% top-1 and from 90% to 97% hit@4, with Hindi FAQ answers precise on 34 of 34 turns. Shipped the first version in 16 days, and an A/B on its eval set chose a model 4.8× cheaper per passing answer at equal behaviour (40 of 40 checks).',
-          'Designed the journey to ask less: credit-bureau, IIB, GSTN and existing-policy checks run as soon as basic details are in, knock-out cases stop early with an alternative, and a health answer opens a reflex questionnaire. In 75 test journeys the price arrived by the fourth turn (median) with no fact asked twice.',
+          'Designed the journey to ask less: IIB, GSTN and existing-policy checks run as soon as basic details are in, knock-out cases stop early with an alternative, and a health answer opens a reflex questionnaire. In 75 test journeys the price arrived by the fourth turn (median) with no fact asked twice.',
           'Built a pricing-parity harness that checks the engine against the insurer’s existing calculator across 100,000 input combinations.',
-          'Designed every conversation to be auditable: the customer’s message, the model’s response and each guardrail decision are stored, and a change-data-capture feed (Debezium, Kafka) to the data lake is being set up with the data-warehouse team.',
-          'Delivering a 30-item integration plan, each item with an owning team: an employer search over about 46,000 approved companies, document intake, medical scheduling, resuming a journey, call-backs to the lead system and payment.',
+          'Designed every conversation to be auditable: the customer’s message, the model’s response, each guardrail decision and every upstream call are stored, as one scrubbed record per turn.',
         ],
       },
       {

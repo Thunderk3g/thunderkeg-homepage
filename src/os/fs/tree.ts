@@ -89,8 +89,9 @@ percentiles, corpus sizes, programme spend, reviewer-decision totals —
 are NOT published here. They require written clearance and they live
 only in a private master résumé.
 
-What IS published: architecture, method, named negative results, and
-numbers sourced from public corpora or from my own repositories.
+What IS published: architecture, method, offline evaluation results,
+named negative results, and numbers sourced from public corpora or
+from my own repositories.
 
 If you need a figure that isn't here, ask. Some of it can be shared
 under NDA; some of it can't be shared at all, and I'd rather say so.
