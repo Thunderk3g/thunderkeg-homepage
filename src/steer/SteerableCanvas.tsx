@@ -217,7 +217,6 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
     setDialVariant(stored('stc.dial', DIALS, 'arc'));
     setGutterVariant(stored('stc.gutter', GUTTERS, 'heat'));
     if (autoFocus) rootRef.current?.focus({ preventScroll: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── size: the stage, and the width of one character ── */
@@ -255,7 +254,6 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
     const chosen = config.tasks.find((t) => t.id === task) ?? config.tasks[0];
     session.seed(seed ?? chosen?.seed ?? '', chosen?.id ?? null, cols);
     setActive(config.dimensions[0]?.name ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, size.w]);
 
   useEffect(() => {
@@ -264,7 +262,6 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
 
   useEffect(() => {
     if (onText && state && !state.generating) onText(session.tokens.join(''));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.generating, version]);
 
   /* ── rows ── */
@@ -343,7 +340,6 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
     const label = visible > anchor ? `rewrites L${anchorRow + 1}–${(visible ? laid.lineOf[visible - 1] : 0) + 1}` : `writes from L${laid.cursor.row + 1}`;
     return { views: out, cursor: laid.cursor, zoneLabel: label };
     // the session's arrays are mutated in place; `version` is what says they changed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version, cols, committed, anchor, generating]);
 
   /* ── where the instrument hangs ── */
