@@ -117,8 +117,10 @@ branches live in an LRU (64 by default). The rules:
 
 - **A control changes.** Cancel whatever is in flight, wait out the debounce
   (30 ms, and never more than 90 ms for a hand that does not stop), send
-  `invalidate`, then serve the branch from the cache or generate it. A branch
-  that is already cached skips the debounce: it costs no request.
+  `invalidate`, then serve the branch from the cache or generate it. Two cases
+  skip the debounce: a branch that is already cached (it costs no request), and
+  the first change after the controls have been at rest (nothing is known yet
+  about where the hand is going, so waiting only delays the first new word).
 - **Scrub backward.** Truncate the visible text at once and cancel ongoing work.
   The dropped tail stays on the path, so scrubbing forward again is served
   without a request.

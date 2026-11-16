@@ -313,6 +313,23 @@ const seedLen = split(SEED).length;
 }
 
 {
+  const { engine, client, source } = rig({ debounceMs: 300, debounceMaxMs: 350, speculate: false });
+  engine.seed(SEED);
+  await settle(engine);
+  await sleep(400);
+  const switches = engine.steer;
+  engine.setDial('tone', 1, undefined, 1);
+  await sleep(30);
+  eq(engine.steer, switches + 1, 'the first change after a rest is not debounced');
+  engine.setDial('tone', 0, undefined, 2);
+  await sleep(50);
+  eq(engine.steer, switches + 1, 'a change right behind it is part of a burst, and is');
+  await settle(engine);
+  eq(source.requests.at(-1)!.dials, { tone: 0 }, 'and the text ends on the last of them');
+  consistent(engine, client);
+}
+
+{
   // changes arrive faster than the first token: cancelling each time would show nothing until the hand stops
   const { engine, client, source } = rig({ ttftMs: 60, tokS: 2000, debounceMs: 10, debounceMaxMs: 30, speculate: false });
   engine.seed(SEED);

@@ -12,9 +12,10 @@ A *branch* is one continuation of one prefix under one set of controls. Its key
 is hash(prefix up to the anchor) + the quantised dial vector + the pin set (+
 the sample number and the task), and branches live in an LRU. The rules:
 
-  control change   cancel whatever is in flight at once, wait out the debounce,
-                   send `invalidate`, then serve the branch from the cache or
-                   generate it from the prefix.
+  control change   cancel whatever is in flight at once, wait out the debounce
+                   (none for the first change after a rest, or for a branch
+                   already cached), send `invalidate`, then serve the branch
+                   from the cache or generate it from the prefix.
   scrub backward   truncate the visible text at once and cancel ongoing work.
                    The dropped tail stays where it was, so scrubbing forward
                    again is served without a request.
@@ -157,6 +158,8 @@ class Engine:
         self._deferred = False
         self._hold_handle: asyncio.TimerHandle | None = None
         self._active_since = 0.0
+        #: when a control change last asked for a branch that had to be generated
+        self._changed_at = float("-inf")
         self._loops: list[asyncio.Task] = []
         self._dirty = asyncio.Event()
         self._attn_dirty = asyncio.Event()
@@ -441,7 +444,13 @@ class Engine:
         self._cancel_work("control change", keep=key)
         # The debounce is there to spare requests that a moving hand would
         # waste. A branch already in the cache costs none, so it is shown now.
-        self._schedule_switch(0.0 if hit else self.s.debounce_ms / 1000)
+        # So is the first change after the controls have been at rest: nothing
+        # is known yet about where the hand is going, and waiting only adds to
+        # the time before the first new word.
+        now = self.clock()
+        rested = now - self._changed_at > self.s.debounce_max_ms / 1000
+        self._changed_at = now
+        self._schedule_switch(0.0 if hit or rested else self.s.debounce_ms / 1000)
 
     def _awaiting_first_token(self) -> bool:
         return self._gen_task is not None and self._latency_from is not None and self.following

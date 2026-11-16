@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
+import { MODELS, isGroq } from '@/os/ai/llm';
 import type { PromptDimension } from '../prompting';
 import type { DimensionInfo, TaskInfo } from '../protocol';
 import type { SimPools } from '../sim';
@@ -56,6 +57,9 @@ export function publicConfig(file: SteerFile): { dimensions: DimensionInfo[]; ta
   };
 }
 
+/** Groq's smaller open-weight model: already the last resort of the site's chain, here the first choice. */
+const FAST_ON_GROQ = 'openai/gpt-oss-20b';
+
 const num = (name: string, fallback: number) => {
   const v = Number(process.env[name]);
   return Number.isFinite(v) && v > 0 ? v : fallback;
@@ -79,10 +83,19 @@ export function hostedEngine() {
   };
 }
 
-/** The models the steer endpoint tries, in order. Empty: the site's usual chain. */
+/**
+ * The models the steer endpoint tries, in order.
+ *
+ * For the canvas the time to the first word matters more than the quality of
+ * the model: a dial that answers in half a second does not feel like a dial.
+ * So unless STEER_MODEL says otherwise, on Groq the smaller model of the chain
+ * goes first and the rest of the chain stands behind it.
+ */
 export function steerModels(): string[] {
-  return (process.env.STEER_MODEL ?? '')
+  const named = (process.env.STEER_MODEL ?? '')
     .split(',')
     .map((m) => m.trim())
     .filter(Boolean);
+  if (named.length) return named;
+  return isGroq ? [...new Set([FAST_ON_GROQ, ...MODELS])] : MODELS;
 }

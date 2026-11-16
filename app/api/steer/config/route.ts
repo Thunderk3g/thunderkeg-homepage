@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL, isLlmConfigured } from '@/os/ai/llm';
+import { isLlmConfigured } from '@/os/ai/llm';
 import { hostedEngine, publicConfig, steerFile, steerModels } from '@/steer/server/config';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,7 @@ export async function GET() {
     {
       ...publicConfig(steerFile()),
       llm,
-      model: llm ? (steerModels()[0] ?? DEFAULT_MODEL) : null,
+      model: llm ? steerModels()[0] : null,
       engine: hostedEngine(),
     },
     { headers: { 'cache-control': 'no-store' } },

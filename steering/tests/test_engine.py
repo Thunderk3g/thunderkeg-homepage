@@ -444,3 +444,20 @@ async def test_coming_back_to_the_branch_in_flight_releases_the_hold(rig):
     await settle(engine)
     assert len(backend.requests) == calls and backend.requests[-1].dials == {"pace": 0.0}
     consistent(engine, client)
+
+
+async def test_the_first_change_after_a_rest_is_not_debounced(rig):
+    engine, client, backend = rig(debounce_ms=300, debounce_max_ms=350, speculate=False)
+    engine.seed(SEED)
+    await settle(engine)
+    await asyncio.sleep(0.4)  # the controls have been at rest
+    switches = engine.steer
+    engine.set_dial("tone", 1.0, seq=1)
+    await asyncio.sleep(0.03)
+    assert engine.steer == switches + 1, "the first turn of a dial waited out the debounce"
+    engine.set_dial("tone", 0.0, seq=2)  # a second change right behind it is part of a burst, and is debounced
+    await asyncio.sleep(0.05)
+    assert engine.steer == switches + 1
+    await settle(engine)
+    assert engine.steer == switches + 2 and backend.requests[-1].dials == {"tone": 0.0}
+    consistent(engine, client)

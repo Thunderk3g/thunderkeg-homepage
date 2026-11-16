@@ -14,7 +14,7 @@ import OpenAI from 'openai';
  *   LLM_FALLBACK_MODELS  comma-separated; default qwen/qwen3.8-27b,openai/gpt-oss-20b
  */
 const baseURL = process.env.LLM_BASE_URL ?? 'https://api.groq.com/openai/v1';
-const isGroq = /api\.groq\.com/.test(baseURL);
+export const isGroq = /api\.groq\.com/.test(baseURL);
 
 export const DEFAULT_MODEL = process.env.LLM_MODEL || 'openai/gpt-oss-120b';
 const FALLBACKS = (process.env.LLM_FALLBACK_MODELS ?? 'qwen/qwen3.8-27b,openai/gpt-oss-20b')

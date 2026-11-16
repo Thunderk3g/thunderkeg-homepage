@@ -188,6 +188,8 @@ export class Engine {
   private deferred = false;
   private holdTimer: ReturnType<typeof setTimeout> | null = null;
   private activeSince = 0;
+  /** when a control change last asked for a branch that had to be generated */
+  private changedAt = -Infinity;
   private closed = false;
 
   // counters
@@ -479,8 +481,13 @@ export class Engine {
     // controls ask for is the head start speculation exists to give.
     this.cancelWork('control change', key);
     // The debounce spares requests that a moving hand would waste. A branch
-    // already in the cache costs none, so it is shown now.
-    this.scheduleSwitch(hit ? 0 : this.s.debounceMs);
+    // already in the cache costs none, so it is shown now. So is the first
+    // change after the controls have been at rest: nothing is known yet about
+    // where the hand is going, and waiting only delays the first new word.
+    const t = now();
+    const rested = t - this.changedAt > this.s.debounceMaxMs;
+    this.changedAt = t;
+    this.scheduleSwitch(hit || rested ? 0 : this.s.debounceMs);
   }
 
   private awaitingFirstToken(): boolean {
