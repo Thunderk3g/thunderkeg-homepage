@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { dominant, readout, weights } from '../dimensions';
 import { arcPath, pointAt, type Pt } from '../geometry';
 import type { DimensionInfo } from '../protocol';
@@ -31,6 +31,50 @@ export const webX = (count: number, scale: number) => labelRadius(count, scale) 
 
 const O: Pt = { x: 0, y: 0 };
 const pct = (w: number) => `${Math.round(w * 100)}%`;
+
+/**
+ * The dial positions as drawn: each eases toward where its dial was set, so a
+ * keyboard step or a click on a pole glides instead of jumping. The dial under
+ * the hand (`direct`) is never eased: it stays exactly on the pointer.
+ */
+function useEased(dims: readonly DimensionInfo[], values: Record<string, number | null>, direct: string | null): Record<string, number | null> {
+  const shown = useRef<Record<string, number | null>>({ ...values });
+  const target = useRef(values);
+  const [, redraw] = useState(0);
+  const frame = useRef(0);
+  target.current = values;
+  const key = dims.map((d) => values[d.name] ?? 'x').join(',') + '|' + (direct ?? '');
+
+  useEffect(() => {
+    const step = () => {
+      frame.current = 0;
+      let moving = false;
+      for (const d of dims) {
+        const to = target.current[d.name] ?? null;
+        let from = shown.current[d.name] ?? null;
+        // a bipolar dial that has just been set swings out from its neutral centre
+        if (from == null && to != null && d.kind === 'bipolar') from = 0.5;
+        if (to == null || from == null || d.name === direct || Math.abs(to - from) < 0.003) {
+          shown.current[d.name] = to;
+        } else {
+          shown.current[d.name] = from + (to - from) * 0.3;
+          moving = true;
+        }
+      }
+      redraw((n) => n + 1);
+      if (moving) frame.current = requestAnimationFrame(step);
+    };
+    if (!frame.current) frame.current = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(frame.current);
+      frame.current = 0;
+    };
+    // `key` is the values and the dial in hand, flattened: the objects themselves change every render
+  }, [key, dims]);
+
+  const still = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return still ? values : shown.current;
+}
 
 export interface OverlayProps {
   width: number;
@@ -122,20 +166,33 @@ function ActiveRing({ dim, value, r, variant, scale }: { dim: DimensionInfo; val
         const b = pointAt(O, r + 4 * scale, poleAt(k));
         return <line key={p.name} x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="stc-tick major" />;
       })}
-      {handle && <circle cx={handle.x} cy={handle.y} r={4.5} className="stc-handle" />}
+      {handle && (
+        <>
+          <circle cx={handle.x} cy={handle.y} r={9} className="stc-halo" />
+          <circle cx={handle.x} cy={handle.y} r={4.5} className="stc-handle" />
+        </>
+      )}
     </g>
   );
 }
 
 export function Overlay(props: OverlayProps) {
-  const { width, height, center, head, scale, dims, values, active, variant, showWeb, zone, generating, held } = props;
+  const { width, height, center, head, scale, dims, active, variant, showWeb, zone, generating, held } = props;
+  const values = useEased(dims, props.values, held ? active : null);
   const count = dims.length;
   const rl = labelRadius(count, scale);
   const x0 = webX(count, scale);
   const activeDim = dims.find((d) => d.name === active) ?? dims[0];
   const activeValue = activeDim ? (values[activeDim.name] ?? null) : null;
   const top = activeDim && activeValue != null ? dominant(activeDim, activeValue) : null;
-  const style: CSSProperties = { transform: `translate(${center.x}px, ${center.y}px)`, transition: held ? 'none' : undefined };
+  // The instrument eases to the head, except when the head moves down: lagging
+  // then would leave it over the line just written, so it goes at once.
+  const lastY = useRef(center.y);
+  const down = center.y > lastY.current + 0.5;
+  useEffect(() => {
+    lastY.current = center.y;
+  });
+  const style: CSSProperties = { transform: `translate(${center.x}px, ${center.y}px)`, transition: held || down ? 'none' : undefined };
   const hx = head.x - center.x;
   const hy = head.y - center.y;
 
@@ -156,7 +213,7 @@ export function Overlay(props: OverlayProps) {
             const label = v == null ? '—' : readout(d, v) + (on && d.kind === 'bipolar' && lead ? ` ${pct(lead.weight)}` : '');
             return (
               <g key={d.name} className={'stc-node' + (on ? ' on' : v == null ? ' unset' : '')} onClick={() => props.onSelect(d.name)} onDoubleClick={() => props.onUnset(d.name)}>
-                <line x1={hx} y1={hy} x2={x0} y2={y} className="stc-ray" />
+                <line x1={hx} y1={hy} x2={x0} y2={y} className={'stc-ray' + (on && generating ? ' live' : '')} />
                 <circle cx={x0} cy={y} r={on ? 3.5 : 2.25} className="stc-dot" />
                 <text x={x0 + 10} y={y + 4}>
                   <tspan className="stc-node-name">{d.name}: </tspan>
@@ -208,8 +265,13 @@ export function Overlay(props: OverlayProps) {
             const tx = at.x + (anchor === 'end' ? -4 : anchor === 'start' ? 4 : 0);
             const ty = at.y + (anchor === 'middle' ? 12 : 4) + (v === 0 || v === 1 ? 6 : 0);
             const bx = anchor === 'end' ? tx - w + 5 : anchor === 'start' ? tx - 5 : tx - w / 2;
+            // a faint spoke ties the label to its tick on the ring in hand, across the rings between
+            const ringR = ringRadius(dims.indexOf(activeDim), scale);
+            const s0 = pointAt(O, ringR + 7 * scale, v);
+            const s1 = pointAt(O, rl - 5 * scale, v);
             return (
               <g key={p.name} className={'stc-pole' + (chosen ? ' on' : '')} onClick={() => props.onPole(activeDim.name, p.name)}>
+                {s1.y - s0.y + Math.abs(s1.x - s0.x) > 8 && <line x1={s0.x} y1={s0.y} x2={s1.x} y2={s1.y} className="stc-spoke" />}
                 <rect x={bx} y={ty - 11} width={w} height={15} className="stc-chip" />
                 <text x={tx} y={ty} textAnchor={anchor}>
                   {p.name}

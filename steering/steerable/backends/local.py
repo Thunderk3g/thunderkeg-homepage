@@ -15,6 +15,9 @@ Where Tier A can only rewrite the prompt, this backend reaches into the model:
   focus   the focus monitor reads the model's own attention, with the same
           steering and bias in effect, so it shows what the lock is doing.
 
+The model is given the text as it stands and continues it: no chat template
+and no task framing are put around it.
+
 Generation is a plain sampling loop, one token per forward pass, run in a
 worker thread. Each generated token's text is one display token (cut once
 more where it mixes newlines with other characters, which the layout code
@@ -36,7 +39,7 @@ import torch
 
 from ..attention.readout import Runner, cut, layer_range
 from ..config import Settings
-from ..dimensions import Dimensions
+from ..dimensions import Dimension, Dimensions
 from ..vectors import ControlVector, vector_path
 from .base import AttnRequest, AttnResult, BackendError, GenRequest, SteeringBackend
 
@@ -74,7 +77,7 @@ class LocalSteeringBackend(SteeringBackend):
         spans: list[list[int]] = []
         for dim in dims:
             spans.append(layer_range(self.lm.depth, *(dim.tier_b.get("layers") or ())))
-            loaded = self._load_vector(dim.name, vector_path(dim, settings.vectors_dir), float(dim.tier_b.get("max_strength", 0.0)))
+            loaded = self._load_vector(dim, vector_path(dim, settings.vectors_dir))
             if loaded:
                 self.vectors[dim.name] = loaded
         # the focus monitor reads the layers the dials act on
@@ -84,19 +87,29 @@ class LocalSteeringBackend(SteeringBackend):
         self._gate: asyncio.Lock | None = None
         self._gate_loop: asyncio.AbstractEventLoop | None = None
 
-    def _load_vector(self, name: str, path: Path, strength: float) -> dict[str, dict[int, torch.Tensor]] | None:
+    def _load_vector(self, dim: Dimension, path: Path) -> dict[str, dict[int, torch.Tensor]] | None:
         """One dimension's vectors, scaled to full strength; None (and one warning) if they cannot be used."""
         if not path.exists():
-            log.warning("%s: no control vectors at %s; this dial will have no effect (python -m steerable.vectors train)", name, path)
+            log.warning("%s: no control vectors at %s; this dial will have no effect (python -m steerable.vectors train)", dim.name, path)
             return None
         vec = ControlVector.load(path)
-        sizes = {v.shape[-1] for v in vec.poles.values()}
-        if sizes != {self.lm.hidden} or max(vec.layers) >= self.lm.depth:
-            log.warning("%s: the vectors at %s were trained for %s and do not fit %s; this dial will have no effect", name, path, vec.model, self.model)
+        fits = (
+            set(vec.poles) == {p.name for p in dim.poles}
+            and all(v.shape[-1] == self.lm.hidden for v in vec.poles.values())
+            and max(vec.layers) < self.lm.depth
+        )
+        if not fits:
+            log.warning(
+                "%s: the vectors at %s (trained on %s) do not fit this dimension on %s; this dial will have no effect",
+                dim.name,
+                path,
+                vec.model,
+                self.model,
+            )
             return None
         if vec.model != self.model:
-            log.warning("%s: the vectors at %s were trained for %s, not %s", name, path, vec.model, self.model)
-        scale = (vec.norms * strength)[:, None]
+            log.warning("%s: the vectors at %s were trained on %s, not %s", dim.name, path, vec.model, self.model)
+        scale = (vec.norms * float(dim.tier_b.get("max_strength", 0.0)))[:, None]
         return {
             pole: {layer: v.to(self.lm.device, self.lm.dtype) for layer, v in zip(vec.layers, unit * scale)}
             for pole, unit in vec.poles.items()
@@ -116,8 +129,6 @@ class LocalSteeringBackend(SteeringBackend):
                 for layer, vector in poles[pole].items():
                     total[layer] = total[layer] + weight * vector if layer in total else weight * vector
         return total
-
-    # ───────────────────────── generation ─────────────────────────
 
     def _write(self, req: GenRequest, stop: threading.Event) -> Iterator[str]:
         """The sampling loop: yields each generated token's text as it is decoded, until told to stop."""
@@ -202,8 +213,6 @@ class LocalSteeringBackend(SteeringBackend):
                     await _joined(worker)
         finally:
             self.inflight -= 1
-
-    # ───────────────────────── focus ─────────────────────────
 
     def _focus(self, req: AttnRequest) -> list[float]:
         scores = self.lm.focus(

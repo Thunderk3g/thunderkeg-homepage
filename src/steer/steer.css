@@ -31,6 +31,8 @@
 }
 .stc *, .stc *::before, .stc *::after { box-sizing: border-box; }
 .stc-empty { align-items: center; justify-content: center; color: var(--quiet); font-size: 11px; }
+.stc:not(.stc-empty) { animation: stc-rise 420ms ease-out both; }
+@keyframes stc-rise { from { opacity: 0; } }
 
 .stc button, .stc select, .stc textarea {
   font: inherit;
@@ -65,7 +67,8 @@
 .stc-top button:hover, .stc-foot button:hover:not(:disabled) { color: var(--bright); }
 .stc-top button.on, .stc-foot button.on { color: var(--accent); }
 .stc-pick { display: flex; align-items: center; gap: 6px; }
-.stc-pick select { color: var(--fg); appearance: none; cursor: pointer; padding-right: 2px; }
+.stc-pick select { color: var(--fg); appearance: none; cursor: pointer; padding-right: 2px; field-sizing: content; }
+.stc-pick select:hover { color: var(--bright); }
 .stc-pick select option { background: #111; color: var(--fg); }
 .stc-swatch { display: flex; align-items: center; gap: 8px; }
 .stc-swatch > span { color: var(--dim); }
@@ -73,7 +76,14 @@
 
 /* ── the stage ── */
 
-.stc-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.stc-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  /* the ground is not quite flat: a little lift where the text begins */
+  background: radial-gradient(120% 90% at 22% -10%, #121212 0%, var(--bg) 62%);
+}
 .stc-probe { position: absolute; visibility: hidden; white-space: pre; pointer-events: none; }
 .stc-scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
 .stc-scroll::-webkit-scrollbar { display: none; }
@@ -86,12 +96,34 @@
 .stc-text .a { color: var(--fg); }
 .stc-text .s { color: var(--mid); }
 .stc-text .g { color: #383838; }
+.stc-text .t > span { transition: color 240ms ease; }
+/* A word that has just been written fades up bright and settles into the text.
+   Only its colour moves, so a paragraph arriving at once costs a repaint of a
+   few rows and no layers. */
+.stc-text .t > span { animation: stc-ink 520ms ease-out; }
+@keyframes stc-ink {
+  from { color: rgba(255, 255, 255, 0); }
+  30% { color: #ffffff; }
+}
 .stc-text .u { text-decoration: underline; text-decoration-color: var(--quiet); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .stc-text .p { border-top: 1px solid var(--quiet); border-bottom: 1px solid var(--quiet); background: #141414; color: var(--bright); cursor: pointer; }
 .stc-text .po { border-left: 1px solid var(--quiet); margin-left: -1px; }
 .stc-text .pc { border-right: 1px solid var(--quiet); margin-right: -1px; }
 
-.stc-cursor { position: absolute; width: var(--ch); height: 15px; margin-top: 3px; background: var(--accent); pointer-events: none; }
+.stc-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--ch);
+  height: 15px;
+  margin-top: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(255, 74, 28, 0.55), 0 0 2px rgba(255, 74, 28, 0.9);
+  pointer-events: none;
+  will-change: transform;
+  /* the cursor glides to the head instead of jumping a word at a time */
+  transition: transform 80ms linear;
+}
 .stc-cursor.idle { animation: stc-blink 1.15s steps(1) infinite; }
 @keyframes stc-blink { 50% { opacity: 0; } }
 
@@ -99,10 +131,11 @@
 
 .stc-gut { flex: none; width: var(--gut); display: flex; align-items: center; font-size: 10px; color: var(--quiet); }
 .stc-zone { flex: none; width: 2px; height: 20px; margin: 0 7px 0 5px; }
+.stc-zone { transition: background-color 200ms ease; }
 .stc-zone.steer { background: #2a2a2a; }
 .stc-zone.live { background: var(--accent); }
 .stc-cells { flex: none; display: flex; gap: 1px; }
-.stc-cells i { width: var(--cell); height: 9px; background: #151515; }
+.stc-cells i { width: var(--cell); height: 9px; background: #151515; transition: background-color 260ms ease; }
 .stc-cells i.l1 { background: #2b2b2b; }
 .stc-cells i.l2 { background: #6b6b6b; }
 .stc-cells i.l3 { background: #d4d4d4; }
@@ -116,7 +149,7 @@
   align-items: center;
   background: repeating-linear-gradient(90deg, #202020 0 1px, transparent 1px calc(var(--cell) + 1px)) 0 100% / 100% 2px no-repeat;
 }
-.stc-weight i { height: 2px; background: var(--quiet); }
+.stc-weight i { height: 2px; background: var(--quiet); transition: width 260ms ease, background-color 260ms ease; }
 .stc-weight.top i { background: var(--accent); }
 .stc-lock { flex: none; width: 34px; padding-left: 6px; display: flex; align-items: center; gap: 3px; color: var(--mid); }
 .stc-lock[data-lock] { cursor: ns-resize; touch-action: none; }
@@ -131,7 +164,10 @@
 .stc-hit { fill: transparent; stroke: transparent; pointer-events: all; cursor: pointer; }
 .stc-hit.ring { fill: none; pointer-events: stroke; cursor: grab; touch-action: none; }
 
-.stc-ring { fill: none; stroke: #2a2a2a; stroke-width: 1; }
+.stc-ring { fill: none; stroke: #2a2a2a; stroke-width: 1; transition: stroke 160ms ease; }
+.stc-dial:hover .stc-ring.set, .stc-dial:hover .stc-ring.unset { stroke: #6b6b6b; stroke-dasharray: none; }
+.stc-spoke { stroke: #2c2c2c; stroke-width: 1; stroke-dasharray: 1 4; }
+.stc-pole.on .stc-spoke { stroke: #5a5a5a; }
 .stc-ring.unset { stroke: #303030; stroke-dasharray: 1 5; }
 .stc-ring.set { stroke: #3d3d3d; }
 .stc-ring.active { stroke: #6b6b6b; }
@@ -140,6 +176,7 @@
 .stc-tick { stroke: #3d3d3d; stroke-width: 1; }
 .stc-tick.major { stroke: var(--mid); }
 .stc-handle { fill: var(--accent); }
+.stc-halo { fill: var(--accent); fill-opacity: 0.16; }
 .stc-needle { stroke: var(--accent); stroke-width: 1; }
 .stc-needle.thick { stroke-width: 2; }
 .stc-seg { fill: none; stroke: #202020; }
@@ -151,6 +188,11 @@
 .stc-node.on text { fill: var(--bright); }
 .stc-ray { stroke: #202020; stroke-width: 1; }
 .stc-node.on .stc-ray { stroke: var(--accent); stroke-opacity: 0.8; }
+/* while the dial in hand is rewriting the text, its ray runs toward the cursor */
+.stc-node.on .stc-ray.live { stroke-dasharray: 2 6; animation: stc-flow 480ms linear infinite; }
+@keyframes stc-flow { to { stroke-dashoffset: 16; } }
+.stc-node text, .stc-dot, .stc-ray { transition: fill 160ms ease, stroke 160ms ease; }
+.stc-node:hover text { fill: var(--bright); }
 .stc-dot { fill: #555; }
 .stc-node.unset .stc-dot { fill: #333; }
 .stc-node.on .stc-dot { fill: var(--accent); }
@@ -158,7 +200,7 @@
 .stc-pole { pointer-events: all; cursor: pointer; }
 .stc-pole text { font-size: 11px; fill: var(--quiet); }
 .stc-pole:hover text { fill: var(--bright); }
-.stc-chip { fill: transparent; }
+.stc-chip { fill: transparent; transition: fill 140ms ease; }
 .stc-pole.on .stc-chip { fill: var(--accent); }
 .stc-pole.on text, .stc-pole.on:hover text { fill: #0a0a0a; }
 
@@ -167,7 +209,20 @@
 .stc-readout .zone { fill: var(--quiet); font-size: 10px; }
 .stc-readout .zone.live { fill: var(--accent); }
 
-/* ── pin button, panels ── */
+/* ── first-run hint, pin button, panels ── */
+
+.stc-hint {
+  position: absolute;
+  left: calc(var(--gut) + 14px);
+  bottom: 12px;
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--quiet);
+  pointer-events: none;
+  animation: stc-rise 600ms 900ms ease-out both;
+}
+.stc-narrow .stc-hint { display: none; }
 
 .stc .stc-pinit {
   position: absolute;
@@ -242,7 +297,20 @@
 .stc-seg-committed { background: var(--bright); height: 3px !important; top: 11.5px !important; }
 .stc-track .stc-anchor { top: 8px; width: 1px; height: 10px; background: var(--fg); }
 .stc-track .stc-knob { top: 6px; width: 7px; height: 14px; margin-left: -3px; background: var(--fg); }
-.stc-scrub.on .stc-knob, .stc-track:hover .stc-knob { background: var(--accent); }
+.stc-scrub.on .stc-knob, .stc-track:hover .stc-knob { background: var(--accent); box-shadow: 0 0 10px rgba(255, 74, 28, 0.6); }
+/* at rest the bar eases to the text's length; under the hand it follows exactly */
+.stc-scrub:not(.on) .stc-track i { transition: width 160ms ease-out, left 160ms ease-out, background-color 140ms ease; }
+.stc-bubble {
+  position: absolute;
+  top: -15px;
+  transform: translateX(-50%);
+  padding: 2px 5px;
+  font-size: 10px;
+  line-height: 1;
+  color: #0a0a0a;
+  background: var(--accent);
+  pointer-events: none;
+}
 
 /* ── telemetry ── */
 
@@ -258,6 +326,6 @@
 .stc-narrow .stc-top, .stc-narrow .stc-foot, .stc-narrow .stc-scrub, .stc-narrow .stc-chips { gap: 10px; padding: 0 10px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .stc-instrument { transition: none; }
-  .stc-cursor.idle { animation: none; }
+  .stc-instrument, .stc-cursor, .stc-scrub .stc-track i { transition: none !important; }
+  .stc-cursor.idle, .stc-text .t > span, .stc:not(.stc-empty), .stc-hint, .stc-node.on .stc-ray.live { animation: none !important; }
 }

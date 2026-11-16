@@ -11,6 +11,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { polePosition, quantise, readout } from './dimensions';
 import { layoutRows, topThreshold, valueAt, type Pt } from './geometry';
 import type { DimensionInfo, PinState, TaskInfo } from './protocol';
@@ -165,8 +166,8 @@ export function SteerableCanvas({ wsUrl, configUrl = '/api/steer/config', genera
       session={session}
       mode={mode!}
       modes={modes}
-      onMode={(m) => {
-        setNote(null);
+      onMode={(m, why) => {
+        setNote(why ?? null);
         setMode(m);
       }}
       note={note}
@@ -183,7 +184,7 @@ interface CanvasProps {
   session: Session;
   mode: Mode;
   modes: Mode[];
-  onMode: (m: Mode) => void;
+  onMode: (m: Mode, why?: string) => void;
   note: string | null;
   task?: string;
   seed?: string;
@@ -199,6 +200,10 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
   const scrollRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const follow = useRef(true);
+  const glide = useRef(0);
+  const want = useRef(0);
+  const pinned = useRef(false);
+  const still = useRef(false);
   const seeded = useRef(false);
 
   const [size, setSize] = useState({ w: 0, h: 0, ch: 7.8 });
@@ -356,12 +361,61 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
   const center: Pt = held ?? { x: Math.max(minX, Math.min(maxX, headX)), y: headTop + LH };
   const inView = center.y > LH && center.y < size.h - 24;
 
+  // Where the text should be scrolled to. At rest the head line sits just above
+  // the room the instrument needs. While a dial is in hand the instrument holds
+  // still, so the text is scrolled to keep the head on the instrument's line:
+  // new words never run underneath the dial being turned.
+  const headBottom = PAD_Y + (cursor.row + 1) * LH;
+  want.current = Math.max(0, headBottom - (held ? held.y : size.h - depth));
+  pinned.current = held != null;
+
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    if (follow.current) el.scrollTop = el.scrollHeight - el.clientHeight;
     if (Math.abs(el.scrollTop - scrollTop) > 0.5) setScrollTop(el.scrollTop);
+    if (!follow.current) return;
+    if (pinned.current || still.current) {
+      // under the hand there is no easing: the head stays exactly on the line
+      if (Math.abs(el.scrollTop - want.current) > 0.5) {
+        el.scrollTop = want.current;
+        setScrollTop(el.scrollTop);
+      }
+      return;
+    }
+    if (glide.current) return;
+    // Follow the head by gliding, not jumping: each frame closes part of the
+    // gap, so a paragraph arriving at once scrolls as one movement.
+    const step = () => {
+      glide.current = 0;
+      const gap = want.current - el.scrollTop;
+      const done = !follow.current || pinned.current || Math.abs(gap) < 0.75;
+      if (done && (!follow.current || pinned.current)) return;
+      el.scrollTop = done ? want.current : el.scrollTop + Math.sign(gap) * Math.max(1, Math.abs(gap) * 0.4);
+      // The instrument is placed from this number. Waiting for the scroll event
+      // would put it a frame behind the text it hangs from.
+      flushSync(() => setScrollTop(el.scrollTop));
+      if (!done) glide.current = requestAnimationFrame(step);
+    };
+    glide.current = requestAnimationFrame(step);
   });
+
+  useEffect(() => {
+    still.current = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    return () => {
+      // clear the flag as well as the frame, or a remount would wait for a glide that will never run
+      cancelAnimationFrame(glide.current);
+      glide.current = 0;
+    };
+  }, []);
+
+  // A model that keeps refusing (a rate limit, an outage) should not leave a dead canvas:
+  // fall back to the simulated writer, and say so.
+  const refusals = session.errors.length;
+  useEffect(() => {
+    if (mode === 'api' && refusals >= 2 && modes.includes('sim')) {
+      onMode('sim', 'the model is rate-limited or busy, so this is the simulated writer; click the backend to try the model again');
+    }
+  }, [refusals, mode, modes, onMode]);
 
   /* ── gestures ── */
 
@@ -713,17 +767,24 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
           ref={scrollRef}
           onScroll={(e) => {
             const el = e.currentTarget;
-            follow.current = el.scrollTop >= el.scrollHeight - el.clientHeight - 4;
+            // reaching the end resumes following; only the reader's own scrolling stops it
+            if (el.scrollTop >= want.current - 4) follow.current = true;
             setScrollTop(el.scrollTop);
+          }}
+          onWheel={(e) => {
+            if (e.deltaY < 0 && !e.altKey) follow.current = false;
+          }}
+          onTouchMove={() => {
+            follow.current = false;
           }}
           onMouseUp={readSelection}
           onKeyUp={readSelection}
         >
-          <div className="stc-lines" style={{ padding: `${PAD_Y}px ${PAD_X}px ${depth}px 0` }}>
+          <div className="stc-lines" style={{ padding: `${PAD_Y}px ${PAD_X}px ${Math.max(depth, size.h - LH)}px 0` }}>
             {views.map((view) => (
               <TextRow key={view.index} view={view} variant={gutterVariant} />
             ))}
-            <span className={'stc-cursor' + (generating ? '' : ' idle')} style={{ left: gut + PAD_X + cursor.col * size.ch, top: PAD_Y + cursor.row * LH }} />
+            <span className={'stc-cursor' + (generating ? '' : ' idle')} style={{ transform: `translate(${gut + PAD_X + cursor.col * size.ch}px, ${PAD_Y + cursor.row * LH}px)` }} />
           </div>
         </div>
 
@@ -753,6 +814,10 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
             }}
             onUnset={(d) => session.setDial(d, null)}
           />
+        )}
+
+        {session.gestures === 0 && visible > 0 && !help && !seedOpen && (
+          <p className="stc-hint">drag a ring to steer · select words to pin them · drag the bar below to scrub · ? for keys</p>
         )}
 
         {selection && (
@@ -815,6 +880,11 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
           <i className="stc-seg-committed" style={{ width: share(committed) }} />
           <i className="stc-anchor" style={{ left: share(anchor) }} title="regeneration starts here" />
           <i className="stc-knob" style={{ left: share(visible) }} />
+          {scrubbing && (
+            <span className="stc-bubble" style={{ left: share(visible) }}>
+              {visible}
+            </span>
+          )}
         </div>
         <span className="stc-scrub-end">{span}</span>
         <button type="button" onClick={more} title="write one more stretch past the end (m)">

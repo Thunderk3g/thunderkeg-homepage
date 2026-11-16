@@ -10,6 +10,11 @@ import type { Row } from '../geometry';
  * description changes, which is what keeps the canvas at frame rate while
  * tokens stream: a frame of new tokens touches the last row or two, not the
  * page.
+ *
+ * A token's key is its place and its text. A word that a control change
+ * rewrites is therefore a new element and fades in; a word that survives the
+ * change is the same element and does not move. That is what makes regenerated
+ * text read as morphing rather than being replaced.
  */
 
 export type GutterVariant = 'heat' | 'bar' | 'weight';
@@ -87,7 +92,7 @@ function RowImpl({ view, variant }: { view: RowView; variant: GutterVariant }) {
           const inside = pin && view.pinEdge[j] !== 'o' && view.pinEdge[j] !== 'b';
           const gap = inside ? 0 : text.length - text.trimStart().length;
           return (
-            <span key={i} data-i={i} data-pin={pin ?? undefined} title={pin ? 'pinned: click to release' : undefined}>
+            <span key={`${i}:${text}`} className="t" data-i={i} data-pin={pin ?? undefined} title={pin ? 'pinned: click to release' : undefined}>
               {gap > 0 && text.slice(0, gap)}
               <span className={cls}>{text.slice(gap)}</span>
             </span>

@@ -116,9 +116,10 @@ def train_lm(model, tokenizer, text: str, *, steps: int, batch: int = 32, window
     return sum(tail) / len(tail)
 
 
-# A synthetic language with two styles that can be counted. Every document is
+# A synthetic language with two styles that can be counted. Every sentence is
 # written in one tone (two vocabularies with no word in common) and at one pace
-# (one clause to a sentence, or three to five joined by connectives).
+# (a single clause, or three to five joined by connectives), and a text tends
+# to stay in the style it is in.
 
 SUBJECTS = ["the man", "the girl", "the dog", "tom", "anna", "the old woman", "the boy", "the baker", "the sailor", "the teacher"]
 WARM = {
@@ -162,13 +163,20 @@ def toy_passage(rng: random.Random, tone: dict[str, list[str]], long: bool, sent
     return " ".join(toy_sentence(rng, tone, long) for _ in range(sentences))
 
 
-def toy_corpus(documents: int, seed: int = 0) -> str:
-    """Documents one to a line, each with its own tone and pace drawn at random."""
+def toy_corpus(documents: int, seed: int = 0, stay: float = 0.8) -> str:
+    """Documents one to a line. Each sentence keeps the tone and the pace of the one before it with probability `stay`."""
     rng = random.Random(seed)
     lines = []
     for _ in range(documents):
         tone, long = rng.choice([WARM, COLD]), rng.random() < 0.5
-        lines.append(toy_passage(rng, tone, long, 1 if long else rng.randint(2, 4)))
+        sentences = []
+        for _ in range(rng.randint(6, 10)):
+            sentences.append(toy_sentence(rng, tone, long))
+            if rng.random() > stay:
+                tone = COLD if tone is WARM else WARM
+            if rng.random() > stay:
+                long = not long
+        lines.append(" ".join(sentences))
     return "\n".join(lines) + "\n"
 
 

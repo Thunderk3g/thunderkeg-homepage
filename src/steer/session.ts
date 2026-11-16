@@ -43,6 +43,10 @@ export class Session {
   lastPaint = 0;
   fps = 0;
   recording: Recording | null = null;
+  /** how many steering gestures the hand has made this session */
+  gestures = 0;
+  /** refusals from the model (rate limits, outages), most recent last */
+  errors: number[] = [];
   seedText = '';
   task: string | null = null;
 
@@ -169,6 +173,7 @@ export class Session {
         break;
       case 'error':
         this.error = { message: msg.message, at: Date.now(), retryAfter: msg.retry_after };
+        this.errors = [...this.errors.filter((t) => Date.now() - t < 20_000), Date.now()];
         break;
     }
     this.notify();
@@ -178,6 +183,7 @@ export class Session {
     if (!this.transport) return;
     let out = msg;
     if (timed && msg.type !== 'layout') {
+      this.gestures += 1;
       this.seq += 1;
       this.sentAt.set(this.seq, performance.now());
       out = { ...msg, seq: this.seq };
@@ -212,6 +218,7 @@ export class Session {
 
   scrub(position: number): void {
     if (position > this.tokens.length) {
+      this.gestures += 1;
       this.seq += 1;
       this.sentAt.set(this.seq, performance.now());
       this.forward = this.seq;

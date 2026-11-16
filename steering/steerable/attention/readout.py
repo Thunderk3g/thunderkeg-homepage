@@ -26,7 +26,6 @@ share the model by taking turns, one pass at a time.
 
 from __future__ import annotations
 
-import logging
 import math
 import re
 import threading
@@ -34,15 +33,13 @@ from bisect import bisect_right
 from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import accumulate
-from typing import Any, Iterator, Sequence
+from typing import Any, Callable, Iterator, Sequence
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, DynamicCache
 
 from ..backends.base import BackendError, PinSpec
 from ..cache import LRU
-
-log = logging.getLogger("steerable.model")
 
 DTYPES = {"fp16": torch.float16, "float16": torch.float16, "bf16": torch.bfloat16, "bfloat16": torch.bfloat16, "fp32": torch.float32, "float32": torch.float32}
 #: the share of the depth the focus monitor reads when no dimension says otherwise
@@ -87,7 +84,7 @@ def layer_range(depth: int, lo: float = DEFAULT_LAYERS[0], hi: float = DEFAULT_L
 def steering(layers: Sequence[torch.nn.Module], vectors: dict[int, torch.Tensor], start: int) -> Iterator[None]:
     """Add `vectors[i]` to the output of layer i, from input position `start` on, for the passes run inside."""
 
-    def hook(vector: torch.Tensor):
+    def hook(vector: torch.Tensor) -> Callable[..., None]:
         def add(_module: torch.nn.Module, _inputs: Any, output: Any) -> None:
             hidden = output[0] if isinstance(output, tuple) else output
             hidden[:, start:] += vector
@@ -108,7 +105,7 @@ def recording(layers: Sequence[torch.nn.Module], indices: Sequence[int]) -> Iter
     """Keep the output of each listed layer (batch, positions, hidden) from the last pass run inside."""
     seen: dict[int, torch.Tensor] = {}
 
-    def hook(index: int):
+    def hook(index: int) -> Callable[..., None]:
         def keep(_module: torch.nn.Module, _inputs: Any, output: Any) -> None:
             seen[index] = (output[0] if isinstance(output, tuple) else output).detach().clone()
 
@@ -210,6 +207,8 @@ class Encoded:
 
 
 class Runner:
+    """One loaded model and tokenizer; see the module docstring for what it does with them."""
+
     def __init__(self, name: str, device: str = "auto", dtype: str = "auto", prefixes: int = 4) -> None:
         self.name = name
         self.device, self.dtype = pick_device(device, dtype)
@@ -230,8 +229,6 @@ class Runner:
         self.lock = threading.RLock()
         self._attn = config._attn_implementation
         self._prefixes: LRU[str, tuple[list[int], Any]] = LRU(prefixes)
-
-    # ───────────────────────── text ─────────────────────────
 
     def encode(self, text: str) -> Encoded:
         """Model tokens with the characters each one owns.
@@ -265,8 +262,6 @@ class Runner:
 
     def decode(self, ids: Sequence[int]) -> str:
         return self.tokenizer.decode(list(ids), skip_special_tokens=True, clean_up_tokenization_spaces=False)
-
-    # ───────────────────────── passes ─────────────────────────
 
     def forward(
         self,
@@ -342,8 +337,6 @@ class Runner:
             return None
         return torch.tensor(weights, dtype=self.dtype, device=self.device) * strength
 
-    # ───────────────────────── focus ─────────────────────────
-
     def focus(
         self,
         tokens: Sequence[str],
@@ -374,7 +367,8 @@ class Runner:
         enc = self.encode("".join(tokens))
         ids, spans = enc.ids, enc.spans
         starts = starts_of(tokens)
-        a = enc.before(starts[min(max(anchor, 0), len(tokens))])
+        anchor = min(max(anchor, 0), len(tokens))
+        a = enc.before(starts[anchor])
         head = min(enc.before(starts[max(0, len(tokens) - window)]), len(ids) - 1)
         bias = self.pin_bias(pins, tokens, spans, pin_strength)
         # a text longer than the model can take is read over its tail only

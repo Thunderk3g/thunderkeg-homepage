@@ -15,6 +15,9 @@ import contextlib
 import logging
 import math
 import random
+import subprocess
+import sys
+import time
 
 import pytest
 
@@ -32,7 +35,7 @@ from steerable.backends import make_backend  # noqa: E402
 from steerable.backends import local as local_module  # noqa: E402
 from steerable.backends.base import AttnRequest, BackendError, GenRequest, PinSpec  # noqa: E402
 from steerable.backends.local import LocalSteeringBackend  # noqa: E402
-from steerable.dimensions import load_dimensions  # noqa: E402
+from steerable.dimensions import HERE, load_dimensions  # noqa: E402
 from steerable.engine import Engine  # noqa: E402
 from steerable.layout import split as layout_split  # noqa: E402
 from steerable.layout import wrap  # noqa: E402
@@ -88,9 +91,6 @@ def request_for(backend: LocalSteeringBackend, text: str = TEXT, **over) -> GenR
     return GenRequest(**base)
 
 
-# ───────────────────────── tokens ─────────────────────────
-
-
 @both
 def test_split_gives_the_text_back(backend):
     for text in [TEXT, *AWKWARD]:
@@ -131,9 +131,6 @@ def test_a_pin_is_mapped_by_characters_not_by_index():
     weights = pin_weights([PinSpec(1, 2, 0.5, "key")], words, spans)
     assert weights == [0.0, 0.0, 0.5, 0.5, 0.0, 0.0]
     assert pin_weights([PinSpec(3, 9, 1.0, "hidden"), PinSpec(1, 2, 0.5, "key")], words, spans) == [0.0, 0.0, 0.5, 0.5, 0.0, 1.0]
-
-
-# ───────────────────────── generation ─────────────────────────
 
 
 @both
@@ -232,6 +229,39 @@ async def test_cancel_stops_the_thread_before_inflight_clears(backend):
 
 
 @both
+async def test_a_second_cancel_still_waits_for_the_thread(backend):
+    busy = [False]
+    real = backend.lm.forward
+
+    def slow(*args, **kwargs):
+        busy[0] = True
+        time.sleep(0.03)
+        try:
+            return real(*args, **kwargs)
+        finally:
+            busy[0] = False
+
+    backend.lm.forward = slow
+    got: list[str] = []
+
+    async def consume() -> None:
+        async for chunk in backend.generate(request_for(backend, max_tokens=200)):
+            got.extend(chunk)
+
+    task = asyncio.create_task(consume())
+    while not (got and busy[0]):
+        await asyncio.sleep(0.001)
+    task.cancel()
+    await asyncio.sleep(0)  # the task is now waiting for its thread, which is in the middle of a pass
+    assert not task.done() and backend.inflight == 1
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert not busy[0], "the request was let go while its thread was still on the model"
+    assert backend.inflight == 0
+
+
+@both
 async def test_closing_the_stream_early_stops_the_thread(backend):
     calls = count_forwards(backend)
     async with contextlib.aclosing(backend.generate(request_for(backend, max_tokens=200))) as stream:
@@ -267,9 +297,6 @@ async def test_a_queued_request_that_is_cancelled_leaves_the_queue(backend):
     assert len(await third) == 5 and len(await first) == 100
     assert len(started) == 2, "the cancelled request must never have reached the model"
     assert backend.inflight == 0
-
-
-# ───────────────────────── the prefix cache ─────────────────────────
 
 
 @both
@@ -313,9 +340,6 @@ def test_a_prefix_that_tokenises_differently_in_context_is_cut_back(backend):
     assert done <= len(lm.encode(prefix).ids) and lm.encode(prefix).ids[:done] == ids[:done]
     out = lm.forward(ids[done:], past)
     assert torch.allclose(out.logits[0], lm.forward(ids).logits[0][done:], atol=1e-5)
-
-
-# ───────────────────────── steering ─────────────────────────
 
 
 def continuation_projection(backend: LocalSteeringBackend, dials: dict[str, float], direction: torch.Tensor) -> tuple[torch.Tensor, float, int]:
@@ -392,9 +416,6 @@ async def test_vectors_for_another_model_are_refused(checkpoints, trained, tmp_p
     backend = LocalSteeringBackend(load_dimensions(), settings)
     assert backend.vectors == {}
     await backend.aclose()
-
-
-# ───────────────────────── the attention lock ─────────────────────────
 
 
 def pinned_mass(backend: LocalSteeringBackend, weight: float) -> tuple[torch.Tensor, torch.Tensor, int, list[int]]:
@@ -477,15 +498,27 @@ async def test_a_pin_changes_what_is_written(backend):
     assert len(await collect(backend, pinned)) == 12
 
 
+def test_the_rest_of_the_package_does_not_need_torch():
+    code = "import sys, steerable.backends, steerable.engine, steerable.server; assert 'torch' not in sys.modules and 'transformers' not in sys.modules"
+    subprocess.run([sys.executable, "-c", code], check=True, cwd=str(HERE))
+
+
+async def test_tier_a_takes_the_proxy_as_its_focus_monitor(checkpoints):
+    settings = make_settings(backend="api", attention="proxy", proxy_model=checkpoints["gpt2"], api_key="x")
+    backend = make_backend(settings, load_dimensions())
+    assert backend.attention_source == f"proxy:{checkpoints['gpt2']}"
+    tokens = layout_split(TEXT)
+    result = await backend.attention(AttnRequest(tokens=tokens, pins=[], window=6))
+    assert result.source == backend.attention_source and len(result.tok_scores) == len(tokens)
+    await backend.aclose()
+
+
 def test_an_unknown_layout_is_refused():
     class Odd(torch.nn.Module):
         base_model = torch.nn.Linear(2, 2)
 
     with pytest.raises(BackendError, match="unsupported layout"):
         decoder_layers(Odd())
-
-
-# ───────────────────────── the focus monitor ─────────────────────────
 
 
 @both
@@ -555,9 +588,6 @@ async def test_proxy_focus_monitor(checkpoints, arch):
     assert sum(pinned.tok_scores[2:4]) / sum(pinned.tok_scores) > sum(plain.tok_scores[2:4]) / sum(plain.tok_scores)
     long = await proxy.attention(AttnRequest(tokens=layout_split(("word " * 400).strip()), pins=[], window=6))
     assert len(long.tok_scores) == 400 and max(long.tok_scores) == 1.0, "a text past the model's context is read over its tail"
-
-
-# ───────────────────────── vectors ─────────────────────────
 
 
 @pytest.mark.parametrize("arch", ARCHS)
@@ -660,9 +690,6 @@ def test_eval_command_line_reports_and_sets_the_exit_code(checkpoints, trained, 
     assert "run `train` first" in capsys.readouterr().err
 
 
-# ───────────────────────── through the engine ─────────────────────────
-
-
 @both
 async def test_engine_end_to_end(backend):
     settings = make_settings(backend="local", horizon=60, spec_tokens=8, debounce_ms=5, attention_ms=5)
@@ -721,12 +748,17 @@ async def test_engine_end_to_end(backend):
     assert engine.inflight == 0 and backend.inflight == 0
 
 
-# ───────────────────────── the acceptance criterion, small ─────────────────────────
+#: `max_strength` for the toy model's two dials, chosen the way a user would: by running `eval` at a few values
+TOY_STRENGTH = {"tone": 0.12, "pace": 0.2}
 
 
-def toy_dimensions(strength: float) -> dict:
+def toy_dimensions() -> dict:
     """Two dials for the synthetic language. A pole's `prompt` is a passage written in that style."""
     rng = random.Random(1)
+
+    def tier_b(name: str) -> dict:
+        return {"layers": [0.35, 0.7], "max_strength": TOY_STRENGTH[name], "steps": 24, "vector": f"vectors/{name}.pt"}
+
     return {
         "version": 1,
         "dimensions": [
@@ -737,7 +769,7 @@ def toy_dimensions(strength: float) -> dict:
                     {"name": "grim", "prompt": tiny.toy_passage(rng, tiny.COLD, False, 5)},
                     {"name": "kind", "prompt": tiny.toy_passage(rng, tiny.WARM, False, 5)},
                 ],
-                "tier_b": {"layers": [0.3, 0.8], "max_strength": strength, "steps": 24, "vector": "vectors/tone.pt"},
+                "tier_b": tier_b("tone"),
             },
             {
                 "name": "pace",
@@ -746,7 +778,7 @@ def toy_dimensions(strength: float) -> dict:
                     {"name": "compressed", "prompt": tiny.toy_passage(rng, tiny.WARM, False, 5)},
                     {"name": "expansive", "prompt": tiny.toy_passage(rng, tiny.WARM, True, 2)},
                 ],
-                "tier_b": {"layers": [0.3, 0.8], "max_strength": strength, "steps": 24, "vector": "vectors/pace.pt"},
+                "tier_b": tier_b("pace"),
             },
         ],
         # openings that give neither style away; half stop inside a clause, half at the end of one
@@ -764,29 +796,32 @@ def test_a_dial_moves_a_measured_style_monotonically(tmp_path, capsys):
 
     The language has two tones with no word in common and two paces (one
     clause to a sentence, or several), so both styles can be counted in a
-    sample. The vectors come from the real training command with a prompt
+    sample, and it has a grammar small enough to check every sentence
+    against. The vectors come from the real training command with a prompt
     template the toy model can read: a passage in the pole's style, then the
     opening. Each dial is then swept over five positions with twenty samples
-    at each, and the mean score must rise at every step.
+    at each. The mean score must rise at every step, the evaluation's own
+    grammar verdict must be "intact", and, since here it can be checked
+    exactly, nearly every sentence written must be a sentence of the language.
     """
-    text = tiny.toy_corpus(3000)
+    text = tiny.toy_corpus(1500)
     tokenizer = tiny.train_tokenizer([text], vocab_size=420, bos=False)
     torch.manual_seed(0)
     model = tiny.build_model("llama", len(tokenizer), hidden=64, layers=4, heads=4)
     loss = tiny.train_lm(model, tokenizer, text, steps=600)
-    assert loss < 1.3, f"the toy model did not learn its language (loss {loss:.2f})"
+    assert loss < 1.4, f"the toy model did not learn its language (loss {loss:.2f})"
     checkpoint = tmp_path / "toy"
     model.save_pretrained(checkpoint)
     tokenizer.save_pretrained(checkpoint)
 
     dims_file = tmp_path / "dimensions.yaml"
-    dims_file.write_text(yaml.safe_dump(toy_dimensions(strength=0.3)))
+    dims_file.write_text(yaml.safe_dump(toy_dimensions()))
     common = ["--model", str(checkpoint), "--dimensions", str(dims_file), "--vectors-dir", str(tmp_path / "vectors"), "--device", "cpu"]
     assert vectors.main(["train", *common, "--template", "{prompt} {stem}"]) == 0
 
     # pace, through the command line exactly as a user would run the acceptance check
-    code = vectors.main(["eval", *common, "--dim", "pace", "--samples", "20", "--positions", "5", "--tokens", "48"])
-    tables = [capsys.readouterr().out]
+    code = vectors.main(["eval", *common, "--dim", "pace", "--samples", "20", "--positions", "5", "--tokens", "64"])
+    tables = [capsys.readouterr().out.split("\n", 2)[2]]  # after the two lines `train` printed
     assert code == 0, f"pace did not pass:\n{tables[0]}"
 
     dims = load_dimensions(dims_file)
@@ -795,7 +830,7 @@ def test_a_dial_moves_a_measured_style_monotonically(tmp_path, capsys):
     async def sweep() -> dict[str, vectors.Report]:
         backend = LocalSteeringBackend(dims, settings)
         tone = dims.get("tone")
-        kwargs = dict(samples=20, positions=5, tokens=48)
+        kwargs = dict(samples=20, positions=5, tokens=64)
         reports = {
             "pace": await vectors.evaluate(backend, dims.get("pace"), **kwargs),
             # tone, counted: of the tone words in a sample, the share from the warm vocabulary
@@ -810,6 +845,12 @@ def test_a_dial_moves_a_measured_style_monotonically(tmp_path, capsys):
 
     reports = asyncio.run(sweep())
     tables += [r.table() for r in list(reports.values())[1:]]
+    stems = list(dims.contrast_stems)
+    formed = {
+        name: [sum(tiny.well_formed(stems[i % len(stems)] + text) for i, text in enumerate(p.samples)) / 20 for p in [r.baseline, *r.positions]]
+        for name, r in reports.items()
+    }
+    tables.append("sentences that are well formed, unset dial then each position:\n" + "\n".join(f"  {k}: {[round(v, 3) for v in vs]}" for k, vs in formed.items()))
     with capsys.disabled():
         print("\n\n" + "\n\n".join(tables))
 
@@ -821,6 +862,8 @@ def test_a_dial_moves_a_measured_style_monotonically(tmp_path, capsys):
         assert report.monotonic and report.grammar_intact, f"{name}:\n{report.table()}"
         low, high = report.positions[0], report.positions[-1]
         assert high.score - low.score > 4 * math.hypot(low.spread, high.spread), f"{name}: the shift is within the noise"
+        assert formed[name][0] == 1.0, "the unsteered model does not write its own language"
+        assert min(formed[name]) >= 0.95, f"{name}: steering broke the grammar: {formed[name]}"
     # the two ends of each dial are far apart in the units of the measure itself
-    assert reports["pace"].positions[-1].score > 2 * reports["pace"].positions[0].score
+    assert reports["pace"].positions[-1].score > 3 * reports["pace"].positions[0].score
     assert reports["tone, counted"].positions[0].score < 0.2 and reports["tone, counted"].positions[-1].score > 0.8

@@ -12,6 +12,12 @@ The vector for a pole at a layer is the first principal component of the
 differences between that pole and its opposite (bipolar) or the mean of the
 other poles (blend), pointed toward the pole and scaled to length one.
 
+What is recorded at the last token is what the model is about to do there, so
+a style shows up only where it is about to matter: sentence length at the end
+of a clause, word choice in the middle of one. Openings should therefore stop
+at varied points. (On the small model in the tests, openings that all stopped
+at one kind of point gave a vector that steered one dial and not the other.)
+
 Each file holds, for one dimension and one model: the unit vectors per pole
 and layer, the layers' indices, and the mean length of the residual at each
 layer. At run time the vector added at a layer is
@@ -25,7 +31,9 @@ poles, the first being the second negated, so the two kinds are applied alike.
 `eval` is the acceptance check: with the dial at several positions from 0 to
 1 it writes the same samples (same openings, same seeds), scores each one for
 the dimension, and reports whether the mean score rises monotonically and
-whether the text still reads as the model's own language.
+whether the text still reads as the model's own language. It exits 0 when
+both hold, 1 when the score is not monotonic, 2 when it is but the language
+is broken, which is the sign that `max_strength` is set too high.
 """
 
 from __future__ import annotations
@@ -51,8 +59,6 @@ from .dimensions import HERE, Dimension, Dimensions, load_dimensions
 if TYPE_CHECKING:
     from .backends.local import LocalSteeringBackend
 
-log = logging.getLogger("steerable.vectors")
-
 #: the plain framing of a contrastive prompt, for a model with no chat template
 PLAIN_CONTRAST = "Write in a style that is {prompt}.\n\n{stem}"
 CHAT_CONTRAST = "Continue this piece of writing in a style that is {prompt}."
@@ -63,9 +69,6 @@ CHAT_JUDGE = "Passage:\n{text}\n\nWhich one word describes the {dimension} of th
 ODD_TOKEN = math.log(1e-3)
 
 Scorer = Callable[[str], float]
-
-
-# ───────────────────────── the file ─────────────────────────
 
 
 @dataclass
@@ -103,9 +106,6 @@ def vector_path(dim: Dimension, vectors_dir: str = "vectors") -> Path:
     if rel.parts[0] == "vectors":
         return HERE / vectors_dir / Path(*rel.parts[1:])
     return HERE / rel
-
-
-# ───────────────────────── training ─────────────────────────
 
 
 def contrast_ids(lm: Runner, stem: str, prompt: str, template: str | None = None) -> list[int]:
@@ -185,6 +185,9 @@ def train(
     lm: Runner | None = None,
 ) -> dict[str, Path]:
     """Train and save vectors for the named dimensions (all of them by default); returns where each went."""
+    unknown = set(names or ()) - {d.name for d in dims}
+    if unknown:
+        raise ValueError(f"unknown dimension(s): {', '.join(sorted(unknown))}")
     lm = lm or Runner(settings.local_model, settings.local_device, settings.local_dtype)
     written: dict[str, Path] = {}
     for dim in dims:
@@ -199,13 +202,7 @@ def train(
             f"residual length {vector.norms.min():.2f}..{vector.norms.max():.2f}, "
             f"pairs agreeing {agreement:.0%} -> {path}"
         )
-    unknown = set(names or ()) - {d.name for d in dims}
-    if unknown:
-        raise ValueError(f"unknown dimension(s): {', '.join(sorted(unknown))}")
     return written
-
-
-# ───────────────────────── scoring ─────────────────────────
 
 
 def words_per_sentence(text: str) -> float:
@@ -291,9 +288,6 @@ class Judge:
             return logp[1] - logp[0]
         share = torch.softmax(torch.tensor(logp), 0).tolist()
         return sum(s * i / (len(share) - 1) for i, s in enumerate(share))
-
-
-# ───────────────────────── evaluation ─────────────────────────
 
 
 @dataclass
@@ -400,8 +394,8 @@ async def evaluate(
     scorer: Scorer | None = None,
     scorer_name: str | None = None,
     stems: Sequence[str] | None = None,
-    max_nll_rise: float = 1.0,
-    max_odd_rise: float = 0.02,
+    max_nll_rise: float = 0.5,
+    max_odd_rise: float = 0.01,
     max_repetition_rise: float = 0.15,
 ) -> Report:
     """Sweep one dial from 0 to 1 and measure what it does to the text.
@@ -441,9 +435,6 @@ async def evaluate(
     return Report(dim, scorer_name or "custom scorer", tokens, rows[0], rows[1:], max_nll_rise, max_odd_rise, max_repetition_rise)
 
 
-# ───────────────────────── command line ─────────────────────────
-
-
 def _settings(args: argparse.Namespace) -> Settings:
     over = {
         "local_model": args.model,
@@ -476,8 +467,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_eval.add_argument("--tokens", type=int, default=60, help="tokens written per sample")
     p_eval.add_argument("--scorer", choices=["auto", "words", "judge"], default="auto", help="auto: words per sentence for pace, the model judge otherwise")
     p_eval.add_argument("--judge-template", help="judge prompt with {text}, {dimension} and {poles}, used instead of the chat template")
-    p_eval.add_argument("--max-nll-rise", type=float, default=1.0, help="allowed rise in nll/token over the unset dial")
-    p_eval.add_argument("--max-odd-rise", type=float, default=0.02, help="allowed rise in the share of tokens the unsteered model finds implausible")
+    p_eval.add_argument("--max-nll-rise", type=float, default=0.5, help="allowed rise in nll/token over the unset dial")
+    p_eval.add_argument("--max-odd-rise", type=float, default=0.01, help="allowed rise in the share of tokens the unsteered model finds implausible")
     p_eval.add_argument("--max-repetition-rise", type=float, default=0.15, help="allowed rise in the repetition rate over the unset dial")
     p_eval.add_argument("--show", action="store_true", help="print the first sample at each position")
 

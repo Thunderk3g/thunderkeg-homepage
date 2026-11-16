@@ -128,7 +128,9 @@ export class ApiSource implements TokenSource {
             ? 'no model is configured on this site'
             : body.reason === 'rate' || body.reason === 'busy'
               ? `the model is rate-limited here${retry ? `; try again in ${retry}s` : ''}`
-              : (body.error ?? body.reason ?? `HTTP ${res.status}`);
+              : body.llm === 'unavailable'
+                ? 'the model is busy: every model in the chain refused'
+                : (body.error ?? body.reason ?? `HTTP ${res.status}`);
         throw new SourceError(why, retry);
       }
       if (!res.ok || !res.body) throw new SourceError(`HTTP ${res.status}`);
