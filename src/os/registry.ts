@@ -12,6 +12,7 @@ import { stacksApp } from './apps/stacks/StacksApp';
 import { psqlApp } from './apps/psql/Psql';
 import { musicApp } from './apps/music/Music';
 import { hireApp } from './apps/hire/Hire';
+import { steerApp } from './apps/steer/Steer';
 
 /**
  * Shell-side overrides for apps whose definition lives in a module owned
@@ -37,6 +38,7 @@ export const apps: AppDefinition[] = [
   browserApp,
   researchApp,
   stacksApp,
+  steerApp,
   writingApp,
   fileManagerApp,
   vmApp,

@@ -506,6 +506,13 @@ export const APPS: Record<string, AppAnatomy> = {
     work: ['knowledge-compilation'],
     links: [['board', 'the same model, drawn as text']],
   },
+  steer: {
+    twin: ['No twin', 'Nothing on Kali plays this part.'],
+    built: ['A steering canvas', 'A text canvas over a generation engine. A continuation is cached by its prefix, the dial values and the pinned phrases, and every control change cancels whatever is in flight. It runs in the page, simulated unless a model key is set. Also at /steer.'],
+    tool: ['Control while decoding', 'Steering the model as it writes, instead of prompting again afterwards. Through an API the dials can only be compiled into the prompt; with local weights they become vectors added to the residual stream.'],
+    work: ['transformer-internals'],
+    links: [['kernel', 'asks the model through /api/steer/generate']],
+  },
   writing: {
     twin: ['Mousepad', "Kali's text editor is the nearest thing. Publishing is not a desktop feature."],
     built: ['Markdown, prerendered', 'Every post and paper note is a file in content/. Committing one publishes it to this app, to /writing and to the RSS feed.'],

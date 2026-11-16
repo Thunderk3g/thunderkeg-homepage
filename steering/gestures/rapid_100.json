@@ -1,0 +1,608 @@
+{
+ "name": "rapid_100",
+ "description": "100 dial changes 4-70 ms apart across all six dials",
+ "events": [
+  {
+   "t": 0,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.203
+  },
+  {
+   "t": 8,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.721
+  },
+  {
+   "t": 33,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.583
+  },
+  {
+   "t": 49,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.069
+  },
+  {
+   "t": 65,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.304
+  },
+  {
+   "t": 135,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.03
+  },
+  {
+   "t": 160,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.003
+  },
+  {
+   "t": 164,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.626
+  },
+  {
+   "t": 180,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.61
+  },
+  {
+   "t": 188,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.794
+  },
+  {
+   "t": 258,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.339
+  },
+  {
+   "t": 274,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.967
+  },
+  {
+   "t": 286,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.228
+  },
+  {
+   "t": 356,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.818
+  },
+  {
+   "t": 381,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.785
+  },
+  {
+   "t": 406,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.969
+  },
+  {
+   "t": 418,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.355
+  },
+  {
+   "t": 443,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.484
+  },
+  {
+   "t": 468,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.215
+  },
+  {
+   "t": 472,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.57
+  },
+  {
+   "t": 484,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.775
+  },
+  {
+   "t": 554,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.217
+  },
+  {
+   "t": 579,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.451
+  },
+  {
+   "t": 649,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.825
+  },
+  {
+   "t": 661,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.97
+  },
+  {
+   "t": 677,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.345
+  },
+  {
+   "t": 685,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.617
+  },
+  {
+   "t": 725,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.39
+  },
+  {
+   "t": 750,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.97
+  },
+  {
+   "t": 766,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.693
+  },
+  {
+   "t": 836,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.489
+  },
+  {
+   "t": 840,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.973
+  },
+  {
+   "t": 844,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.728
+  },
+  {
+   "t": 856,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.989
+  },
+  {
+   "t": 881,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.974
+  },
+  {
+   "t": 889,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.663
+  },
+  {
+   "t": 901,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.489
+  },
+  {
+   "t": 909,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.74
+  },
+  {
+   "t": 925,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.792
+  },
+  {
+   "t": 937,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.086
+  },
+  {
+   "t": 977,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.246
+  },
+  {
+   "t": 1002,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.846
+  },
+  {
+   "t": 1018,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.288
+  },
+  {
+   "t": 1043,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.074
+  },
+  {
+   "t": 1059,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.403
+  },
+  {
+   "t": 1099,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.097
+  },
+  {
+   "t": 1169,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.689
+  },
+  {
+   "t": 1194,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.774
+  },
+  {
+   "t": 1202,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.666
+  },
+  {
+   "t": 1272,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.411
+  },
+  {
+   "t": 1276,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.635
+  },
+  {
+   "t": 1301,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.828
+  },
+  {
+   "t": 1371,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.53
+  },
+  {
+   "t": 1379,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.601
+  },
+  {
+   "t": 1419,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.09
+  },
+  {
+   "t": 1444,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.214
+  },
+  {
+   "t": 1452,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.394
+  },
+  {
+   "t": 1477,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.837
+  },
+  {
+   "t": 1517,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.657
+  },
+  {
+   "t": 1557,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.566
+  },
+  {
+   "t": 1627,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.767
+  },
+  {
+   "t": 1631,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.557
+  },
+  {
+   "t": 1635,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.63
+  },
+  {
+   "t": 1675,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.161
+  },
+  {
+   "t": 1715,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.281
+  },
+  {
+   "t": 1727,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.491
+  },
+  {
+   "t": 1752,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.279
+  },
+  {
+   "t": 1760,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.808
+  },
+  {
+   "t": 1785,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.607
+  },
+  {
+   "t": 1789,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.45
+  },
+  {
+   "t": 1805,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.039
+  },
+  {
+   "t": 1821,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.665
+  },
+  {
+   "t": 1825,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.583
+  },
+  {
+   "t": 1850,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.87
+  },
+  {
+   "t": 1858,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.656
+  },
+  {
+   "t": 1883,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.193
+  },
+  {
+   "t": 1908,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.381
+  },
+  {
+   "t": 1933,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.734
+  },
+  {
+   "t": 1973,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.924
+  },
+  {
+   "t": 1985,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.834
+  },
+  {
+   "t": 1989,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.137
+  },
+  {
+   "t": 1997,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.673
+  },
+  {
+   "t": 2001,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.888
+  },
+  {
+   "t": 2017,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.182
+  },
+  {
+   "t": 2087,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.428
+  },
+  {
+   "t": 2157,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.691
+  },
+  {
+   "t": 2161,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.196
+  },
+  {
+   "t": 2201,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.466
+  },
+  {
+   "t": 2241,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.528
+  },
+  {
+   "t": 2257,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.788
+  },
+  {
+   "t": 2297,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.822
+  },
+  {
+   "t": 2301,
+   "type": "set_dial",
+   "dim": "mode",
+   "value": 0.273
+  },
+  {
+   "t": 2326,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.579
+  },
+  {
+   "t": 2396,
+   "type": "set_dial",
+   "dim": "tone",
+   "value": 0.927
+  },
+  {
+   "t": 2408,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.277
+  },
+  {
+   "t": 2424,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.656
+  },
+  {
+   "t": 2436,
+   "type": "set_dial",
+   "dim": "tension",
+   "value": 0.297
+  },
+  {
+   "t": 2452,
+   "type": "set_dial",
+   "dim": "surprise",
+   "value": 0.108
+  },
+  {
+   "t": 2460,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.747
+  },
+  {
+   "t": 2472,
+   "type": "set_dial",
+   "dim": "focus",
+   "value": 0.647
+  }
+ ],
+ "seed": "Elara had kept the key hidden for eleven years, and tonight she finally carried it up the hill.\n\nShadows stretched across the path as the last of the light went out of the valley.",
+ "task": "story"
+}

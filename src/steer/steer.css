@@ -1,0 +1,263 @@
+/* The steerable canvas. Black ground, greyscale everything, and one accent
+   (#ff4a1c) kept for whatever is active: the cursor, the dial in hand, the
+   lines the model is attending to most. */
+
+.stc {
+  --bg: #0a0a0a;
+  --fg: #d4d4d4;
+  --bright: #f0f0f0;
+  --mid: #a3a3a3;
+  --quiet: #6b6b6b;
+  --dim: #3a3a3a;
+  --faint: #1c1c1c;
+  --accent: #ff4a1c;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+  -webkit-font-smoothing: antialiased;
+  outline: none;
+  user-select: none;
+}
+.stc *, .stc *::before, .stc *::after { box-sizing: border-box; }
+.stc-empty { align-items: center; justify-content: center; color: var(--quiet); font-size: 11px; }
+
+.stc button, .stc select, .stc textarea {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+}
+.stc button { cursor: pointer; }
+.stc button:disabled { cursor: default; }
+.stc button:focus-visible, .stc select:focus-visible, .stc:focus-visible .stc-knob { outline: 1px solid var(--mid); outline-offset: 2px; }
+
+/* ── top strip ── */
+
+.stc-top, .stc-foot, .stc-scrub, .stc-chips {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--quiet);
+  white-space: nowrap;
+}
+.stc-top { height: 28px; border-bottom: 1px solid #141414; }
+.stc-title { color: var(--mid); letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; }
+.stc-fill { flex: 1; min-width: 0; }
+.stc-top button, .stc-foot button { color: var(--quiet); padding: 3px 0; }
+.stc-top button:hover, .stc-foot button:hover:not(:disabled) { color: var(--bright); }
+.stc-top button.on, .stc-foot button.on { color: var(--accent); }
+.stc-pick { display: flex; align-items: center; gap: 6px; }
+.stc-pick select { color: var(--fg); appearance: none; cursor: pointer; padding-right: 2px; }
+.stc-pick select option { background: #111; color: var(--fg); }
+.stc-swatch { display: flex; align-items: center; gap: 8px; }
+.stc-swatch > span { color: var(--dim); }
+.stc-swatch button.on { color: var(--bright); box-shadow: 0 1px 0 var(--bright); }
+
+/* ── the stage ── */
+
+.stc-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.stc-probe { position: absolute; visibility: hidden; white-space: pre; pointer-events: none; }
+.stc-scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.stc-scroll::-webkit-scrollbar { display: none; }
+.stc-lines { position: relative; min-height: 100%; }
+
+.stc-row { display: flex; height: 20px; white-space: pre; }
+.stc-text { user-select: text; cursor: text; }
+.stc-text ::selection { background: #3a3a3a; color: var(--bright); }
+.stc-text .k { color: var(--bright); }
+.stc-text .a { color: var(--fg); }
+.stc-text .s { color: var(--mid); }
+.stc-text .g { color: #383838; }
+.stc-text .u { text-decoration: underline; text-decoration-color: var(--quiet); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.stc-text .p { border-top: 1px solid var(--quiet); border-bottom: 1px solid var(--quiet); background: #141414; color: var(--bright); cursor: pointer; }
+.stc-text .po { border-left: 1px solid var(--quiet); margin-left: -1px; }
+.stc-text .pc { border-right: 1px solid var(--quiet); margin-right: -1px; }
+
+.stc-cursor { position: absolute; width: var(--ch); height: 15px; margin-top: 3px; background: var(--accent); pointer-events: none; }
+.stc-cursor.idle { animation: stc-blink 1.15s steps(1) infinite; }
+@keyframes stc-blink { 50% { opacity: 0; } }
+
+/* ── the gutter: zone bracket, attention cells, lock, line number ── */
+
+.stc-gut { flex: none; width: var(--gut); display: flex; align-items: center; font-size: 10px; color: var(--quiet); }
+.stc-zone { flex: none; width: 2px; height: 20px; margin: 0 7px 0 5px; }
+.stc-zone.steer { background: #2a2a2a; }
+.stc-zone.live { background: var(--accent); }
+.stc-cells { flex: none; display: flex; gap: 1px; }
+.stc-cells i { width: var(--cell); height: 9px; background: #151515; }
+.stc-cells i.l1 { background: #2b2b2b; }
+.stc-cells i.l2 { background: #6b6b6b; }
+.stc-cells i.l3 { background: #d4d4d4; }
+.stc-cells.top i.l2, .stc-cells.top i.l3 { background: var(--accent); }
+.stc-weight {
+  flex: none;
+  width: calc(var(--cell) * 10 + 9px);
+  height: 9px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background: repeating-linear-gradient(90deg, #202020 0 1px, transparent 1px calc(var(--cell) + 1px)) 0 100% / 100% 2px no-repeat;
+}
+.stc-weight i { height: 2px; background: var(--quiet); }
+.stc-weight.top i { background: var(--accent); }
+.stc-lock { flex: none; width: 34px; padding-left: 6px; display: flex; align-items: center; gap: 3px; color: var(--mid); }
+.stc-lock[data-lock] { cursor: ns-resize; touch-action: none; }
+.stc-lock i { width: 5px; height: 1px; background: var(--mid); }
+.stc-no { flex: 1; text-align: right; padding-right: 10px; color: var(--dim); }
+
+/* ── the instrument ── */
+
+.stc-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; font-family: inherit; }
+.stc-instrument { transition: transform 170ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.stc-cross { stroke: #191919; stroke-width: 1; shape-rendering: crispEdges; }
+.stc-hit { fill: transparent; stroke: transparent; pointer-events: all; cursor: pointer; }
+.stc-hit.ring { fill: none; pointer-events: stroke; cursor: grab; touch-action: none; }
+
+.stc-ring { fill: none; stroke: #2a2a2a; stroke-width: 1; }
+.stc-ring.unset { stroke: #303030; stroke-dasharray: 1 5; }
+.stc-ring.set { stroke: #3d3d3d; }
+.stc-ring.active { stroke: #6b6b6b; }
+.stc-ring.lit { stroke: var(--bright); stroke-width: 1.5; }
+.stc-mark { stroke: var(--mid); stroke-width: 1.5; }
+.stc-tick { stroke: #3d3d3d; stroke-width: 1; }
+.stc-tick.major { stroke: var(--mid); }
+.stc-handle { fill: var(--accent); }
+.stc-needle { stroke: var(--accent); stroke-width: 1; }
+.stc-needle.thick { stroke-width: 2; }
+.stc-seg { fill: none; stroke: #202020; }
+.stc-seg.on { stroke: var(--fg); }
+
+.stc-node text { font-size: 11px; fill: var(--mid); }
+.stc-node .stc-node-name { fill: var(--quiet); }
+.stc-node.unset text, .stc-node.unset .stc-node-name { fill: #444; }
+.stc-node.on text { fill: var(--bright); }
+.stc-ray { stroke: #202020; stroke-width: 1; }
+.stc-node.on .stc-ray { stroke: var(--accent); stroke-opacity: 0.8; }
+.stc-dot { fill: #555; }
+.stc-node.unset .stc-dot { fill: #333; }
+.stc-node.on .stc-dot { fill: var(--accent); }
+
+.stc-pole { pointer-events: all; cursor: pointer; }
+.stc-pole text { font-size: 11px; fill: var(--quiet); }
+.stc-pole:hover text { fill: var(--bright); }
+.stc-chip { fill: transparent; }
+.stc-pole.on .stc-chip { fill: var(--accent); }
+.stc-pole.on text, .stc-pole.on:hover text { fill: #0a0a0a; }
+
+.stc-readout .name { fill: var(--quiet); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+.stc-readout .value { fill: var(--bright); font-size: 12.5px; }
+.stc-readout .zone { fill: var(--quiet); font-size: 10px; }
+.stc-readout .zone.live { fill: var(--accent); }
+
+/* ── pin button, panels ── */
+
+.stc .stc-pinit {
+  position: absolute;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  line-height: 14px;
+  color: #0a0a0a;
+  background: var(--fg);
+}
+.stc .stc-pinit:hover { background: var(--bright); }
+
+.stc-panel {
+  position: absolute;
+  top: 10px;
+  left: calc(var(--gut) + 14px);
+  width: min(560px, calc(100% - var(--gut) - 28px));
+  padding: 14px 16px;
+  background: #0f0f0f;
+  border: 1px solid #262626;
+  font-size: 11.5px;
+  line-height: 18px;
+  color: var(--mid);
+  z-index: 3;
+}
+.stc-panel p { margin: 0 0 10px; color: var(--quiet); white-space: normal; }
+.stc .stc-panel textarea {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  background: #0a0a0a;
+  border: 1px solid #262626;
+  color: var(--fg);
+  font-size: 12.5px;
+  line-height: 19px;
+  resize: vertical;
+  outline: none;
+  user-select: text;
+}
+.stc .stc-panel textarea:focus { border-color: var(--quiet); }
+.stc-panel > div { display: flex; gap: 16px; margin-top: 10px; }
+.stc .stc-panel button { color: var(--fg); }
+.stc .stc-panel button:hover { color: var(--bright); }
+.stc .stc-panel button:first-child { color: var(--accent); }
+.stc-help { cursor: pointer; }
+.stc-help dl { margin: 0 0 10px; }
+.stc-help dl > div { display: flex; gap: 14px; }
+.stc-help dt { flex: none; width: 190px; color: var(--fg); }
+.stc-help dd { margin: 0; color: var(--quiet); white-space: normal; }
+.stc-help p { margin: 0; }
+
+/* ── dials as chips, where the web does not fit ── */
+
+.stc-chips { height: 24px; gap: 12px; overflow-x: auto; scrollbar-width: none; border-top: 1px solid #141414; }
+.stc-chips button { color: var(--mid); }
+.stc-chips button.unset { color: #4a4a4a; }
+.stc-chips button.on { color: var(--bright); box-shadow: 0 1px 0 var(--accent); }
+.stc-chips button span { color: var(--quiet); }
+
+/* ── the main knob ── */
+
+.stc-scrub { height: 26px; gap: 10px; border-top: 1px solid #141414; }
+.stc-scrub-end { min-width: 22px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.stc-scrub-end:first-child { text-align: right; }
+.stc-scrub button { color: var(--quiet); }
+.stc-scrub button:hover { color: var(--bright); }
+.stc-track { position: relative; flex: 1; height: 26px; cursor: ew-resize; touch-action: none; }
+.stc-track i { position: absolute; top: 12px; left: 0; height: 2px; }
+.stc-seg-horizon { background: #161616; }
+.stc-seg-cached { background: repeating-linear-gradient(90deg, #3a3a3a 0 2px, transparent 2px 5px); }
+.stc-seg-visible { background: var(--quiet); }
+.stc-seg-kept { background: var(--fg); }
+.stc-seg-committed { background: var(--bright); height: 3px !important; top: 11.5px !important; }
+.stc-track .stc-anchor { top: 8px; width: 1px; height: 10px; background: var(--fg); }
+.stc-track .stc-knob { top: 6px; width: 7px; height: 14px; margin-left: -3px; background: var(--fg); }
+.stc-scrub.on .stc-knob, .stc-track:hover .stc-knob { background: var(--accent); }
+
+/* ── telemetry ── */
+
+.stc-foot { height: 24px; border-top: 1px solid #141414; font-variant-numeric: tabular-nums; overflow: hidden; }
+.stc-foot b { font-weight: 400; color: var(--fg); }
+.stc-foot em { font-style: normal; color: var(--dim); }
+.stc-foot .warn { color: var(--mid); overflow: hidden; text-overflow: ellipsis; }
+.stc-foot .warn b { color: var(--accent); }
+
+/* ── a narrow canvas keeps the instrument and drops the debug detail ── */
+
+.stc-narrow .stc-swatch, .stc-narrow .stc-foot em, .stc-narrow .stc-title { display: none; }
+.stc-narrow .stc-top, .stc-narrow .stc-foot, .stc-narrow .stc-scrub, .stc-narrow .stc-chips { gap: 10px; padding: 0 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stc-instrument { transition: none; }
+  .stc-cursor.idle { animation: none; }
+}

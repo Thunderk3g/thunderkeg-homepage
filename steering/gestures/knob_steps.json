@@ -1,0 +1,248 @@
+{
+ "name": "knob_steps",
+ "description": "pace stepped one quantum at a time, 280-650 ms apart",
+ "events": [
+  {
+   "t": 0,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.6667
+  },
+  {
+   "t": 592,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.5
+  },
+  {
+   "t": 884,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.3333
+  },
+  {
+   "t": 1263,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.5
+  },
+  {
+   "t": 1873,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.6667
+  },
+  {
+   "t": 2244,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.5
+  },
+  {
+   "t": 2620,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.6667
+  },
+  {
+   "t": 3138,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 3509,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 3898,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 4504,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 4849,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.6667
+  },
+  {
+   "t": 5146,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 5552,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 6070,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 6659,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 7307,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 7845,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 8310,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 8701,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 9062,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 9586,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 10019,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 10404,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 10730,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 11323,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 11931,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.6667
+  },
+  {
+   "t": 12533,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 12885,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 13168,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 13580,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 13957,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 14575,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 15123,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 15690,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 16275,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 16793,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 17380,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  },
+  {
+   "t": 17684,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 0.8333
+  },
+  {
+   "t": 18036,
+   "type": "set_dial",
+   "dim": "pace",
+   "value": 1.0
+  }
+ ],
+ "seed": "Elara had kept the key hidden for eleven years, and tonight she finally carried it up the hill.\n\nShadows stretched across the path as the last of the light went out of the valley.",
+ "task": "story"
+}

@@ -1,0 +1,130 @@
+# Material for the simulated backend (no model). The Python SimBackend and the
+# browser's sim source both read this file, so the two write the same kind of
+# text. Every pool is keyed by a pole of a dimension in dimensions.yaml; a dial
+# decides which pool a sentence draws from, which is what makes turning a dial
+# visibly change the text even with no model behind it.
+#
+# A sentence is: [opener] subject verb object [tail] — in the shape its mode
+# asks for. `{pin}` is replaced by a pinned phrase.
+
+subjects:
+  character: [Elara, She, She, Elara]
+  narrator: [The girl, A figure on the path, Someone below, The lone walker]
+
+# mode -> tension -> predicates (verb + object)
+predicates:
+  action:
+    relaxed:
+      - wandered up past the garden wall
+      - turned the key over in her palm
+      - stopped to tie back her hair
+      - set the lantern on the step
+      - walked the last of the path at an easy pace
+      - brushed the dust from the old latch
+    tense:
+      - ran for the gate before it could close
+      - wrenched the key from its chain
+      - threw her shoulder against the door
+      - dropped flat as something moved in the dark
+      - snatched the lantern back from the edge
+      - forced the lock with shaking hands
+  description:
+    relaxed:
+      - stood among warm stones and slow evening air
+      - was framed by lamplight and the smell of cut grass
+      - rested under a sky the colour of pale tea
+      - moved through a garden gone soft with dusk
+      - was small against the long quiet of the hill
+    tense:
+      - stood where every window had gone suddenly dark
+      - was caught in a wind that came from nowhere
+      - waited under a sky pressed low and bruised
+      - was ringed by trees that leaned in to listen
+      - was the only still thing on a hill full of noise
+  introspection:
+    relaxed:
+      - wondered whether the door had always been this small
+      - remembered the taste of the apples that grew here
+      - let herself think it might simply be a room
+      - counted the years without any hurry
+      - decided the morning would be soon enough to worry
+    tense:
+      - knew there would not be a second chance
+      - could not stop counting the seconds
+      - understood too late what the key was for
+      - tried not to think about who else had come
+      - felt every reason to turn back arrive at once
+
+# mode: dialogue is built from a spoken line and an attribution
+dialogue:
+  relaxed:
+    - It's only a door
+    - We have all night
+    - I used to play here, you know
+    - Sit a while, the hill isn't going anywhere
+    - Tell me what you remember
+  tense:
+    - Don't turn around
+    - Give me the key, now
+    - We're out of time
+    - Something's already inside
+    - Run, and don't stop at the gate
+  said:
+    character: [she said, Elara said, she whispered]
+    narrator: [the girl said, a voice said, someone called]
+
+# tone -> tails appended to a sentence
+tails:
+  wry:
+    - ", which was about as useful as it sounds"
+    - ", naturally"
+    - ", because of course it would"
+    - ", not that anyone had asked"
+    - ", a plan in the loosest possible sense"
+  tender:
+    - ", gently, as though it might bruise"
+    - ", and something in her chest eased"
+    - ", the way one touches a sleeping child"
+    - ", and for a moment the years forgave her"
+    - ", careful of every small thing"
+  somber:
+    - ", and the quiet afterwards was heavy"
+    - ", though nothing would bring it back"
+    - ", as the last of the light went out"
+    - ", and no one was left to be told"
+    - ", the way things end without saying so"
+  wondrous:
+    - ", shimmering like a held breath"
+    - ", as though the world had just been invented"
+    - ", and the dark filled with small bright sounds"
+    - ", lit from somewhere that had no name"
+    - ", impossibly, beautifully"
+
+# pace: expansive sentences open with one of these; compressed ones lose their tail
+openers:
+  - "Long after the bells had stopped, "
+  - "While the valley settled into its evening, "
+  - "With the slow patience of someone who has waited years, "
+  - "As the path curved once more beneath the trees, "
+  - "In the hour when the hill keeps its own counsel, "
+
+# surprise: a whole sentence dropped in between the others
+events:
+  expected:
+    - Everything was where she had left it.
+    - The path went on as it always had.
+    - The gate creaked, the way it always did.
+    - Nothing on the hill had changed.
+  unexpected:
+    - A second key, identical to hers, was already in the lock.
+    - The door opened onto the sea, though the sea was a hundred miles away.
+    - Her own voice answered from inside.
+    - The hill, she realised, had been following her.
+    - Every lamp in the valley went out and then came back on blue.
+
+# an attention lock, as the simulated text shows it: the pinned phrase returns
+pins:
+  - "Still, it came back to that: {pin}."
+  - "And under everything, {pin}."
+  - "{pin} — the words would not leave her."
+  - "Again and again: {pin}."

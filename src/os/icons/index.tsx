@@ -133,6 +133,18 @@ const GLYPHS: Record<string, Plate> = {
       </>
     ),
   },
+  steer: {
+    from: '#34363d', to: '#0d0d0f',
+    glyph: (
+      <>
+        <path {...S} d="M4.5 8.5 H19.5" opacity="0.5" />
+        <path {...S} d="M5.5 8.5 A6.5 6.5 0 0 0 18.5 8.5" />
+        <path {...S} d="M8.5 8.5 A3.5 3.5 0 0 0 15.5 8.5" opacity="0.5" />
+        <circle cx="16.6" cy="13.1" r="1.9" fill="#ff4a1c" />
+        <path {...S} d="M6.5 19 H17.5" opacity="0.5" />
+      </>
+    ),
+  },
   folder: {
     from: '#5aa2ff', to: '#2a5fd6',
     glyph: <path {...S} d="M4 7.5 A1.5 1.5 0 0 1 5.5 6 H10 L12 8 H18.5 A1.5 1.5 0 0 1 20 9.5 V17 A1.5 1.5 0 0 1 18.5 18.5 H5.5 A1.5 1.5 0 0 1 4 17 Z" />,

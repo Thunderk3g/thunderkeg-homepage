@@ -60,22 +60,36 @@ function shouldFallBack(err: unknown): boolean {
 
 type Msg = { role: 'user' | 'assistant' | 'system'; content: string };
 
+export interface CompletionOptions {
+  /** try these instead of the configured chain */
+  models?: string[];
+  maxTokens?: number;
+  seed?: number;
+  /** aborting closes the stream to the provider, which stops it generating */
+  signal?: AbortSignal;
+}
+
 /** Open a streaming completion on the first model that accepts the request. */
-export async function streamChatCompletion(messages: Msg[], temperature = 0.4) {
+export async function streamChatCompletion(messages: Msg[], temperature = 0.4, opts: CompletionOptions = {}) {
   let last: unknown;
-  for (const model of MODELS) {
+  for (const model of opts.models?.length ? opts.models : MODELS) {
     try {
-      const stream = await getLlm().chat.completions.create({
-        model,
-        messages,
-        stream: true,
-        temperature,
-        ...extras(model),
-      } as OpenAI.Chat.ChatCompletionCreateParamsStreaming);
+      const stream = await getLlm().chat.completions.create(
+        {
+          model,
+          messages,
+          stream: true,
+          temperature,
+          ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
+          ...(opts.seed != null ? { seed: opts.seed } : {}),
+          ...extras(model),
+        } as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
+        { signal: opts.signal },
+      );
       return { stream, model };
     } catch (err) {
       last = err;
-      if (!shouldFallBack(err)) break;
+      if (opts.signal?.aborted || !shouldFallBack(err)) break;
     }
   }
   throw last instanceof Error ? last : new Error('No model accepted the request');

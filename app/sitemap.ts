@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/resume`, priority: 0.9 },
     { url: `${SITE}/writing`, priority: 0.8 },
     { url: `${SITE}/stacks`, priority: 0.7 },
+    { url: `${SITE}/steer`, priority: 0.6 },
     ...allEntries().map((e) => ({
       url: `${SITE}/writing/${e.slug}`,
       lastModified: e.date || undefined,

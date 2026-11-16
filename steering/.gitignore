@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+*.egg-info/
+.venv/
+.env
+# trained control vectors are built per model with `python -m steerable.vectors train`
+vectors/*.pt
+vectors/*.npz

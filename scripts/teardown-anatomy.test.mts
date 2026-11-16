@@ -34,9 +34,9 @@ for (const id of Object.keys(APPS)) check('app:' + id, windowAnatomy(id));
 console.log('ok - every app window has three readings');
 
 // every app on the desktop has its own entry, so no window falls back to the generic text
-const registered = ['hire', 'terminal', 'browser', 'research', 'stacks', 'writing', 'files', 'vm', 'psql', 'assistant', 'code-editor', 'music', 'settings'];
+const registered = ['hire', 'terminal', 'browser', 'research', 'stacks', 'steer', 'writing', 'files', 'vm', 'psql', 'assistant', 'code-editor', 'music', 'settings'];
 for (const id of registered) assert.ok(APPS[id], `no anatomy for the "${id}" app`);
-console.log('ok - all thirteen apps are described');
+console.log('ok - all fourteen apps are described');
 ok(appAnatomy('no-such-app').built[0] === 'A React component', 'an unknown app still gets a generic reading');
 
 // nothing depends on itself, and the stack bottoms out at the hardware

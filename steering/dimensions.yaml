@@ -1,0 +1,184 @@
+# Steering dimensions: one entry per dial.
+#
+# This file is the single source for both runtimes. The Python backend reads it
+# directly (STEER_DIMENSIONS overrides the path); the web app reads it through
+# /api/steer/config. Nothing about a dimension is hard-coded anywhere else, so a
+# product that wants different dials ships a different file.
+#
+# kind
+#   bipolar  two poles with a neutral centre. 0 is fully the first pole, 1 fully
+#            the second, 0.5 is neutral. Strength is the distance from the centre.
+#   blend    two or more poles spread evenly along the arc. The value
+#            interpolates between the two nearest poles; there is no neutral
+#            point, only "unset" (the dial has not been touched).
+# steps      how many quanta the arc is cut into. Branches are cached per
+#            quantum, so this sets both how fine the dial is and how much the
+#            cache and the speculation have to cover.
+# prompt     Tier A: what the pole means, compiled into the system prompt.
+# tier_b     Tier B: where the control vector is added and how hard.
+#            `layers` is the span of decoder layers the vector is added
+#            after, as fractions of the model's depth. `max_strength` is the
+#            length of what is added at each of those layers with the dial
+#            fully at a pole, as a fraction of the mean length of the residual
+#            stream at that layer (measured when the vector is trained), so a
+#            value means the same push on a small model as on a large one.
+#            The additions accumulate along the span: eleven layers at 0.08
+#            come to most of one residual length. The values here are starting
+#            points that have not been tuned against real weights; raise one
+#            until `python -m steerable.vectors eval --dim <name>` shows the
+#            score moving across the whole arc, and stop before it reports
+#            broken grammar. `vector` is the trained file, relative to this
+#            directory (STEER_VECTORS_DIR replaces the leading `vectors/`).
+#            `steps` here replaces the one above, because a vector scales
+#            smoothly where a prompt does not.
+
+version: 1
+
+dimensions:
+  - name: tone
+    kind: blend
+    steps: 12
+    description: The emotional colour of the voice.
+    poles:
+      - name: wry
+        description: dry, understated, quietly amused
+        prompt: dry and understated, with a quiet irony that never turns into an outright joke
+      - name: tender
+        description: warm, gentle, careful with people
+        prompt: warm and gentle, attentive to small kindnesses and to how things feel
+      - name: somber
+        description: grave, heavy, aware of loss
+        prompt: grave and subdued, with a sense of weight and of things that cannot be undone
+      - name: wondrous
+        description: awed, luminous, wide-eyed
+        prompt: full of awe, luminous and wide-eyed, as if everything is being seen for the first time
+    tier_b: { layers: [0.35, 0.7], max_strength: 0.08, steps: 24, vector: vectors/tone.pt }
+
+  - name: pace
+    kind: bipolar
+    steps: 6
+    description: How much ground each sentence covers.
+    poles:
+      - name: compressed
+        description: short sentences, fast cuts
+        prompt: short, clipped sentences; skip ahead quickly; cut every word that is not load-bearing
+      - name: expansive
+        description: long sentences, lingering
+        prompt: long, unhurried sentences that linger on detail and let each moment take its time
+    tier_b: { layers: [0.35, 0.7], max_strength: 0.08, steps: 24, vector: vectors/pace.pt }
+
+  - name: tension
+    kind: bipolar
+    steps: 6
+    description: How much is at stake right now.
+    poles:
+      - name: relaxed
+        description: at ease, nothing pressing
+        prompt: at ease; nothing is pressing and nothing is at risk
+      - name: tense
+        description: taut, something is about to go wrong
+        prompt: taut and urgent; something is at stake and could go wrong at any moment
+    tier_b: { layers: [0.35, 0.7], max_strength: 0.08, steps: 24, vector: vectors/tension.pt }
+
+  - name: surprise
+    kind: bipolar
+    steps: 6
+    description: How far the next turn departs from what the reader expects.
+    poles:
+      - name: expected
+        description: follows the obvious next step
+        prompt: take the most natural next step; nothing the reader would not predict
+      - name: unexpected
+        description: turns somewhere the reader did not see coming
+        prompt: turn somewhere the reader did not see coming, while staying consistent with what is already written
+    tier_b: { layers: [0.35, 0.7], max_strength: 0.06, steps: 24, vector: vectors/surprise.pt }
+
+  - name: focus
+    kind: bipolar
+    steps: 6
+    description: Whose view the text is held in.
+    poles:
+      - name: character
+        description: close on the main character
+        prompt: stay close inside the main character's point of view, with their perceptions and feelings
+      - name: narrator
+        description: pulled back to the narrator
+        prompt: pull back to a distant narrator who sees the whole scene from outside
+    tier_b: { layers: [0.35, 0.7], max_strength: 0.06, steps: 24, vector: vectors/focus.pt }
+
+  - name: mode
+    kind: blend
+    steps: 12
+    description: What kind of sentence is doing the work.
+    poles:
+      - name: action
+        description: things happen
+        prompt: physical action; people do things and events move forward
+      - name: dialogue
+        description: people speak
+        prompt: spoken dialogue; let people talk, with short attributions
+      - name: description
+        description: the scene is shown
+        prompt: description of place, light, sound and texture
+      - name: introspection
+        description: thought turns inward
+        prompt: inner thought; what the character wonders, remembers and decides
+    tier_b: { layers: [0.35, 0.7], max_strength: 0.06, steps: 24, vector: vectors/mode.pt }
+
+# What the canvas can be asked to write. `framing` opens the system prompt;
+# `seed` is the text the session starts from. The simulated backend only has
+# story material, so it offers the tasks marked `sim: true`.
+tasks:
+  - id: story
+    label: story
+    sim: true
+    framing: You are continuing a piece of literary fiction.
+    seed: |-
+      Elara had kept the key hidden for eleven years, and tonight she finally carried it up the hill.
+
+      Shadows stretched across the path as the last of the light went out of the valley.
+  - id: marketing
+    label: marketing copy
+    framing: You are continuing a piece of marketing copy for a product page. Write for a reader deciding whether to buy.
+    seed: |-
+      Most people find out what their policy covers on the day they need it.
+
+      We built this one the other way round.
+  - id: sales
+    label: sales script
+    framing: You are continuing a script that a sales advisor speaks aloud on a call. Keep it sayable.
+    seed: |-
+      Thanks for taking the call. Before I tell you anything about us, can I ask what made you look at this now?
+  - id: support
+    label: agent response
+    framing: You are continuing a customer-support reply. Be accurate about what is known and plain about what is not.
+    seed: |-
+      Thank you for writing in, and I am sorry the claim has taken this long.
+
+      Here is where it stands today.
+
+# Tier B: scenario openings used to build contrastive pairs when the control
+# vectors are trained (steerable.vectors). Each opening is paired with every
+# pole's `prompt`; the vector is the first principal component of the
+# difference in activations between a pole and the others.
+contrast_stems:
+  - The train pulled out of the station and
+  - She opened the letter and
+  - By the time the rain stopped,
+  - He set the cup down on the table and
+  - The dog had been waiting at the door since
+  - At the edge of the market,
+  - When the lights came back on,
+  - The first thing anyone noticed about the house was
+  - Nobody had told her that
+  - On the last day of the harvest,
+  - The boat drifted past the rocks while
+  - He had rehearsed the sentence all morning, but
+  - Behind the school there was a field where
+  - The clock in the hall struck nine and
+  - Every summer the river
+  - She counted the coins twice and
+  - Two streets from the harbour,
+  - The old teacher looked up from the page and
+  - It was the kind of evening when
+  - After the phone call,

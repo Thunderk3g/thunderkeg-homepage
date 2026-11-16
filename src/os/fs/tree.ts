@@ -114,6 +114,9 @@ Everything here is interactive:
   • Stacks            the board on the desktop: every stack is a subject, every cube
                       one thing I built, measured, studied or wrote, oldest at the
                       bottom. Hover a cube to read it; run 'stacks' for it in words
+  • Steerable Canvas  steer a model while it writes: dials for tone, pace and tension,
+                      pinned phrases, and a knob that scrubs through continuations
+                      (run 'steer'; also at /steer)
   • Teardown          the whole desktop tilted and pulled apart into its layers, down
                       to the display, the session, the file system and your machine
                       (the layers button in the panel, Ctrl+Alt+X, or run 'teardown')
@@ -123,7 +126,7 @@ Everything here is interactive:
   • Text Editor       CodeMirror with Markdown preview — try ~/Documents/resume.md
   • Documents         ~/Documents holds the real résumé content
 
-Plain pages for humans in a hurry:  /resume  ·  /writing  ·  /stacks
+Plain pages for humans in a hurry:  /resume  ·  /writing  ·  /stacks  ·  /steer
 
 — Diwakar
 `;
