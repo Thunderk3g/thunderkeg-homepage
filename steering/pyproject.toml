@@ -15,7 +15,8 @@ dependencies = [
 
 [project.optional-dependencies]
 # Tier B (activation steering) and the proxy-model focus monitor
-local = ["torch>=2.2", "transformers>=4.44", "tokenizers>=0.19", "numpy>=1.26"]
+# written against transformers 5.23: it relies on that version passing a float 4D attention mask through
+local = ["torch>=2.2", "transformers>=5.0", "tokenizers>=0.19", "numpy>=1.26"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 
 [project.scripts]

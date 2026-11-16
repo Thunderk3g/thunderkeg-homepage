@@ -56,6 +56,7 @@ state, and gets display tokens back.
 | Attention lock | the pinned phrase returns in the text | a "keep in focus" list in the prompt: soft | an additive bias on attention scores toward the pinned positions |
 | Focus monitor | lexical heuristic | a small proxy model's attention if it can load, else the heuristic | the generating model's own attention |
 | Scrub and regenerate | yes | yes; speed is the provider's | yes; the prefix's KV cache is reused |
+| Verified here | yes | against a local stand-in endpoint, not a real provider | on models built locally, not on real weights |
 | Needs | nothing | an API key | a GPU (an 8B model in 16-bit wants about 16 GB) |
 
 Hosted APIs expose neither activations nor attention weights, so Tier A can only
@@ -172,9 +173,10 @@ cannot load, the backend says so in its log and uses the heuristic.
 ## Tier B: local weights
 
 `STEER_BACKEND=local` runs an open-weights model through HF transformers with
-control vectors and attention-bias locks (`steerable/backends/local.py`,
-`steerable/vectors.py`). This part is still being reviewed; its instructions
-and what has been verified will be written up here once it is.
+control vectors and attention-bias locks. [TIER_B.md](TIER_B.md) covers
+training the vectors, the monotonic check, and, first of all, what has and has
+not been verified: the mechanism is tested on models built locally, and it has
+not yet been run on real pretrained weights or a GPU.
 
 ## The latency harness
 
@@ -241,7 +243,7 @@ python -m pytest tests -q -m "not slow"
 | `test_engine.py` | The engine's rules, one test each: cache, cancellation, scrubbing, speculation, pins, the hold for a moving hand, and that an orphaned request is detected |
 | `test_api_and_server.py` | Tier A against a real HTTP endpoint (a local stand-in): the steering reaches the model, and a cancelled request closes its stream. The WebSocket server speaks the contract. |
 | `test_units.py` | Layout, dimensions, the prompt compiler, the heuristic. Two fixtures here are also checked by the web app's tests, which keeps the Python and TypeScript halves in step. |
-| `test_local.py` | Tier B on small models built locally |
+| `test_local.py` | Tier B on small models built locally: steering, the attention bias, KV-cache reuse, cancellation, the focus monitor. One test marked `slow` trains a small model and checks a dial moves a measured style monotonically |
 
 ## Configuration
 
