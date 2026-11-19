@@ -146,8 +146,9 @@ export function SteerableCanvas({ wsUrl, configUrl = '/api/steer/config', genera
       );
     } else if (host) {
       const source = mode === 'api' ? new ApiSource(generateUrl, host.model) : new SimSource(host.sim, host.dimensions);
-      // only the hosted model needs the gentler settings; the simulated source costs nothing
-      s.attach(new LocalTransport(source, host.dimensions, host.tasks, s.receive, mode === 'api' ? host.engine : {}));
+      // only the hosted model needs the gentler settings; the simulated source costs nothing.
+      // Both are written out at the same pace, so the page reads the same with or without a key.
+      s.attach(new LocalTransport(source, host.dimensions, host.tasks, s.receive, mode === 'api' ? host.engine : { revealTokS: host.engine.revealTokS }));
     }
     setSession(s);
     return () => s.close();
@@ -893,7 +894,7 @@ function Canvas({ session, mode, modes, onMode, note, task, seed, onText, autoFo
       </div>
 
       <footer className="stc-foot">
-        <span title="tokens per second of the stream now on screen; a display token is about a word">
+        <span title="tokens per second the model wrote the text now on screen at; a display token is about a word. A fast model is shown at a steadier pace than it writes">
           <b>{t ? Math.round(t.tok_s) : 0}</b> tok/s
         </span>
         <span title={`gesture to painted text, measured in this browser · p50 ${q(0.5)} ms · p95 ${q(0.95)} ms over ${paint.length} gestures · engine: p50 ${t?.latency_p50 ?? 0} ms, p95 ${t?.latency_p95 ?? 0} ms`}>

@@ -88,7 +88,7 @@ from its offline fallback to the real thing. Copy `.env.local.example` to
 | Variable | What it turns on | Without it |
 | --- | --- | --- |
 | `LLM_API_KEY` (and optional `LLM_BASE_URL`, `LLM_MODEL`, `LLM_FALLBACK_MODELS`) | The assistant, the research summaries and the steerable canvas, through any OpenAI-compatible endpoint | The assistant says it is offline; the canvas runs simulated |
-| `STEER_MODEL`, `STEER_SPECULATE`, `STEER_RATE_PER_ADDRESS` (all optional) | A faster model for the canvas only; speculative generation; its own rate limit | The site's model chain, no speculation, 150 requests per address in five minutes |
+| `STEER_MODEL`, `STEER_SPECULATE`, `STEER_REVEAL_TOK_S`, `STEER_RATE_PER_ADDRESS` (all optional) | A faster model for the canvas only; speculative generation; how many words a second go on screen (`0` shows text as it arrives); its own rate limit | The site's model chain, no speculation, 40 words a second, 150 requests per address in five minutes |
 | `NEXT_PUBLIC_STEER_WS_URL` | The canvas connects to the Python backend in `steering/` (a local model, a proxy focus monitor) | The engine runs in the page |
 | `S2_API_KEY` | Semantic Scholar lookups in Research without the shared rate limit | The panel links out when it is limited |
 | `SMTP_USER`, `SMTP_PASS` (and optional `SMTP_HOST`, `SMTP_PORT`, `HIRE_TO`, `HIRE_FROM`) | The brief form sends mail | The form opens the visitor's own mail app |

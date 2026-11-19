@@ -72,9 +72,14 @@ const num = (name: string, fallback: number) => {
  * the controls come to rest, and most of what they write is thrown away. On a
  * metered or free-tier key that is the first thing to run out. The debounce is
  * longer than the engine's default for the same reason.
+ *
+ * The reveal pace is here because a fast host needs it most: Groq writes a
+ * whole branch in about a fifth of a second, and unpaced that is a paragraph
+ * appearing at once. STEER_REVEAL_TOK_S=0 shows text as it arrives.
  */
 export function hostedEngine() {
   return {
+    revealTokS: process.env.STEER_REVEAL_TOK_S?.trim() === '0' ? 0 : Math.min(1000, num('STEER_REVEAL_TOK_S', 40)),
     speculate: process.env.STEER_SPECULATE === '1',
     debounceMs: num('STEER_DEBOUNCE_MS', 80),
     debounceMaxMs: num('STEER_DEBOUNCE_MAX_MS', 320),

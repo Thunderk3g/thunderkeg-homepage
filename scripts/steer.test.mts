@@ -405,6 +405,90 @@ const seedLen = split(SEED).length;
   await engine.close();
 }
 
+/* ── the paced reveal: a branch that arrives all at once is still written out word by word ── */
+
+{
+  // the source hands over the whole branch in one read, 60 ms after it is asked
+  const { engine, client, source } = rig({ speculate: false, ttftMs: 60, revealTokS: 200 });
+  engine.seed(SEED);
+  const from = client.msgs.length;
+  const stamps: [number, number][] = [];
+  const seen = client.recv;
+  const t0 = performance.now();
+  (engine as unknown as { send: (m: ServerMsg) => void }).send = (m) => {
+    if (m.type === 'tokens') stamps.push([performance.now() - t0, m.tokens.length]);
+    seen(m);
+  };
+  await sleep(90);
+  ok(source.requests.length === 1 && source.inflight === 0 && client.tokens.length > seedLen && client.tokens.length < seedLen + 20, 'with a pace set, a branch that has fully arrived is not all on screen');
+  ok(client.state!.cached_len === seedLen + 40 && client.state!.visible < seedLen + 40 && client.state!.generating, 'the state says it is held and still being written');
+  await settle(engine);
+  const sizes = stamps.map(([, n]) => n);
+  eq(sizes[0], 1, 'the wait for the first token is not repaid as a burst');
+  ok(sizes.filter((n) => n === 1).length > sizes.length / 2 && Math.max(...sizes) <= 8, 'the words go out one at a time');
+  const took = stamps.at(-1)![0] - stamps[0][0];
+  ok(took > 150 && took < 600, `at the pace asked for (40 words at 200/s took ${Math.round(took)} ms)`);
+  ok(client.tokens.length === seedLen + 40 && !client.state!.generating && client.msgs.length > from, 'and the state says so when the last word is out');
+  consistent(engine, client);
+}
+
+{
+  const { engine, client, source } = rig({ speculate: false, revealTokS: 200 });
+  engine.seed(SEED);
+  engine.setDial('pace', 0);
+  await sleep(70);
+  const shown = client.tokens.length - seedLen;
+  ok(shown > 3 && shown < 30, 'a dial turned away from a branch part-way through its reveal');
+  engine.setDial('pace', 1);
+  await settle(engine);
+  const calls = source.requests.length;
+  const mark = client.msgs.length;
+  engine.setDial('pace', 0);
+  await sleep(3);
+  const back = client.msgs.slice(mark).filter((m) => m.type === 'tokens');
+  ok(client.invalidates().at(-1)!.cached && back.length >= 1 && back[0].type === 'tokens' && back[0].tokens.length >= shown && back[0].tokens.length < 40, 'finds on its return what it had shown, at once');
+  await settle(engine);
+  ok(client.tokens.length === seedLen + 40 && source.requests.length === calls, 'and the rest of it, which had arrived unseen, is written out with no new request');
+  consistent(engine, client);
+}
+
+{
+  const { engine, client, source } = rig({ speculate: false, revealTokS: 200 });
+  engine.seed(SEED);
+  await sleep(60);
+  engine.stop();
+  const n = client.tokens.length;
+  ok(n > seedLen && n < seedLen + 40, 'stop, part-way through a reveal');
+  await sleep(80);
+  await settle(engine);
+  ok(client.tokens.length === n && client.state!.cached_len === n && !client.state!.generating, 'ends the text where it stands');
+  const calls = source.requests.length;
+  engine.scrub(10_000);
+  await settle(engine);
+  ok(client.tokens.length === n + 40 && source.requests.length === calls + 1, 'and pulling the knob on writes from there');
+  engine.scrub(n + 5);
+  eq(client.tokens.length, n + 5, 'scrubbing back in paced text truncates in the same call');
+  engine.scrub(n + 30);
+  eq(client.tokens.length, n + 30, 'and scrubbing forward shows what the knob passes at once');
+  consistent(engine, client);
+}
+
+{
+  const { engine, client } = rig({ tokS: 2000, ttftMs: 3, debounceMs: 4, revealTokS: 300 });
+  engine.seed(SEED);
+  await sleep(20);
+  for (let i = 0; i < 60; i++) {
+    engine.setDial(['tone', 'pace', 'tension', 'mode'][i % 4], ((i * 37) % 13) / 12, undefined, i);
+    if (i % 7 === 3) engine.scrub(seedLen + ((i * 5) % 50));
+    if (i % 11 === 5) engine.stop();
+    await sleep([0, 2, 9, 30][i % 4]);
+    assert.deepEqual(client.violations, [], `after change ${i}`);
+  }
+  await settle(engine);
+  consistent(engine, client);
+  ok(engine.inflight === 0, 'paced or not, rapid changes leave no stale tokens and nothing in flight');
+}
+
 for (const { engine, source } of made) {
   await engine.close();
   assert.equal(engine.inflight, 0, 'a generation outlived its session');

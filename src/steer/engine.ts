@@ -17,6 +17,12 @@ import type { ClientMsg, DimensionInfo, ServerMsg, StateMsg, TaskInfo, Telemetry
  *
  * It speaks the same messages as the WebSocket backend, so the canvas cannot
  * tell which one it is talking to.
+ *
+ * One thing here is the page's own: the paced reveal (`revealTokS`). A hosted
+ * model writes a whole branch in a fraction of a second, which reads as a
+ * block of text landing after a wait. With a pace set, a branch still fills
+ * (and is cached) as fast as it arrives, but its words go on screen one at a
+ * time.
  */
 
 export interface PinSpec {
@@ -79,6 +85,12 @@ export interface EngineSettings {
   focusWindow: number;
   /** how long a request still waiting for its first token is left to land when the controls move on */
   holdMs: number;
+  /**
+   * The most display tokens put on screen per second; 0 shows each one as it
+   * arrives. Only words not yet seen are paced: text a branch has shown before
+   * comes back at once.
+   */
+  revealTokS: number;
 }
 
 export const DEFAULT_SETTINGS: EngineSettings = {
@@ -94,6 +106,7 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   attentionMs: 100,
   focusWindow: 24,
   holdMs: 400,
+  revealTokS: 0,
 };
 
 /** how long the controls must be still before neighbours are speculated */
@@ -107,6 +120,8 @@ interface Branch {
   tokens: string[];
   /** the source ended the text itself; there is nothing more to ask for */
   done: boolean;
+  /** how many of its tokens have ever been on screen */
+  shown: number;
 }
 
 interface Work {
@@ -178,6 +193,12 @@ export class Engine {
   private specTimer: ReturnType<typeof setTimeout> | null = null;
   private frameTimer: ReturnType<typeof setTimeout> | null = null;
   private frameDirty = false;
+  /** armed while written words are still waiting for their turn on screen */
+  private revealTimer: ReturnType<typeof setTimeout> | null = null;
+  /** when the next word may be shown */
+  private revealAt = 0;
+  /** nothing is waiting to be shown, so the reveal clock is stopped */
+  private starved = true;
   private attnBusy = false;
   private attnDirty = false;
   private telemetryTimer: ReturnType<typeof setInterval> | null = null;
@@ -245,7 +266,7 @@ export class Engine {
     this.closed = true;
     this.cancelSwitch();
     this.cancelWork('close');
-    for (const t of [this.specTimer, this.frameTimer, this.holdTimer]) if (t != null) clearTimeout(t);
+    for (const t of [this.specTimer, this.frameTimer, this.holdTimer, this.revealTimer]) if (t != null) clearTimeout(t);
     if (this.telemetryTimer != null) clearInterval(this.telemetryTimer);
     await this.drain();
   }
@@ -274,7 +295,7 @@ export class Engine {
 
   /** nothing in flight and nothing scheduled: for tests and the harness */
   get idle(): boolean {
-    return !this.generating && !this.specTasks.size && this.specTimer === null && !this.dying.size && !this.frameDirty;
+    return !this.generating && !this.specTasks.size && this.specTimer === null && !this.dying.size && !this.frameDirty && this.revealTimer === null;
   }
 
   /* ───────────────────────── keys ───────────────────────── */
@@ -335,6 +356,7 @@ export class Engine {
   seed(text: string, task: string | null = null, cols?: number, seq?: number): void {
     this.cancelSwitch();
     this.cancelWork('seed');
+    this.cancelReveal();
     this.cache.clear();
     this.pins.clear();
     this.variant = 0;
@@ -399,6 +421,7 @@ export class Engine {
     const p = Math.max(this.committed, Math.min(position, this.s.maxTokens, Math.max(length, this.target, length + this.s.horizon)));
     if (p < this.visible) {
       this.cancelWork('scrub back');
+      this.cancelReveal();
       this.visible = p;
       this.anchorPos = p;
       this.following = false;
@@ -415,8 +438,7 @@ export class Engine {
       this.anchorPos = p;
       const upto = Math.min(p, length);
       if (upto > this.visible) {
-        this.send({ type: 'tokens', branch_id: this.branchId, from_tok: this.visible, tokens: this.slice(this.visible, upto) });
-        this.visible = upto;
+        this.show(upto);
         this.markAttention();
       }
       if (p >= length) {
@@ -442,6 +464,14 @@ export class Engine {
   stop(): void {
     this.cancelSwitch();
     this.cancelWork('stop');
+    this.cancelReveal();
+    // Stopping ends the text where it stands. Words written but not yet shown
+    // go the way of the words the cancelled request never wrote.
+    if (this.following && this.active && this.visible >= this.prefix.length && this.visible < this.len()) {
+      this.active.tokens.length = this.visible - this.prefix.length;
+      this.active.shown = this.active.tokens.length;
+      this.active.done = false;
+    }
     this.target = this.len();
     this.emitState();
   }
@@ -580,16 +610,24 @@ export class Engine {
       // the dial back finds it.
       const alias = this.key(prefixHash, this.active.dials, this.active.pins);
       if (!this.cache.has(alias)) {
-        this.put({ key: alias, dials: { ...this.active.dials }, pins: this.active.pins, tokens: this.slice(a, length), done: this.active.done });
+        this.put({
+          key: alias,
+          dials: { ...this.active.dials },
+          pins: this.active.pins,
+          tokens: this.slice(a, length),
+          done: this.active.done,
+          shown: Math.max(0, this.visible - a),
+        });
       }
     }
 
     let branch = this.cache.get(key);
     const cached = !!branch && branch.tokens.length > 0;
-    if (!branch) branch = { key, dials, pins, tokens: [], done: false };
+    if (!branch) branch = { key, dials, pins, tokens: [], done: false, shown: 0 };
     if (cached) this.cacheHits += 1;
     else this.cacheMisses += 1;
 
+    this.cancelReveal();
     this.prefix = newPrefix;
     this.active = branch;
     this.put(branch);
@@ -774,7 +812,7 @@ export class Engine {
       const key = this.key(prefixHash, dials, pins);
       let branch = this.cache.get(key);
       if (!branch) {
-        branch = { key, dials, pins, tokens: [], done: false };
+        branch = { key, dials, pins, tokens: [], done: false, shown: 0 };
         this.put(branch);
       }
       if (branch.done || branch.tokens.length >= depth) continue;
@@ -785,12 +823,42 @@ export class Engine {
 
   /* ───────────────────────── messages out ───────────────────────── */
 
+  /** Put the text up to `upto` on screen. */
+  private show(upto: number): void {
+    this.send({ type: 'tokens', branch_id: this.branchId, from_tok: this.visible, tokens: this.slice(this.visible, upto) });
+    this.visible = upto;
+    if (this.active) this.active.shown = Math.max(this.active.shown, upto - this.prefix.length);
+    if (upto >= this.len()) this.starved = true;
+  }
+
   private flush(): void {
     if (!this.following || !this.active) return;
     const length = this.len();
-    if (this.visible >= length) return;
-    this.send({ type: 'tokens', branch_id: this.branchId, from_tok: this.visible, tokens: this.slice(this.visible, length) });
-    this.visible = length;
+    if (this.visible >= length) {
+      this.starved = true;
+      return;
+    }
+    let upto = length;
+    if (this.s.revealTokS > 0) {
+      const step = 1000 / this.s.revealTokS;
+      const t = now();
+      // The clock runs only while words are waiting: the wait for a model's
+      // first token must not be repaid as a burst when it lands.
+      if (this.starved) {
+        this.revealAt = t;
+        this.starved = false;
+      }
+      // Counted from the clock rather than one per tick, so a late timer (a
+      // busy frame, a background tab) does not slow the text down.
+      const due = t >= this.revealAt ? 1 + Math.floor((t - this.revealAt) / step) : 0;
+      this.revealAt += due * step;
+      // what this branch has shown before comes back at once
+      const seen = Math.max(this.visible, Math.min(length, this.prefix.length + this.active.shown));
+      upto = Math.min(length, seen + due);
+      if (upto < length) this.armReveal(Math.max(this.s.frameMs, this.revealAt - t));
+      if (upto <= this.visible) return;
+    }
+    this.show(upto);
     if (this.latencyFrom !== null) {
       this.latencyMs = now() - this.latencyFrom;
       this.latencies.push(this.latencyMs);
@@ -800,6 +868,25 @@ export class Engine {
     this.markAttention();
     // the held request is on screen; now follow the hand
     if (this.deferred) this.moveOn();
+  }
+
+  private armReveal(delay: number): void {
+    if (this.revealTimer !== null) return;
+    this.revealTimer = setTimeout(() => {
+      this.revealTimer = null;
+      if (this.closed) return;
+      this.flush();
+      // the last word is out: the state the client holds says "still writing" until told otherwise
+      if (this.revealTimer === null) this.emitState();
+    }, delay);
+  }
+
+  private cancelReveal(): void {
+    if (this.revealTimer !== null) {
+      clearTimeout(this.revealTimer);
+      this.revealTimer = null;
+    }
+    this.starved = true;
   }
 
   /** Tokens leave in frames: at once when the first arrives, then no more often than frameMs. */
@@ -911,7 +998,8 @@ export class Engine {
       visible: this.visible,
       cached_len: this.len(),
       target: this.target,
-      generating: this.generating,
+      // to the canvas, text still being written out is text still being written
+      generating: this.generating || this.revealTimer !== null,
       variant: this.variant,
       dials: { ...this.dials },
       quantised: this.quantised(),
